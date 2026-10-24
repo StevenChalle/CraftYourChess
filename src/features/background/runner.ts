@@ -136,9 +136,10 @@ export type PlayerProgress = {
 
 /**
  * One pass: fetch each favorite's latest games, as many as their options say (the game store only
- * asks for new ones), then analyse those not analysed yet, newest first, a few at a time; then
- * evaluate every position at depth of the games of the favorites with the deep option, newest
- * first again. Rejects as soon as the signal aborts. Each report says how far each favorite is,
+ * asks for new ones), then analyse those not analysed yet, newest first, a few at a time; then,
+ * only once every game is analysed a first time, evaluate every position at depth of the games of
+ * the favorites with the deep option, newest first again. A favorite's games not all fetched
+ * (rate limit, network): no deepening in this pass, the next one fetches and analyses them first. Rejects as soon as the signal aborts. Each report says how far each favorite is,
  * starting from `previous` (the last pass) until their games are fetched again.
  */
 export async function runCycle(
@@ -171,6 +172,7 @@ export async function runCycle(
   const byKey = new Map<string, ReviewGame>()
   const deepKeys = new Set<string>()
   let rateLimited = false
+  let incomplete = false
   for (const [index, player] of players.entries()) {
     const accounts = playerAccounts(player)
     const selection: GameSelection = {
@@ -182,6 +184,7 @@ export async function runCycle(
     rateLimited ||= found.failures.some(
       ({ error }) => error instanceof ApiError && error.status === 429,
     )
+    incomplete ||= found.failures.length > 0
     for (const game of found.games) {
       byKey.set(`${game.source}:${game.id}`, game)
       if (player.deep) deepKeys.add(`${game.source}:${game.id}`)
@@ -227,7 +230,7 @@ export async function runCycle(
     send({ phase: 'analysing', done, total })
   }
 
-  if (deepGames.length > 0) {
+  if (deepGames.length > 0 && !incomplete) {
     const toDeepen = deepGames.filter((game) => shallow.has(gameKey(game)))
     // Out of the games to deepen only: the others never will be.
     const deepTotal = deepGames.length

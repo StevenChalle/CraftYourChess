@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { ProfileSearch } from '@/features/player/search'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useKeepAwake } from '@/hooks/useKeepAwake'
-import { ActiveTime, trackActiveTime } from '@/lib/activeTime'
 import { beginActivity, withActivity } from '@/lib/activity'
 import { trainingPuzzles } from '@/features/training/order'
 import {
@@ -109,8 +108,6 @@ export function AnalysisSessionProvider({
           status: 'running',
           progress: { phase: 'fetching' },
           settings: initialQuick,
-          // Replaced by the review's own clock as soon as it starts.
-          clock: new ActiveTime(),
         }
       : { status: 'none' },
   )
@@ -159,9 +156,7 @@ export function AnalysisSessionProvider({
       analysisCount.current += 1
       setAnalysisId(analysisCount.current)
       setTrainings((tabs) => tabs.filter((tab) => tab.phase.kind === 'running'))
-      const active = trackActiveTime()
-      const clock = active.time
-      setAnalysis({ status: 'running', progress: { phase: 'fetching' }, settings, clock })
+      setAnalysis({ status: 'running', progress: { phase: 'fetching' }, settings })
       try {
         const found = await getFound(signal)
         if (signal.aborted) return
@@ -172,9 +167,8 @@ export function AnalysisSessionProvider({
                 analyzeGames(found.games, settings.criteria, {
                   signal,
                   onProgress: (progress) => {
-                    clock.markProgress()
                     if (!signal.aborted) {
-                      setAnalysis({ status: 'running', progress, settings, clock })
+                      setAnalysis({ status: 'running', progress, settings })
                     }
                   },
                 }),
@@ -184,7 +178,6 @@ export function AnalysisSessionProvider({
             status: 'done',
             outcome: { games, failures: found.failures, criteria: settings.criteria },
             settings,
-            durationMs: clock.elapsedMs(),
           })
         }
       } catch (error) {
@@ -193,11 +186,8 @@ export function AnalysisSessionProvider({
             status: 'error',
             error: error as Error,
             settings,
-            durationMs: clock.elapsedMs(),
           })
         }
-      } finally {
-        active.stop()
       }
     },
     [],

@@ -153,12 +153,6 @@ export function formatSignedTenths(value: number): string {
   return signedTenthsFormat().format(value)
 }
 
-/** Stopwatch: "0:07", "1:42", "12:05" */
-export function formatClock(seconds: number): string {
-  const whole = Math.floor(seconds)
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
-}
-
 /** "a", "a and b", "a, b, and c" */
 export function formatList(items: string[]): string {
   return andList().format(items)

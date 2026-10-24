@@ -3,7 +3,6 @@ import { Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ReviewResults } from '@/features/review/components/ReviewResults'
 import { ReviewSteps } from '@/features/review/components/ReviewSteps'
-import { Stopwatch } from '@/features/review/components/Stopwatch'
 import { useAnalysisSession } from '@/features/review/sessionContext'
 import { m } from '@/paraglide/messages'
 
@@ -39,12 +38,7 @@ function ResultsTab() {
       ) : analysis.status === 'error' ? (
         <p className="text-loss">{m.review_failed()}</p>
       ) : (
-        <ReviewResults
-          outcome={analysis.outcome}
-          onTrain={trainGame}
-          // The time above the feedback link
-          footer={<Stopwatch durationMs={analysis.durationMs} />}
-        />
+        <ReviewResults outcome={analysis.outcome} onTrain={trainGame} />
       )}
       {analysis.status === 'running' && (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -58,11 +52,6 @@ function ResultsTab() {
             {m.analysis_stop()}
           </Button>
         </div>
-      )}
-      {analysis.status === 'running' ? (
-        <Stopwatch clock={analysis.clock} />
-      ) : (
-        analysis.status === 'error' && <Stopwatch durationMs={analysis.durationMs} />
       )}
     </div>
   )

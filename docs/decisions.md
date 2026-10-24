@@ -696,3 +696,7 @@ Le compteur « 120 / 500 » prenait trop de place dans l'en-tête, et un total c
 - **En-tête** : une icône seule (en cours, à jour, en pause, erreur). La loupe de recherche disparaît sur téléphone : l'en-tête débordait, et l'accueil a la recherche.
 - **Panneau** : une barre par favori et son nombre de parties suivies, rien d'autre que le bouton Pause, sauf une ligne quand il faut expliquer pourquoi rien n'avance.
 - **Progression par favori** : le runner la calcule à chaque lot (`PlayerProgress` dans l'état et le battement de cœur entre onglets). Les parties déjà approfondies sont cherchées avant l'analyse (l'analyse n'approfondit rien), pour que la barre soit juste dès le début.
+
+## 2026-10-24 : plus de chrono sous l'analyse
+
+Le chrono discret (temps écoulé pendant l'analyse, puis durée totale sous les résultats) est retiré : il n'aidait pas l'utilisateur. L'estimation avant de lancer et la progression suffisent. `ActiveTime` reste, pour mesurer la vitesse réelle des moteurs.

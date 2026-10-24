@@ -131,6 +131,10 @@ export function BackgroundIndicator() {
           <Icon aria-hidden className={cn('mt-px size-3.5 shrink-0', iconClass)} />
           {statusText(state)}
         </p>
+        {/* Reassures while it works: the deep option does not start until every game is analysed. */}
+        {working && favorites.players.some((player) => player.deep) && (
+          <p className="text-xs text-muted-foreground/80">{m.background_deep_note()}</p>
+        )}
         {state.phase === 'paused' ? (
           <Button variant="outline" size="sm" onClick={resume}>
             <Play data-icon="inline-start" />

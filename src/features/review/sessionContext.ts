@@ -1,4 +1,3 @@
-import type { ActiveTime } from '@/lib/activeTime'
 import { createContext, useContext } from 'react'
 import type { Mistake, ReviewOutcome } from './analyze'
 import type { FetchProgress, FoundGames, ReviewAccount } from './fetch'
@@ -20,15 +19,11 @@ export type SearchState =
   | { status: 'found'; found: FoundGames; selection: GameSelection }
   | { status: 'error'; error: Error }
 
-/**
- * The stopwatch survives tab switches: `clock` while running, then the final `durationMs`. Both
- * leave out the time the page was hidden (a phone pauses the analysis then, see ActiveTime).
- */
 export type AnalysisState =
   | { status: 'none' }
-  | { status: 'running'; progress: ReviewProgress; settings: ReviewSettings; clock: ActiveTime }
-  | { status: 'done'; outcome: ReviewOutcome; settings: ReviewSettings; durationMs: number }
-  | { status: 'error'; error: Error; settings: ReviewSettings; durationMs: number }
+  | { status: 'running'; progress: ReviewProgress; settings: ReviewSettings }
+  | { status: 'done'; outcome: ReviewOutcome; settings: ReviewSettings }
+  | { status: 'error'; error: Error; settings: ReviewSettings }
 
 /**
  * A training tab: first its options, then the board. `run` changes with every restart, which

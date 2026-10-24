@@ -315,6 +315,28 @@ describe('runCycle', () => {
     expect(players.at(-1)!.map((player) => player.share)).toEqual([1, 1])
   })
 
+  it('deepens nothing while some games could not be fetched: they are analysed first', async () => {
+    const deepen = vi.fn<BackgroundDeps['deepen']>(async () => {})
+    const find = async () => ({
+      games,
+      failures: [{ source: 'lichess' as const, error: new ApiError('lichess', 429, 'Too many') }],
+    })
+    const cycle = runCycle(
+      { players: [{ ...alice, deep: true }] },
+      deps({
+        find,
+        deepen,
+        toDeepen: async (all) => new Set(all.map((g) => movesHash(g.sanMoves))),
+      }),
+      new AbortController().signal,
+      () => {},
+    )
+    await vi.runAllTimersAsync()
+    await cycle
+    expect(analysed.flat()).toHaveLength(9)
+    expect(deepen).not.toHaveBeenCalled()
+  })
+
   it('says when Lichess limits the requests', async () => {
     const find = async () => ({
       games: [],

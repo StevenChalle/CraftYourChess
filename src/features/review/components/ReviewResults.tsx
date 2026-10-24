@@ -1,5 +1,5 @@
 import { Microscope, Square, Swords } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { FeedbackNudge } from '@/components/FeedbackLink'
 import { TablePagination } from '@/components/TablePagination'
 import { Button } from '@/components/ui/button'
@@ -20,17 +20,14 @@ const RESULTS_PAGE_SIZE = 20
 
 /**
  * The analysed games, paginated, with each game's errors and a button replaying them.
- * Below them, training on all the errors (TrainingPrompt), then `footer` (the analysis's time),
- * and last the feedback link.
+ * Below them, training on all the errors (TrainingPrompt), and last the feedback link.
  */
 export function ReviewResults({
   outcome,
   onTrain,
-  footer,
 }: {
   outcome: ReviewOutcome
   onTrain: (mistakes: Mistake[]) => void
-  footer?: ReactNode
 }) {
   const [page, setPage] = useState(0)
   const { games, failures } = outcome
@@ -96,7 +93,6 @@ export function ReviewResults({
           <TrainingPrompt outcome={outcome} />
         </>
       )}
-      {footer}
       {games.length > 0 && <FeedbackNudge text={m.feedback_nudge_results()} />}
     </div>
   )
