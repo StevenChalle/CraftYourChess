@@ -548,7 +548,7 @@
   "background_paused": "En pause jusqu'à ce que vous repreniez.",
   "background_rate_limited": "Lichess demande d'attendre une minute : nouvel essai bientôt.",
   "background_failed": "Un problème est survenu : nouvel essai dans une minute.",
-  "background_deep_note": "L'approfondissement vient après une première analyse de toutes les parties.",
+  "background_deep_note": "L'approfondissement suit la première analyse.",
   "background_pause": "Mettre en pause",
   "background_resume": "Reprendre",
   "legal_privacy_local_main": "vos joueurs favoris et combien de leurs dernières parties garder analysées ;",

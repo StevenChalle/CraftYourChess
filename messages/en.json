@@ -548,7 +548,7 @@
   "background_paused": "Paused until you resume.",
   "background_rate_limited": "Lichess asks to wait a minute: trying again soon.",
   "background_failed": "Something went wrong: trying again in a minute.",
-  "background_deep_note": "Deep analysis comes once every game has had a first pass.",
+  "background_deep_note": "Deep analysis comes after the first pass.",
   "background_pause": "Pause",
   "background_resume": "Resume",
   "legal_privacy_local_main": "your favorite players and how many of their latest games to keep analysed;",
