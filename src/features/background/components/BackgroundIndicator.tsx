@@ -1,4 +1,4 @@
-import { CircleCheck, LoaderCircle, Pause, Play, TriangleAlert } from 'lucide-react'
+import { CircleCheck, Layers, LoaderCircle, Pause, Play, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Progress } from '@/components/ui/progress'
@@ -133,7 +133,11 @@ export function BackgroundIndicator() {
         </p>
         {/* Reassures while it works: the deep option does not start until every game is analysed. */}
         {working && favorites.players.some((player) => player.deep) && (
-          <p className="text-xs text-muted-foreground/80">{m.background_deep_note()}</p>
+          // Layers: a second, deeper pass over the first.
+          <p className="flex items-start gap-2 text-xs text-muted-foreground/80">
+            <Layers aria-hidden className="mt-px size-3.5 shrink-0" />
+            {m.background_deep_note()}
+          </p>
         )}
         {state.phase === 'paused' ? (
           <Button variant="outline" size="sm" onClick={resume}>
