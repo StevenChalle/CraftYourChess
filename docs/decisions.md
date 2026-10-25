@@ -700,3 +700,7 @@ Le compteur « 120 / 500 » prenait trop de place dans l'en-tête, et un total c
 ## 2026-10-24 : plus de chrono sous l'analyse
 
 Le chrono discret (temps écoulé pendant l'analyse, puis durée totale sous les résultats) est retiré : il n'aidait pas l'utilisateur. L'estimation avant de lancer et la progression suffisent. `ActiveTime` reste, pour mesurer la vitesse réelle des moteurs.
+
+## 2026-10-25 : barre en deux temps pour l'option approfondie
+
+La barre d'un favori comptait l'analyse rapide et l'approfondissement ensemble (moitié chacun), quand le texte dessous ne compte que le passage en cours : une barre à 70 % face à « 20 / 50 » de l'approfondissement. Désormais, pour un favori avec l'option, la barre a deux moitiés séparées par une encoche (analyse rapide, puis approfondissement plus clair), le texte dit quel passage tourne (« Analyse rapide des parties », « Approfondissement des parties »), et l'infobulle de chaque barre donne les comptes du favori, le texte restant celui de tous les favoris ensemble. Le runner publie des comptes (`games`, `analysed`, `deepened`) au lieu d'une part.

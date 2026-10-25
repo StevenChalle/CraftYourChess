@@ -120,27 +120,34 @@ const LOCK = 'craftyourchess:background'
 const gameKey = (game: ReviewGame) => movesHash(game.sanMoves, game.initialFen)
 
 /**
- * How far one favorite is: their games fetched (loading until then), and the share of the work
- * done on them, analysis then deepening with the deep option.
+ * How far one favorite is: their games fetched (loading until then), how many are analysed a
+ * first time and, with the deep option, how many deepened.
  */
 export type PlayerProgress = {
   /** As named in the settings (playerName) */
   name: string
   /** Their latest games followed: the option */
   max: number
-  /** 0 to 1 */
-  share: number
+  /** Their games to analyse (with moves), out of `max` at most */
+  games: number
+  /** Analysed a first time */
+  analysed: number
+  /** Every position evaluated deeply: only with the deep option */
+  deepened?: number
   /** Their games are being fetched, or will be in this pass */
   loading: boolean
 }
+
+type Counts = Pick<PlayerProgress, 'games' | 'analysed' | 'deepened'>
 
 /**
  * One pass: fetch each favorite's latest games, as many as their options say (the game store only
  * asks for new ones), then analyse those not analysed yet, newest first, a few at a time; then,
  * only once every game is analysed a first time, evaluate every position at depth of the games of
  * the favorites with the deep option, newest first again. A favorite's games not all fetched
- * (rate limit, network): no deepening in this pass, the next one fetches and analyses them first. Rejects as soon as the signal aborts. Each report says how far each favorite is,
- * starting from `previous` (the last pass) until their games are fetched again.
+ * (rate limit, network): no deepening in this pass, the next one fetches and analyses them first.
+ * Rejects as soon as the signal aborts. Each report says how far each favorite is, starting from
+ * `previous` (the last pass) until their games are fetched again.
  */
 export async function runCycle(
   favorites: Favorites,
@@ -151,7 +158,15 @@ export async function runCycle(
 ): Promise<{ rateLimited: boolean }> {
   const { players } = favorites
   const names = players.map(playerName)
-  const shares = names.map((name) => previous.find((item) => item.name === name)?.share ?? 0)
+  const counts: Counts[] = names.map((name, index) => {
+    const last = previous.find((item) => item.name === name)
+    const deep = players[index]!.deep
+    return {
+      games: last?.games ?? 0,
+      analysed: last?.analysed ?? 0,
+      ...(deep && { deepened: last?.deepened ?? 0 }),
+    }
+  })
   const loading = players.map(() => true)
   /** Each favorite's games (gameKey) */
   const keysOf: string[][] = players.map(() => [])
@@ -161,7 +176,7 @@ export async function runCycle(
       players: players.map((player, index) => ({
         name: names[index]!,
         max: player.depth,
-        share: shares[index]!,
+        ...counts[index]!,
         loading: loading[index]!,
       })),
     })
@@ -198,22 +213,21 @@ export async function runCycle(
   const games = [...byKey.values()].filter((game) => game.sanMoves.length > 0)
   const deepGames = games.filter((game) => deepKeys.has(`${game.source}:${game.id}`))
   const analysed = await deps.analysed(games)
-  // Analysing does not deepen: known before, so each favorite's share is right from the start.
+  // Analysing does not deepen: known before, so each favorite's counts are right from the start.
   const shallow = deepGames.length > 0 ? await deps.toDeepen(deepGames) : new Set<string>()
   const deepened = new Set(deepGames.map(gameKey).filter((key) => !shallow.has(key)))
-  const updateShares = () => {
+  const updateCounts = () => {
     for (const [index, player] of players.entries()) {
       const keys = keysOf[index]!
       const count = (set: Set<string>) => keys.filter((key) => set.has(key)).length
-      shares[index] =
-        keys.length === 0
-          ? 1
-          : player.deep
-            ? (count(analysed) + count(deepened)) / (2 * keys.length)
-            : count(analysed) / keys.length
+      counts[index] = {
+        games: keys.length,
+        analysed: count(analysed),
+        ...(player.deep && { deepened: count(deepened) }),
+      }
     }
   }
-  updateShares()
+  updateCounts()
 
   const pending = games.filter((game) => !analysed.has(gameKey(game)))
   let done = total - pending.length
@@ -226,7 +240,7 @@ export async function runCycle(
     )
     done += batch.length
     for (const game of batch) analysed.add(gameKey(game))
-    updateShares()
+    updateCounts()
     send({ phase: 'analysing', done, total })
   }
 
@@ -249,7 +263,7 @@ export async function runCycle(
       )
       deepDone += batch.length
       for (const game of batch) deepened.add(gameKey(game))
-      updateShares()
+      updateCounts()
       send({ phase: 'deepening', done: deepDone, total: deepTotal })
     }
   }
@@ -266,7 +280,9 @@ function samePlayers(a: PlayerProgress[] = [], b: PlayerProgress[] = []): boolea
         other !== undefined &&
         item.name === other.name &&
         item.max === other.max &&
-        item.share === other.share &&
+        item.games === other.games &&
+        item.analysed === other.analysed &&
+        item.deepened === other.deepened &&
         item.loading === other.loading
       )
     })

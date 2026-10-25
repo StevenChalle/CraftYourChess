@@ -53,6 +53,51 @@ function statusText({ phase, done = 0, total = 0 }: BackgroundState): string {
   }
 }
 
+/**
+ * How far a favorite's games are, their counts in its tooltip. With the deep option, two halves
+ * with a notch between them: the quick analysis, then the deepening, lighter.
+ */
+function FavoriteBar({
+  name,
+  games,
+  analysed,
+  deepened,
+  loading,
+}: {
+  name: string
+  games: number
+  analysed: number
+  deepened: number | undefined
+  loading: boolean
+}) {
+  // No game to analyse: nothing left to do, once they are fetched.
+  const percent = (count: number) => (games === 0 ? (loading ? 0 : 100) : (count / games) * 100)
+  const counts = { analysed: formatNumber(analysed), games: formatNumber(games) }
+  const detail =
+    deepened === undefined
+      ? m.favorite_progress(counts)
+      : m.favorite_progress_deep({ ...counts, deepened: formatNumber(deepened) })
+  const shimmer = loading || undefined
+  return (
+    <div title={detail} className="flex flex-1 gap-0.5">
+      <Progress
+        value={percent(analysed)}
+        data-loading={shimmer}
+        aria-label={`${name} · ${detail}`}
+        className="flex-1"
+      />
+      {deepened !== undefined && (
+        <Progress
+          value={percent(deepened)}
+          data-loading={shimmer}
+          aria-hidden
+          className="flex-1 [&>[data-fill]]:opacity-55"
+        />
+      )}
+    </div>
+  )
+}
+
 /** Working, or another tab is: the icon spins and the bars of loading favorites move. */
 function isWorking({ phase, done, total }: BackgroundState): boolean {
   if (phase === 'elsewhere') return total === undefined || (done ?? 0) < total
@@ -90,7 +135,10 @@ export function BackgroundIndicator() {
       search: { lichess: player.lichess, chesscom: player.chesscom },
       accounts: playerAccounts(player),
       max: player.depth,
-      share: progress?.share ?? 0,
+      games: progress?.games ?? 0,
+      analysed: progress?.analysed ?? 0,
+      // Only with the deep option, even before a first report.
+      deepened: player.deep ? (progress?.deepened ?? 0) : undefined,
       loading: working && (progress?.loading ?? true),
     }
   })
@@ -110,7 +158,7 @@ export function BackgroundIndicator() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-3 text-sm">
         <ul className="space-y-2.5">
-          {rows.map(({ name, search, accounts, max, share, loading }) => (
+          {rows.map(({ name, search, accounts, max, ...progress }) => (
             <li key={name} className="flex items-center gap-2">
               <span className="flex w-5 shrink-0 gap-1">
                 {accounts.map(({ source }) => (
@@ -126,12 +174,7 @@ export function BackgroundIndicator() {
               >
                 {name}
               </Link>
-              <Progress
-                value={share * 100}
-                data-loading={loading || undefined}
-                aria-label={name}
-                className="flex-1"
-              />
+              <FavoriteBar name={name} {...progress} />
               <span className="num w-10 text-right text-xs text-muted-foreground">
                 {formatNumber(max)}
               </span>

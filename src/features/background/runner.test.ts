@@ -15,6 +15,7 @@ import {
   type BackgroundDeps,
   type BackgroundState,
   type Heartbeat,
+  type PlayerProgress,
   type TabChannel,
 } from './runner'
 
@@ -278,7 +279,7 @@ describe('runCycle', () => {
     expect(states.at(-1)).toMatchObject({ phase: 'deepening', done: 2, total: 2 })
   })
 
-  it('says how far each favorite is: loading until their games are fetched, then their share', async () => {
+  it('says how far each favorite is: loading until their games are fetched, then their counts', async () => {
     const bob = { ...alice, lichess: 'bob', depth: 200, deep: true }
     const find = vi.fn<BackgroundDeps['find']>(async (accounts) => ({
       games: accounts[0]!.username === 'alice' ? games.slice(0, 4) : games.slice(2, 6),
@@ -297,22 +298,31 @@ describe('runCycle', () => {
       }),
       new AbortController().signal,
       (state) => states.push(state),
-      // Alice's share from the last pass shows until her games are fetched.
-      [{ name: 'alice', max: 50, share: 0.5, loading: false }],
+      // Alice's counts from the last pass show until her games are fetched.
+      [{ name: 'alice', max: 50, games: 4, analysed: 2, loading: false }],
     )
     await vi.runAllTimersAsync()
     await cycle
     const players = states.map((state) => state.players!)
     expect(players[0]).toEqual([
-      { name: 'alice', max: 50, share: 0.5, loading: true },
-      { name: 'bob', max: 200, share: 0, loading: true },
+      { name: 'alice', max: 50, games: 4, analysed: 2, loading: true },
+      { name: 'bob', max: 200, games: 0, analysed: 0, deepened: 0, loading: true },
     ])
     expect(players[1]!.map((player) => player.loading)).toEqual([false, true])
-    // Analysed: m0 to m2. Alice 3 of 4; Bob (analysed m2, deep m4 m5) (1 + 2) / 8.
-    expect(
-      states.find((state) => state.phase === 'analysing')!.players!.map((p) => p.share),
-    ).toEqual([0.75, 0.375])
-    expect(players.at(-1)!.map((player) => player.share)).toEqual([1, 1])
+    // Analysed: m0 to m2. Alice 3 of 4; Bob m2 analysed, m4 and m5 deepened, of 4.
+    const counts = ({ games, analysed, deepened }: PlayerProgress) => ({
+      games,
+      analysed,
+      deepened,
+    })
+    expect(states.find((state) => state.phase === 'analysing')!.players!.map(counts)).toEqual([
+      { games: 4, analysed: 3, deepened: undefined },
+      { games: 4, analysed: 1, deepened: 2 },
+    ])
+    expect(players.at(-1)!.map(counts)).toEqual([
+      { games: 4, analysed: 4, deepened: undefined },
+      { games: 4, analysed: 4, deepened: 4 },
+    ])
   })
 
   it('deepens nothing while some games could not be fetched: they are analysed first', async () => {
