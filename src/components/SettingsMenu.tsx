@@ -96,10 +96,11 @@ export function SettingsMenu() {
   const style = useBoardStyle()
   const currentLocale = getLocale()
   const [removing, setRemoving] = useState<ReviewAccount[] | undefined>(undefined)
+  const [open, setOpen] = useState(false)
 
   return (
     <>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
@@ -113,7 +114,7 @@ export function SettingsMenu() {
         </PopoverTrigger>
         <PopoverContent
           align="end"
-          className="max-h-[85dvh] w-72 gap-0 divide-y divide-border-strong/35 overflow-y-auto"
+          className="max-h-[85dvh] w-80 max-w-[calc(100vw-2rem)] gap-0 divide-y divide-border-strong/35 overflow-y-auto"
         >
           <Group icon={Languages} title={m.settings_language()}>
             <div className="grid grid-cols-2 gap-2">
@@ -206,7 +207,7 @@ export function SettingsMenu() {
           </Group>
 
           <Group icon={Star} title={m.settings_favorites()}>
-            <FavoritesSettings onRemove={setRemoving} />
+            <FavoritesSettings onRemove={setRemoving} onOpenProfile={() => setOpen(false)} />
           </Group>
         </PopoverContent>
       </Popover>

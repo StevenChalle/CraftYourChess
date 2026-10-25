@@ -1,5 +1,7 @@
+import { Link } from '@tanstack/react-router'
 import { CircleCheck, Layers, LoaderCircle, Pause, Play, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Progress } from '@/components/ui/progress'
 import { formatGameCount, formatNumber } from '@/lib/format'
@@ -61,13 +63,15 @@ function isWorking({ phase, done, total }: BackgroundState): boolean {
 
 /**
  * In the header, when there are favorites: an icon only (working, up to date, paused, failed),
- * the details on click: each favorite with a bar of how far their games are, the number of games
+ * the details on click: each favorite (a link to their profile) with a bar of how far their games are, the number of games
  * followed on the right, the state in words with the same icon, and a button to pause for the
  * session (docs/background-analysis.md).
  */
 export function BackgroundIndicator() {
   const background = useBackground()
   const favorites = useFavorites()
+  // Closed when a favorite's profile is opened from it.
+  const [open, setOpen] = useState(false)
   if (!background || !favorites) return null
   const { state, pause, resume } = background
   const working = isWorking(state)
@@ -83,6 +87,7 @@ export function BackgroundIndicator() {
     const progress = state.players?.find((item) => item.name === name)
     return {
       name,
+      search: { lichess: player.lichess, chesscom: player.chesscom },
       accounts: playerAccounts(player),
       max: player.depth,
       share: progress?.share ?? 0,
@@ -91,7 +96,7 @@ export function BackgroundIndicator() {
   })
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -105,16 +110,22 @@ export function BackgroundIndicator() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-3 text-sm">
         <ul className="space-y-2.5">
-          {rows.map(({ name, accounts, max, share, loading }) => (
+          {rows.map(({ name, search, accounts, max, share, loading }) => (
             <li key={name} className="flex items-center gap-2">
               <span className="flex w-5 shrink-0 gap-1">
                 {accounts.map(({ source }) => (
                   <SourceDot key={source} source={source} />
                 ))}
               </span>
-              <span className="w-24 truncate font-medium text-text-strong" title={name}>
+              <Link
+                to="/player"
+                search={search}
+                title={m.favorite_open_profile({ player: name })}
+                onClick={() => setOpen(false)}
+                className="w-24 truncate font-medium text-text-strong hover:text-primary hover:underline"
+              >
                 {name}
-              </span>
+              </Link>
               <Progress
                 value={share * 100}
                 data-loading={loading || undefined}
