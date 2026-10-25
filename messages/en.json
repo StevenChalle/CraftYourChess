@@ -619,5 +619,6 @@
   "install_mac_step2": "Choose “Add to Dock”",
   "install_firefox_step1": "Open the browser's menu ⋮",
   "install_firefox_step2": "Choose “Install”",
-  "install_ok": "Got it"
+  "install_ok": "Got it",
+  "deepen_paused": "paused while Stockfish is used elsewhere, goes on afterwards"
 }

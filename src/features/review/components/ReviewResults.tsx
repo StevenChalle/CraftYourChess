@@ -112,6 +112,7 @@ function DeepenAll({ games }: { games: ReviewedGame[] }) {
           done: formatNumber(deepening.done),
           total: formatNumber(deepening.total),
         })}
+        {deepening.paused && <span>{m.deepen_paused()}</span>}
         <Button variant="ghost" size="xs" onClick={stopDeepening} className="text-muted-foreground">
           <Square data-icon="inline-start" />
           {m.deepen_stop()}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { ProfileSearch } from '@/features/player/search'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useKeepAwake } from '@/hooks/useKeepAwake'
-import { beginActivity, withActivity } from '@/lib/activity'
+import { beginActivity, waitForOthers, watchOthers, withActivity } from '@/lib/activity'
 import { trainingPuzzles } from '@/features/training/order'
 import {
   DEFAULT_TRAINING_SETTINGS,
@@ -436,53 +436,89 @@ export function AnalysisSessionProvider({
     void navigate({ to: '/player/analysis', search: usernames, resetScroll: false })
   }, [navigate, usernames])
 
+  /**
+   * Deepens these games one after the other. It holds an activity (the background analysis waits)
+   * but gives way to any other use of Stockfish (a training, here or in another tab): it stops its
+   * engines, shows that it is paused, and goes on a few seconds after the last one ends. What was
+   * evaluated stays: it resumes with the positions left.
+   */
   const deepenGames = useCallback(async (gameKeys: string[], scope: Deepening['scope']) => {
     const signal = restart(deepenJob)
-    // Stockfish is the player's until the deepening ends: the background analysis waits.
     const endActivity = beginActivity()
     signal.addEventListener('abort', endActivity, { once: true })
-    for (const [position, gameKey] of gameKeys.entries()) {
+    const latest = (gameKey: string) => {
       const current = analysisRef.current
-      if (signal.aborted || current.status !== 'done') break
-      const game = current.outcome.games.find((item) => reviewedGameKey(item) === gameKey)
-      if (!game) continue
-      const total = shallowPositions(game).length
+      return current.status === 'done'
+        ? current.outcome.games.find((item) => reviewedGameKey(item) === gameKey)
+        : undefined
+    }
+    games: for (const [position, gameKey] of gameKeys.entries()) {
+      const first = latest(gameKey)
+      if (signal.aborted || !first) break
+      const total = shallowPositions(first).length
       if (total === 0) continue
       const gamesLeft = gameKeys.length - position - 1
-      setDeepening({ scope, gameKey, done: 0, total, gamesLeft })
-      const criteria = current.outcome.criteria
-      try {
-        await deepenGame(game, {
-          signal,
-          onPosition: (index, cp) => {
-            setAnalysis((state) =>
-              state.status === 'done'
-                ? {
-                    ...state,
-                    outcome: {
-                      ...state.outcome,
-                      games: state.outcome.games.map((item) =>
-                        reviewedGameKey(item) === gameKey
-                          ? withDeepPosition(item, index, cp, criteria)
-                          : item,
-                      ),
-                    },
-                  }
-                : state,
-            )
-            setDeepening((state) =>
-              state?.gameKey === gameKey ? { ...state, done: state.done + 1 } : state,
-            )
-          },
-        })
-      } catch (error) {
-        if (!signal.aborted) console.error('Deepening failed', error)
-        break
+      while (!signal.aborted) {
+        // The positions deepened before a pause are precise now: only the others are left.
+        const game = latest(gameKey)
+        const left = game ? shallowPositions(game).length : 0
+        if (!game || left === 0) break
+        setDeepening({ scope, gameKey, done: total - left, total, gamesLeft, paused: false })
+        const criteria =
+          analysisRef.current.status === 'done' ? analysisRef.current.outcome.criteria : undefined
+        const yielded = new AbortController()
+        const stopWatching = watchOthers(() => yielded.abort())
+        try {
+          await deepenGame(game, {
+            signal: AbortSignal.any([signal, yielded.signal]),
+            onPosition: (index, cp) => {
+              setAnalysis((state) =>
+                state.status === 'done'
+                  ? {
+                      ...state,
+                      outcome: {
+                        ...state.outcome,
+                        games: state.outcome.games.map((item) =>
+                          reviewedGameKey(item) === gameKey && criteria
+                            ? withDeepPosition(item, index, cp, criteria)
+                            : item,
+                        ),
+                      },
+                    }
+                  : state,
+              )
+              setDeepening((state) =>
+                state?.gameKey === gameKey ? { ...state, done: state.done + 1 } : state,
+              )
+            },
+          })
+        } catch (error) {
+          if (!signal.aborted && !yielded.signal.aborted) {
+            console.error('Deepening failed', error)
+            break games
+          }
+        } finally {
+          stopWatching()
+        }
+        if (signal.aborted || !yielded.signal.aborted) break
+        // Another use of Stockfish: wait for it to end, then go on with this game.
+        setDeepening((state) => (state ? { ...state, paused: true } : state))
+        await waitForOthers(signal)
       }
     }
     endActivity()
     if (!signal.aborted) setDeepening(undefined)
   }, [])
+
+  // Once an analysis is done, its games are deepened at once (each analysis once: stopping the
+  // deepening is for good).
+  const autoDeepened = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    if (analysis.status !== 'done' || autoDeepened.current === analysisId) return
+    autoDeepened.current = analysisId
+    const pending = analysis.outcome.games.filter((game) => shallowPositions(game).length > 0)
+    if (pending.length > 0) void deepenGames(pending.map(reviewedGameKey), 'all')
+  }, [analysis, analysisId, deepenGames])
 
   const stopDeepening = useCallback(() => {
     deepenJob.current?.abort()

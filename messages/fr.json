@@ -118,7 +118,7 @@
   "deepen_stop": "Arrêter",
   "deepen_done": "Analyse approfondie de chaque coup",
   "deepen_all": "Approfondir toutes les parties : {games} (≈ {time})",
-  "deepen_all_running": "Approfondissement : {games} restantes · {done} / {total} positions",
+  "deepen_all_running": "Approfondissement : reste {games} · {done} / {total} positions",
   "review_col_link": "Lien vers la partie",
   "result_win": "Victoire",
   "result_draw": "Nulle",
@@ -619,5 +619,6 @@
   "install_mac_step2": "Choisissez « Ajouter au Dock »",
   "install_firefox_step1": "Ouvrez le menu du navigateur ⋮",
   "install_firefox_step2": "Choisissez « Installer »",
-  "install_ok": "Compris"
+  "install_ok": "Compris",
+  "deepen_paused": "en pause pendant que Stockfish sert ailleurs, reprend ensuite"
 }

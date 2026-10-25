@@ -126,6 +126,8 @@ export type Deepening = {
   total: number
   /** Games still waiting after this one (scope "all") */
   gamesLeft: number
+  /** Stockfish is used elsewhere (a training…): it goes on once that is over */
+  paused: boolean
 }
 
 export const SessionContext = createContext<Session | undefined>(undefined)

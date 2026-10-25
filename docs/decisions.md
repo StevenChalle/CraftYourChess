@@ -723,3 +723,11 @@ Installer l'app passait par le menu du navigateur, que peu de gens connaissent. 
 - **Firefox sur ordinateur** : il n'installe pas d'app web, pas de bouton.
 - **Caché** une fois installée (`appinstalled`), dans l'app installée (`display-mode: standalone`, `navigator.standalone` sur iOS), et après une fenêtre d'installation refusée, jusqu'à ce que le navigateur la repropose. Rien n'est stocké, pas de bouton pour le masquer, pas de rappel sur l'accueil (choix de l'utilisateur).
 - **En-tête sur téléphone** : logo un peu plus petit et espacements réduits pour que installer, avis, indicateur de fond et réglages tiennent à 360 px.
+
+## 2026-10-25 : approfondissement automatique après une analyse
+
+Une analyse finie enchaîne d'elle-même l'approfondissement de toutes ses parties (comme « Approfondir toutes les parties »), une fois par analyse : « Arrêter » l'arrête pour de bon.
+
+- **Il cède la place** à tout autre usage de Stockfish (un entraînement, dans cet onglet ou un autre, une autre analyse) : il coupe ses moteurs, affiche « en pause pendant que Stockfish sert ailleurs, reprend ensuite », puis reprend 3 s après la fin du dernier, avec les positions qui restent (ce qui est calculé reste). `lib/activity.ts` : `othersActive`, `watchOthers`, `waitForOthers`, qui comptent les activités autres que la sienne, dans l'onglet et via les verrous partagés des autres onglets.
+- **Il garde son activité pendant la pause** : l'analyse de fond des favoris continue d'attendre, l'analyse du joueur passe d'abord.
+- **Une partie demandée pendant l'approfondissement de toutes** passe en tête, les autres suivent.

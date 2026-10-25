@@ -4,6 +4,9 @@ import {
   isActiveHere,
   isPlayerActive,
   onActivityChange,
+  othersActive,
+  waitForOthers,
+  watchOthers,
   withActivity,
 } from './activity'
 
@@ -36,5 +39,26 @@ describe('activities', () => {
       }),
     ).rejects.toThrow('boom')
     expect(isActiveHere()).toBe(false)
+  })
+
+  it('tell a deepening when another activity starts, then when all is quiet again', async () => {
+    vi.useFakeTimers()
+    const own = beginActivity()
+    expect(await othersActive()).toBe(false)
+    const onActive = vi.fn<() => void>()
+    const stop = watchOthers(onActive)
+    const training = beginActivity()
+    expect(onActive).toHaveBeenCalled()
+    expect(await othersActive()).toBe(true)
+    stop()
+    let resumed = false
+    void waitForOthers(new AbortController().signal).then(() => (resumed = true))
+    await vi.advanceTimersByTimeAsync(4000)
+    expect(resumed).toBe(false)
+    training()
+    await vi.advanceTimersByTimeAsync(4000)
+    expect(resumed).toBe(true)
+    own()
+    vi.useRealTimers()
   })
 })

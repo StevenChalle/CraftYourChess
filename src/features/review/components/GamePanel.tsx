@@ -40,10 +40,19 @@ export function GamePanel({ game }: { game: ReviewedGame }) {
 
 /** "Deepen the analysis (≈ 1 min)", its progress while it runs, or "Deep analysis". */
 function DeepenGame({ game }: { game: ReviewedGame }) {
-  const { deepening, deepenGames, stopDeepening } = useAnalysisSession()
+  const { deepening, deepenGames, stopDeepening, analysis } = useAnalysisSession()
   const key = reviewedGameKey(game)
   const shallow = shallowPositions(game).length
   const running = deepening?.gameKey === key ? deepening : undefined
+
+  // While every game is being deepened: this one first, then the others still to do.
+  const deepenThis = () => {
+    if (deepening?.scope !== 'all' || analysis.status !== 'done') return deepenGames([key], 'game')
+    const others = analysis.outcome.games
+      .filter((item) => reviewedGameKey(item) !== key && shallowPositions(item).length > 0)
+      .map(reviewedGameKey)
+    deepenGames([key, ...others], 'all')
+  }
 
   if (running) {
     return (
@@ -54,6 +63,7 @@ function DeepenGame({ game }: { game: ReviewedGame }) {
               done: formatNumber(running.done),
               total: formatNumber(running.total),
             })}
+            {running.paused && <> · {m.deepen_paused()}</>}
           </p>
           <Progress value={(running.done / running.total) * 100} />
         </div>
@@ -74,7 +84,7 @@ function DeepenGame({ game }: { game: ReviewedGame }) {
   }
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <Button variant="outline" size="sm" onClick={() => deepenGames([key], 'game')}>
+      <Button variant="outline" size="sm" onClick={deepenThis}>
         <Microscope data-icon="inline-start" />
         {m.deepen_game({ time: formatDuration(deepenSeconds(shallow)) })}
       </Button>
