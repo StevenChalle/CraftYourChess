@@ -133,13 +133,14 @@ export function TrainingView({
     tellFinished(finished)
   }, [finished])
 
-  // The engine only runs while the training is on screen: several trainings may be open. Hidden,
-  // it is stopped (searches under way are dropped) and starts again once shown.
+  // The engine only runs while the training is on screen and not over: several trainings may be
+  // open. Hidden, it is stopped (searches under way are dropped) and starts again once shown. On
+  // the summary, every result is in: stopped too, so the background analysis starts again.
   useEffect(() => {
-    if (!active) return
+    if (!active || finished) return
     coach.activate()
     return () => coach.terminate()
-  }, [coach, active])
+  }, [coach, active, finished])
 
   // Look for the best move while the player thinks (again if the training was hidden meanwhile).
   const hasBest = state.best !== undefined
