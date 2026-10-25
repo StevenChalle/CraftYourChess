@@ -5,7 +5,7 @@ import { movesHash, positionKey } from '@/features/review/cache'
 import { replay } from '@/features/review/positions'
 import { AppDatabase, DB_NAME } from '@/lib/db'
 import type { LichessGame } from '@/lib/lichess/types'
-import { clearMemory } from './memory'
+import { clearMemory, memoryStats } from './memory'
 
 const lichessGame = (id: string, white: string, black: string): LichessGame => ({
   id,
@@ -74,6 +74,13 @@ beforeEach(async () => {
 })
 
 afterEach(() => db.close())
+
+describe('memoryStats', () => {
+  it('counts the games analysed, two games with the same moves twice', async () => {
+    await db.games.update(movesHash(['e4', 'e5']), { refs: ['lichess:a1', 'lichess:x9'] })
+    expect(await memoryStats(() => db)).toEqual({ positions: 5, games: 3 })
+  })
+})
 
 describe('clearMemory', () => {
   it("keeps the favorites' games, their analyses and their positions only", async () => {

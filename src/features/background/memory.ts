@@ -12,11 +12,21 @@ import { favoriteAccounts, playerAccounts, type Favorites } from './favorites'
  * background analysis keeps them on its own.
  */
 
-/** What is kept, for the settings. Undefined when IndexedDB is unavailable. */
-export async function memoryStats(): Promise<{ positions: number; games: number } | undefined> {
+/**
+ * What is kept, for the settings: positions, and games analysed. Games, not analyses: two games
+ * with the same moves (an early resignation) share one analysis but count twice. Undefined when
+ * IndexedDB is unavailable.
+ */
+export async function memoryStats(
+  db: () => AppDatabase = database,
+): Promise<{ positions: number; games: number } | undefined> {
   try {
-    const db = database()
-    return { positions: await db.positions.count(), games: await db.games.count() }
+    const app = db()
+    let games = 0
+    await app.games.each((game) => {
+      games += Math.max(game.refs.length, 1)
+    })
+    return { positions: await app.positions.count(), games }
   } catch {
     return undefined
   }
