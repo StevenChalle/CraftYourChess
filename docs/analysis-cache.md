@@ -148,7 +148,7 @@ Obligatoire (CLAUDE.md) :
 
 - déclarer la base `craftyourchess` sur la page `/legal` (ce qu'elle contient : les coups et les évaluations des parties analysées, rien d'autre) ;
 - l'effacer dans `clearLocalData()` (`lib/localData.ts`), qui devient alors asynchrone ;
-- la place utilisée et un bouton pour vider le cache étaient dans les réglages ; retirés le 2026-10-24, ils reviendront dans le détail de l'indicateur de synchronisation (`analysisCacheStats`, `clearAnalysisCache` restent dans `cache.ts`).
+- réglages, section **« Mémoire »** : « Toutes les positions analysées sont gardées dans le navigateur. », le nombre de positions et de parties analysées (relu toutes les 3 s tant que les réglages sont ouverts), et un bouton **« Vider »** confirmé par une fenêtre. Il supprime les positions, les parties analysées et les parties enregistrées, **sauf les parties synchronisées des favoris, leurs analyses et leurs positions** : l'analyse de fond les gère seule. Pour les retrouver, `clearMemory` (`features/background/memory.ts`) prend les parties des comptes favoris dans le magasin, les analyses qui y renvoient (`refs`), et rejoue leurs coups pour lister les positions à garder ; une position partagée avec une autre partie reste.
 
 ## Tests
 

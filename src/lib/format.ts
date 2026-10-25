@@ -45,6 +45,10 @@ export function formatGameCount(count: number): string {
   return m.games_count({ count, formatted: formatNumber(count) })
 }
 
+export function formatPositionCount(count: number): string {
+  return m.positions_count({ count, formatted: formatNumber(count) })
+}
+
 export function formatPercent(ratio: number): string {
   return percentFormat().format(ratio)
 }

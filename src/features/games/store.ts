@@ -321,9 +321,12 @@ export async function deleteStoredAccounts(accounts: string[]): Promise<boolean>
 }
 
 /** Empties the store but for the accounts of `keep` (the analysis cache stays). */
-export async function clearGameStore(keep: string[] = []): Promise<boolean> {
+export async function clearGameStore(
+  keep: string[] = [],
+  open: () => AppDatabase = database,
+): Promise<boolean> {
   try {
-    const db = database()
+    const db = open()
     if (keep.length === 0) {
       await db.transaction('rw', db.accountGames, db.accountSync, async () => {
         await db.accountGames.clear()

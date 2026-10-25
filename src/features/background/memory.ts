@@ -1,0 +1,62 @@
+import Dexie from 'dexie'
+import { accountKey, clearGameStore } from '@/features/games/store'
+import { positionKey } from '@/features/review/cache'
+import { gameRef } from '@/features/review/gameRef'
+import { replay } from '@/features/review/positions'
+import { database, type AppDatabase } from '@/lib/db'
+import { favoriteAccounts, type Favorites } from './favorites'
+
+/**
+ * The browser's memory of analyses (docs/analysis-cache.md, docs/game-store.md), as the settings
+ * show and clear it. The favorites' synced games and their analyses are never cleared here: the
+ * background analysis keeps them on its own.
+ */
+
+/** What is kept, for the settings. Undefined when IndexedDB is unavailable. */
+export async function memoryStats(): Promise<{ positions: number; games: number } | undefined> {
+  try {
+    const db = database()
+    return { positions: await db.positions.count(), games: await db.games.count() }
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Deletes every evaluated position, analysed game and saved game, but those of the favorites'
+ * synced games: their games in the store, the analyses of these games, and the positions of
+ * these analyses (shared with other games or not). False if IndexedDB failed.
+ */
+export async function clearMemory(
+  favorites: Favorites | undefined,
+  db: () => AppDatabase = database,
+): Promise<boolean> {
+  try {
+    const app = db()
+    const accounts = favorites
+      ? favoriteAccounts(favorites).map(({ source, username }) => accountKey(source, username))
+      : []
+    // The favorites' games, as the analyses refer to them.
+    const refs = new Set<string>()
+    for (const account of accounts) {
+      await app.accountGames
+        .where('[account+playedAt]')
+        .between([account, Dexie.minKey], [account, Dexie.maxKey])
+        .each((game) => refs.add(gameRef(game.summary)))
+    }
+    const kept = await app.games.filter((game) => game.refs.some((ref) => refs.has(ref))).toArray()
+    const hashes = new Set(kept.map((game) => game.hash))
+    const keys = new Set(
+      kept.flatMap((game) =>
+        replay(game.sanMoves, game.initialFen).map((position) => positionKey(position.fen)),
+      ),
+    )
+    await app.transaction('rw', app.positions, app.games, async () => {
+      await app.positions.filter((position) => !keys.has(position.key)).delete()
+      await app.games.filter((game) => !hashes.has(game.hash)).delete()
+    })
+    return await clearGameStore(accounts, () => app)
+  } catch {
+    return false
+  }
+}

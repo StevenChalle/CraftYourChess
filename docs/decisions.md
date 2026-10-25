@@ -704,3 +704,11 @@ Le chrono discret (temps écoulé pendant l'analyse, puis durée totale sous les
 ## 2026-10-25 : barre en deux temps pour l'option approfondie
 
 La barre d'un favori comptait l'analyse rapide et l'approfondissement ensemble (moitié chacun), quand le texte dessous ne compte que le passage en cours : une barre à 70 % face à « 20 / 50 » de l'approfondissement. Désormais, pour un favori avec l'option, la barre a deux moitiés séparées par une encoche (analyse rapide, puis approfondissement plus clair), le texte dit quel passage tourne (« Analyse rapide des parties », « Approfondissement des parties »), et l'infobulle de chaque barre donne les comptes du favori, le texte restant celui de tous les favoris ensemble. Le runner publie des comptes (`games`, `analysed`, `deepened`) au lieu d'une part.
+
+## 2026-10-25 : section « Mémoire » dans les réglages
+
+Un bouton pour vider ce que le navigateur garde des analyses, utile pour faire de la place ou repartir de zéro après un bug, même si la mémoire se recycle déjà seule.
+
+- **Ce qu'il vide** : positions évaluées, parties analysées et parties enregistrées, sauf les parties synchronisées des favoris et leurs analyses. Pas d'option pour vider aussi celles des favoris : elles ont leur propre fonctionnement (retirer le favori, avec la case de suppression).
+- **Les positions des favoris** ne sont liées à aucune partie dans la base : on les retrouve en rejouant les analyses des parties des favoris. Quelques secondes au pire, avec le bouton en attente.
+- **Affichage** : les nombres de positions et de parties, relus toutes les 3 s pendant que les réglages sont ouverts. Le titre dit « Mémoire » plutôt que « cache ».

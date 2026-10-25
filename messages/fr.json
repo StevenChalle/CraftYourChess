@@ -590,5 +590,14 @@
   "favorite_remove_delete": "Supprimer aussi ses parties enregistrées",
   "favorite_remove_action": "Retirer",
   "toast_favorite_added": "Ajouté aux favoris",
-  "toast_favorite_removed": "Retiré des favoris"
+  "toast_favorite_removed": "Retiré des favoris",
+  "settings_memory": "Mémoire",
+  "memory_text": "Toutes les positions analysées sont gardées dans le navigateur.",
+  "memory_stats": "{positions} · {games}",
+  "memory_clear": "Vider",
+  "memory_clear_title": "Vider la mémoire ?",
+  "memory_clear_body": "Les positions analysées et les parties enregistrées sont supprimées, sauf les parties synchronisées de vos favoris et leurs analyses. Réanalyser les autres parties prendra du temps.",
+  "memory_clear_action": "Vider",
+  "toast_memory_cleared": "Mémoire vidée",
+  "toast_memory_failed": "La mémoire n'a pas pu être vidée"
 }

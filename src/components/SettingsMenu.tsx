@@ -2,6 +2,7 @@ import {
   ChessKnight,
   Grid3x3,
   Languages,
+  MemoryStick,
   Palette,
   Settings,
   Star,
@@ -24,6 +25,8 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FavoriteDialog } from '@/features/background/components/FavoriteDialog'
 import { FavoritesSettings } from '@/features/background/components/FavoritesSettings'
+import { MemorySettings } from '@/features/background/components/MemorySettings'
+import { useConfirm } from '@/hooks/useConfirm'
 import type { ReviewAccount } from '@/features/review/fetch'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -89,7 +92,7 @@ const sameStyle = (a: BoardStyle, b: BoardStyle) => a.board === b.board && a.pie
 
 /**
  * The gear at the top right: language, how boards look (a whole style in one click, or colors
- * and pieces one by one) and the favorite players. The look is remembered (boardStyle.ts); changing
+ * and pieces one by one), the favorite players and what the browser keeps of the analyses. The look is remembered (boardStyle.ts); changing
  * the language reloads the page (Paraglide's model).
  */
 export function SettingsMenu() {
@@ -97,6 +100,7 @@ export function SettingsMenu() {
   const currentLocale = getLocale()
   const [removing, setRemoving] = useState<ReviewAccount[] | undefined>(undefined)
   const [open, setOpen] = useState(false)
+  const { confirm, dialog } = useConfirm()
 
   return (
     <>
@@ -209,8 +213,13 @@ export function SettingsMenu() {
           <Group icon={Star} title={m.settings_favorites()}>
             <FavoritesSettings onRemove={setRemoving} onOpenProfile={() => setOpen(false)} />
           </Group>
+
+          <Group icon={MemoryStick} title={m.settings_memory()}>
+            <MemorySettings confirm={confirm} />
+          </Group>
         </PopoverContent>
       </Popover>
+      {dialog}
       {removing && (
         <FavoriteDialog
           mode="remove"
