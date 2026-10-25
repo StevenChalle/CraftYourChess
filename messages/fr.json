@@ -609,5 +609,15 @@
         "countPlural=other": "{formatted} parties analysées"
       }
     }
-  ]
+  ],
+  "install_button": "Installer",
+  "install_title": "Installer l'app",
+  "install_body": "Elle s'ouvre comme une appli, dans sa propre fenêtre, même hors ligne.",
+  "install_ios_step1": "Touchez Partager dans la barre du navigateur",
+  "install_ios_step2": "Choisissez « Sur l'écran d'accueil »",
+  "install_mac_step1": "Dans la barre des menus, ouvrez Fichier (ou le bouton Partager)",
+  "install_mac_step2": "Choisissez « Ajouter au Dock »",
+  "install_firefox_step1": "Ouvrez le menu du navigateur ⋮",
+  "install_firefox_step2": "Choisissez « Installer »",
+  "install_ok": "Compris"
 }

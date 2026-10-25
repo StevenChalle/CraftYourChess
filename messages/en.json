@@ -609,5 +609,15 @@
         "countPlural=other": "{formatted} games analysed"
       }
     }
-  ]
+  ],
+  "install_button": "Install",
+  "install_title": "Install the app",
+  "install_body": "It opens like an app, in its own window, even offline.",
+  "install_ios_step1": "Tap Share in the browser's toolbar",
+  "install_ios_step2": "Choose “Add to Home Screen”",
+  "install_mac_step1": "In the menu bar, open File (or the Share button)",
+  "install_mac_step2": "Choose “Add to Dock”",
+  "install_firefox_step1": "Open the browser's menu ⋮",
+  "install_firefox_step2": "Choose “Install”",
+  "install_ok": "Got it"
 }

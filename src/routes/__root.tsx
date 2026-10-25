@@ -15,6 +15,7 @@ import { Toaster } from '@/components/Toaster'
 import { UpdateBanner } from '@/components/UpdateBanner'
 import { BackgroundProvider } from '@/features/background/BackgroundProvider'
 import { BackgroundIndicator } from '@/features/background/components/BackgroundIndicator'
+import { InstallButton } from '@/components/InstallButton'
 import { AccountSearchForm } from '@/features/player/components/AccountSearchForm'
 import { validatePlayerSearch } from '@/features/player/search'
 import { usePageMeta } from '@/hooks/usePageMeta'
@@ -37,19 +38,25 @@ function RootLayout() {
       <div className="flex min-h-dvh flex-col">
         <UpdateBanner />
         <header className="header-etabli">
-          <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
-            {/* The name as a wordmark: brand, not translated */}
+          <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:gap-6">
+            {/* The name as a wordmark: brand, not translated. A little smaller on a phone, for the
+                header's buttons (install, feedback, background, settings) to fit at 360 px. */}
             <Link
               to="/"
-              className="flex items-center gap-3 font-brand text-2xl font-bold tracking-tight text-brand"
+              className="flex shrink-0 items-center gap-2.5 font-brand text-xl font-bold tracking-tight text-brand sm:gap-3 sm:text-2xl"
             >
-              <img src={`${import.meta.env.BASE_URL}pwa-64x64.png`} alt="" className="size-10" />
+              <img
+                src={`${import.meta.env.BASE_URL}pwa-64x64.png`}
+                alt=""
+                className="size-9 sm:size-10"
+              />
               <span>
                 Craft<span className="font-light text-brand-accent">Your</span>Chess
               </span>
             </Link>
-            <div className="ml-auto flex items-center gap-4">
+            <div className="ml-auto flex items-center gap-2 sm:gap-4">
               {!isHome && <HeaderSearch />}
+              <InstallButton />
               <FeedbackButton />
               <BackgroundIndicator />
               <SettingsMenu />

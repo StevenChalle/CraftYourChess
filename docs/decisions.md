@@ -713,3 +713,13 @@ Un bouton pour vider ce que le navigateur garde des analyses, utile pour faire d
 - **Les positions des favoris** ne sont liées à aucune partie dans la base : on les retrouve en rejouant les analyses des parties des favoris. Quelques secondes au pire, avec le bouton en attente.
 - **Seulement la fenêtre des favoris** : pour chaque favori, les analyses de ses N dernières parties (son option, plateformes confondues). Ses analyses plus anciennes partent ; ses parties enregistrées restent toutes, pour ne pas trouer les périodes que le magasin croit complètes.
 - **Affichage** : les nombres de positions et de parties analysées, relus toutes les 3 s pendant que les réglages sont ouverts. Le titre dit « Mémoire » plutôt que « cache ».
+
+## 2026-10-25 : bouton « Installer » dans l'en-tête
+
+Installer l'app passait par le menu du navigateur, que peu de gens connaissent. Un bouton « Installer » (icône seule sur téléphone) apparaît dans l'en-tête tant que l'app peut être installée (`lib/install.ts`, `components/InstallButton.tsx`).
+
+- **Navigateurs Chromium** (Chrome, Edge, Brave, Samsung Internet ; Windows, macOS, Linux, Android) : l'app garde l'événement `beforeinstallprompt` et le bouton ouvre la fenêtre d'installation du navigateur. Le navigateur peut attendre un peu d'usage avant de l'envoyer.
+- **Safari** (iPhone, iPad, Mac) et **Firefox sur Android** : pas d'événement ; le bouton ouvre un petit guide en deux étapes (Partager → Sur l'écran d'accueil ; Fichier → Ajouter au Dock ; menu ⋮ → Installer).
+- **Firefox sur ordinateur** : il n'installe pas d'app web, pas de bouton.
+- **Caché** une fois installée (`appinstalled`), dans l'app installée (`display-mode: standalone`, `navigator.standalone` sur iOS), et après une fenêtre d'installation refusée, jusqu'à ce que le navigateur la repropose. Rien n'est stocké, pas de bouton pour le masquer, pas de rappel sur l'accueil (choix de l'utilisateur).
+- **En-tête sur téléphone** : logo un peu plus petit et espacements réduits pour que installer, avis, indicateur de fond et réglages tiennent à 360 px.
