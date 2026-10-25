@@ -119,7 +119,7 @@ function FavoritesList({
               </button>
             </Accordion.Header>
             <Accordion.Content className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-              <div className="pt-2 pr-2 pb-3 pl-7.5">
+              <div className="px-2 pt-2 pb-3">
                 <FavoriteOptionsFields
                   options={player}
                   onChange={(options) => setFavorites(withOptions(favorites, index, options))}
