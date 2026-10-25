@@ -596,7 +596,7 @@
   "memory_stats": "{positions} · {games}",
   "memory_clear": "Vider",
   "memory_clear_title": "Vider la mémoire ?",
-  "memory_clear_body": "Les positions analysées et les parties enregistrées sont supprimées, sauf les parties synchronisées de vos favoris et leurs analyses. Réanalyser les autres parties prendra du temps.",
+  "memory_clear_body": "Les positions analysées et les parties enregistrées seront supprimées, sauf les parties synchronisées de vos favoris et leurs analyses.",
   "memory_clear_action": "Vider",
   "toast_memory_cleared": "Mémoire vidée",
   "toast_memory_failed": "La mémoire n'a pas pu être vidée",

@@ -596,7 +596,7 @@
   "memory_stats": "{positions} · {games}",
   "memory_clear": "Clear",
   "memory_clear_title": "Clear the memory?",
-  "memory_clear_body": "Analysed positions and saved games are deleted, except your favorites' synchronized games and their analyses. Analysing the other games again will take time.",
+  "memory_clear_body": "Analysed positions and saved games will be deleted, except your favorites' synchronized games and their analyses.",
   "memory_clear_action": "Clear",
   "toast_memory_cleared": "Memory cleared",
   "toast_memory_failed": "The memory could not be cleared",
