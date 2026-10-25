@@ -599,5 +599,15 @@
   "memory_clear_body": "Les positions analysées et les parties enregistrées sont supprimées, sauf les parties synchronisées de vos favoris et leurs analyses. Réanalyser les autres parties prendra du temps.",
   "memory_clear_action": "Vider",
   "toast_memory_cleared": "Mémoire vidée",
-  "toast_memory_failed": "La mémoire n'a pas pu être vidée"
+  "toast_memory_failed": "La mémoire n'a pas pu être vidée",
+  "analysed_games_count": [
+    {
+      "declarations": ["input count", "input formatted", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formatted} partie analysée",
+        "countPlural=other": "{formatted} parties analysées"
+      }
+    }
+  ]
 }

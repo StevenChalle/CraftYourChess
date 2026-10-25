@@ -711,4 +711,5 @@ Un bouton pour vider ce que le navigateur garde des analyses, utile pour faire d
 
 - **Ce qu'il vide** : positions évaluées, parties analysées et parties enregistrées, sauf les parties synchronisées des favoris et leurs analyses. Pas d'option pour vider aussi celles des favoris : elles ont leur propre fonctionnement (retirer le favori, avec la case de suppression).
 - **Les positions des favoris** ne sont liées à aucune partie dans la base : on les retrouve en rejouant les analyses des parties des favoris. Quelques secondes au pire, avec le bouton en attente.
-- **Affichage** : les nombres de positions et de parties, relus toutes les 3 s pendant que les réglages sont ouverts. Le titre dit « Mémoire » plutôt que « cache ».
+- **Seulement la fenêtre des favoris** : pour chaque favori, les analyses de ses N dernières parties (son option, plateformes confondues). Ses analyses plus anciennes partent ; ses parties enregistrées restent toutes, pour ne pas trouer les périodes que le magasin croit complètes.
+- **Affichage** : les nombres de positions et de parties analysées, relus toutes les 3 s pendant que les réglages sont ouverts. Le titre dit « Mémoire » plutôt que « cache ».

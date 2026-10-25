@@ -2,7 +2,7 @@ import { LoaderCircle, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { ConfirmOptions } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
-import { formatGameCount, formatPositionCount } from '@/lib/format'
+import { formatNumber, formatPositionCount } from '@/lib/format'
 import { showToast } from '@/lib/toast'
 import { m } from '@/paraglide/messages'
 import { getFavorites } from '../favorites'
@@ -58,7 +58,10 @@ export function MemorySettings({
         <p className="num text-xs text-muted-foreground">
           {m.memory_stats({
             positions: formatPositionCount(stats.positions),
-            games: formatGameCount(stats.games),
+            games: m.analysed_games_count({
+              count: stats.games,
+              formatted: formatNumber(stats.games),
+            }),
           })}
         </p>
       )}

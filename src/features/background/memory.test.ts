@@ -88,6 +88,26 @@ describe('clearMemory', () => {
     ).toEqual(new Set(keysOf(['e4', 'e5'])))
   })
 
+  it("keeps only the analyses of each favorite's latest games, both platforms together", async () => {
+    // Alice's game a1 (played at 2000) and an older one, a0, analysed too.
+    const older = { ...lichessGame('a0', 'alice', 'carol'), createdAt: 500, lastMoveAt: 900 }
+    await db.accountGames.put(toStoredGame('lichess', 'alice', older)!)
+    const analysis = { version: 1, engine: 'sf', quickNodes: 1, deepNodes: 2 }
+    await db.games.put({
+      hash: movesHash(['c4']),
+      refs: ['lichess:a0'],
+      sanMoves: ['c4'],
+      playedAt: 900,
+      analysis,
+      usedAt: 1,
+    })
+    // Alice follows her latest game only.
+    await clearMemory({ players: [{ lichess: 'alice', depth: 1, deep: false }] }, () => db)
+    expect(await db.games.toCollection().primaryKeys()).toEqual([movesHash(['e4', 'e5'])])
+    // Her saved games all stay: the store holds whole periods.
+    expect(await db.accountGames.count()).toBe(2)
+  })
+
   it('clears everything without favorites', async () => {
     expect(await clearMemory(undefined, () => db)).toBe(true)
     expect(await db.accountGames.count()).toBe(0)

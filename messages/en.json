@@ -599,5 +599,15 @@
   "memory_clear_body": "Analysed positions and saved games are deleted, except your favorites' synchronized games and their analyses. Analysing the other games again will take time.",
   "memory_clear_action": "Clear",
   "toast_memory_cleared": "Memory cleared",
-  "toast_memory_failed": "The memory could not be cleared"
+  "toast_memory_failed": "The memory could not be cleared",
+  "analysed_games_count": [
+    {
+      "declarations": ["input count", "input formatted", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{formatted} game analysed",
+        "countPlural=other": "{formatted} games analysed"
+      }
+    }
+  ]
 }
