@@ -5,6 +5,7 @@ import {
   isCheck,
   legalDests,
   lichessAnalysisUrl,
+  lichessGameUrl,
   moveSquares,
   play,
   sameMove,
@@ -47,6 +48,29 @@ describe('moves', () => {
 
   it('splits UCI into squares', () => {
     expect(moveSquares('a7a8q')).toEqual(['a7', 'a8'])
+  })
+
+  it('links to the whole game on Lichess, at the position', () => {
+    expect(lichessGameUrl({ source: 'lichess', id: 'abcd1234' }, 12, 'black', START)).toBe(
+      'https://lichess.org/abcd1234/black#12',
+    )
+    expect(
+      lichessGameUrl(
+        { source: 'chesscom', id: '1', sanMoves: ['e4', 'e5', 'Qh5', 'Nc6', 'Qxf7#'] },
+        4,
+        'white',
+        START,
+      ),
+    ).toBe('https://lichess.org/analysis/pgn/e4_e5_Qh5_Nc6_Qxf7%23?color=white#4')
+    // From a set-up position: the position alone.
+    expect(
+      lichessGameUrl(
+        { source: 'import', id: '1', sanMoves: ['e4'], initialFen: START },
+        1,
+        'white',
+        START,
+      ),
+    ).toBe(lichessAnalysisUrl(START, 'white'))
   })
 
   it('links to the Lichess analysis board', () => {

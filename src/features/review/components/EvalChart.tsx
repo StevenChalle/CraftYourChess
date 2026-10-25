@@ -13,7 +13,7 @@ import {
 import { Board } from '@/components/board/Board'
 import { ExternalLink } from '@/features/player/components/ExternalLink'
 import { evalDelta, formatDelta, formatEval } from '@/features/training/evaluation'
-import { lichessAnalysisUrl, moveSquares } from '@/features/training/moves'
+import { lichessGameUrl, moveSquares } from '@/features/training/moves'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import type { ReviewedGame } from '../analyze'
@@ -307,7 +307,7 @@ function MoveDetails({
         )}
         {pinned && (
           <p className="pt-1 text-xs">
-            <ExternalLink href={lichessAnalysisUrl(position.fen, game.color)}>
+            <ExternalLink href={lichessGameUrl(game, index, game.color, position.fen)}>
               {m.training_analyse_lichess()}
             </ExternalLink>
           </p>

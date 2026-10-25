@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { evalDelta, formatDelta, formatEval } from '../evaluation'
 import { REFERENCE_LINES } from '../coach'
-import { lichessAnalysisUrl, play, sameMove, sanOf } from '../moves'
+import { lichessGameUrl, play, sameMove, sanOf } from '../moves'
 import { EvaluationPanel } from './EvaluationPanel'
 import { MovePreview } from './MovePreview'
 import type { TrainingAction, TrainingState } from '../session'
@@ -161,11 +161,11 @@ function MoveLine({
   )
 }
 
-/** Going further: the position on Lichess's analysis board, and the game itself. */
+/** Going further: the whole game on Lichess at this position, and the game on its platform. */
 function DeeperLinks({ puzzle }: { puzzle: Mistake }) {
   return (
     <p className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-sm">
-      <ExternalLink href={lichessAnalysisUrl(puzzle.fen, puzzle.color)}>
+      <ExternalLink href={lichessGameUrl(puzzle.game, puzzle.ply, puzzle.color, puzzle.fen)}>
         {m.training_analyse_lichess()}
       </ExternalLink>
       {puzzle.game.url && (

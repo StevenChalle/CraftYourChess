@@ -72,3 +72,32 @@ export function moveSquares(uci: string): [string, string] {
 export function lichessAnalysisUrl(fen: string, color: 'white' | 'black'): string {
   return `https://lichess.org/analysis/${fen.replaceAll(' ', '_')}?color=${color}`
 }
+
+/** What lichessGameUrl needs of a game. */
+export type GameOnLichess = {
+  source: string
+  id: string
+  sanMoves?: string[]
+  initialFen?: string
+}
+
+/**
+ * The whole game on Lichess, at position `ply` (half-moves played), so that its history can be
+ * browsed: a Lichess game on its own page (with Lichess's analysis if it has one), another one
+ * loaded move by move into the analysis board. A game from a set-up position cannot be loaded
+ * this way: its position alone (`fen`).
+ */
+export function lichessGameUrl(
+  game: GameOnLichess,
+  ply: number,
+  color: 'white' | 'black',
+  fen: string,
+): string {
+  if (game.source === 'lichess') {
+    return `https://lichess.org/${game.id}${color === 'black' ? '/black' : ''}#${ply}`
+  }
+  if (game.initialFen || !game.sanMoves?.length) return lichessAnalysisUrl(fen, color)
+  // "#" (mate) and "+" must not end up as the URL's hash or a space.
+  const moves = game.sanMoves.map(encodeURIComponent).join('_')
+  return `https://lichess.org/analysis/pgn/${moves}?color=${color}#${ply}`
+}

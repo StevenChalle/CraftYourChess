@@ -45,7 +45,11 @@ export type Mistake = {
   id: string
   /** Half-move number of the position before the error, in the game: its order among the others */
   ply: number
-  game: Pick<ReviewGame, 'source' | 'id' | 'url' | 'playedAt' | 'opponent'>
+  /** With its moves: the whole game on Lichess (lichessGameUrl) */
+  game: Pick<
+    ReviewGame,
+    'source' | 'id' | 'url' | 'playedAt' | 'opponent' | 'sanMoves' | 'initialFen'
+  >
   color: Color
   /** Position before the error */
   fen: string
@@ -195,6 +199,8 @@ export function judge(
       url: game.url,
       playedAt: game.playedAt,
       opponent: game.opponent,
+      sanMoves: game.sanMoves,
+      ...(game.initialFen && { initialFen: game.initialFen }),
     },
     color: game.color,
     fen: positions[ply]!.fen,

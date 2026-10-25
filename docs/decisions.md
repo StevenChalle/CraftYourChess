@@ -731,3 +731,13 @@ Une analyse finie enchaîne d'elle-même l'approfondissement de toutes ses parti
 - **Il cède la place** à tout autre usage de Stockfish (un entraînement, dans cet onglet ou un autre, une autre analyse) : il coupe ses moteurs, affiche « en pause pendant que Stockfish sert ailleurs, reprend ensuite », puis reprend 3 s après la fin du dernier, avec les positions qui restent (ce qui est calculé reste). `lib/activity.ts` : `othersActive`, `watchOthers`, `waitForOthers`, qui comptent les activités autres que la sienne, dans l'onglet et via les verrous partagés des autres onglets.
 - **Il garde son activité pendant la pause** : l'analyse de fond des favoris continue d'attendre, l'analyse du joueur passe d'abord.
 - **Une partie demandée pendant l'approfondissement de toutes** passe en tête, les autres suivent.
+
+## 2026-10-25 : « Analyser sur Lichess » ouvre la partie entière
+
+Le lien n'ouvrait que la position (FEN) : impossible de parcourir la partie. Désormais (`lichessGameUrl`, depuis le graphique d'évaluation et l'entraînement) :
+
+- **partie Lichess** : sa page sur Lichess, du côté du joueur, à ce coup (`lichess.org/<id>/black#12`), avec l'analyse de Lichess s'il y en a une ;
+- **partie Chess.com ou importée** : chargée coup par coup dans l'échiquier d'analyse (`lichess.org/analysis/pgn/e4_e5_…?color=black#12`), les coups encodés (`#` du mat, `+`) ;
+- **partie depuis une position de départ particulière** : la position seule, comme avant (l'URL PGN ne prend pas de FEN de départ).
+
+Les erreurs d'entraînement gardent pour cela les coups de leur partie (`Mistake.game.sanMoves`, `initialFen`).
