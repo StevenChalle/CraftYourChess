@@ -56,8 +56,8 @@ function RootLayout() {
             </Link>
             <div className="ml-auto flex items-center gap-2 sm:gap-4">
               {!isHome && <HeaderSearch />}
-              <InstallButton />
               <FeedbackButton />
+              <InstallButton />
               <BackgroundIndicator />
               <SettingsMenu />
             </div>
