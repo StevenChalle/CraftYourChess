@@ -40,7 +40,7 @@ src/
   routes/             # une route par fichier (TanStack Router), routeTree.gen.ts est généré automatiquement
   components/ui/      # composants shadcn, générés par la CLI, modifiables
   theme/              # thème « L'Établi » : tokens (etabli.css) et polices (fonts/)
-  routes/player/      # page du joueur, un onglet par fichier : Aperçu (index), Parties (history), Analyse (analysis), Résultats (results), un onglet fermable par entraînement (training.$number) ; la session d'analyse est portée par route.tsx. routes/analysis/ ne fait que rediriger les anciennes adresses
+  routes/player/      # page du joueur, un onglet par fichier : Parties (history, où arrive le profil ; index y redirige, l'aperçu est une fenêtre de l'en-tête, ProfileButton), Analyse (analysis), Résultats (results), un onglet fermable par entraînement (training.$number) ; la session d'analyse est portée par route.tsx. routes/analysis/ ne fait que rediriger les anciennes adresses
   components/         # composants applicatifs partagés (board/, SettingsMenu, Footer, FeedbackLink…)
   hooks/              # hooks transverses (useConfirm, useKeepAwake, usePageMeta : titre et référencement de chaque page)
   features/<nom>/     # code propre à une fonctionnalité, à créer au besoin

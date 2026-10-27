@@ -8,8 +8,8 @@ import { SourceDot } from './SourceBadge'
 
 /**
  * Name, titles, avatar and country, gathered from whichever accounts were found; `nameAction`
- * right after the name and country, `actions` on the right. The name always leads to the profile of these
- * accounts (`profileLink`).
+ * right after the name and country, `actions` on the right. The name always leads to the games of
+ * these accounts (`profileLink`).
  */
 export function PlayerHeader({
   accounts,
@@ -55,7 +55,7 @@ export function PlayerHeader({
                 {account.title}
               </span>
             ))}
-            <Link to="/player" search={profileLink} className="hover:text-primary">
+            <Link to="/player/history" search={profileLink} className="hover:text-primary">
               {main?.username}
             </Link>
           </h1>

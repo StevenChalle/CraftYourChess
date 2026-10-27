@@ -33,7 +33,7 @@ export function RecentSearches({ className }: { className?: string }) {
               className="group flex items-center rounded-md transition-colors hover:bg-muted"
             >
               <Link
-                to="/player"
+                to="/player/history"
                 search={usernames}
                 className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 px-2 py-1.5 text-sm text-text-strong"
               >

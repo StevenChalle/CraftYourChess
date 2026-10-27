@@ -1,11 +1,8 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router'
-import { PlayerOverview } from '@/features/player/components/PlayerOverview'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
+// The profile opens on its games; its overview is a dialog of the header (ProfileButton).
 export const Route = createFileRoute('/player/')({
-  component: function OverviewTab() {
-    const search = Route.useSearch()
-    // Imported games have no overview: their games instead.
-    if (search.import) return <Navigate to="/player/history" search={{ import: true }} replace />
-    return <PlayerOverview usernames={{ lichess: search.lichess, chesscom: search.chesscom }} />
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: '/player/history', search, replace: true })
   },
 })

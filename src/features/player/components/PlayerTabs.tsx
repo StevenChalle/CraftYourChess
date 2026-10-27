@@ -1,5 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { History, LayoutGrid, List, Microscope, SlidersHorizontal, Swords, X } from 'lucide-react'
+import { History, List, Microscope, SlidersHorizontal, Swords, X } from 'lucide-react'
 import { useEffect, useRef, type DragEvent, type MouseEvent, type PointerEvent } from 'react'
 import { useAnalysisSession } from '@/features/review/sessionContext'
 import { trainingTitle } from '@/features/training/title'
@@ -13,7 +13,7 @@ const TAB_CLASS =
   'tab-etabli inline-flex shrink-0 items-center gap-2 px-1 pb-2.5 whitespace-nowrap transition-colors [&>svg]:size-3.5 [&>svg]:opacity-70'
 
 /**
- * The profile's tabs: overview, games, the analysis filters, then its results once there is an
+ * The profile's tabs: games, the analysis filters, then its results once there is an
  * analysis, and a closable tab per training. Switching tabs keeps the scroll position
  * (`resetScroll={false}`): a training tab places its board itself. The bar scrolls sideways when
  * the tabs overflow (several trainings on a phone): the underline sits on the bar's border instead
@@ -106,20 +106,6 @@ export function PlayerTabs({
       className="flex [scrollbar-width:none] gap-6 overflow-x-auto border-b"
       aria-label={m.tabs_label()}
     >
-      {/* Imported games have no profile to show */}
-      {!usernames.import && (
-        <Link
-          resetScroll={false}
-          to="/player"
-          data-path="/player"
-          search={usernames}
-          activeOptions={{ exact: true }}
-          className={TAB_CLASS}
-        >
-          <LayoutGrid aria-hidden />
-          {m.tab_overview()}
-        </Link>
-      )}
       <Link
         resetScroll={false}
         to="/player/history"

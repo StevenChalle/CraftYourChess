@@ -741,3 +741,10 @@ Le lien n'ouvrait que la position (FEN) : impossible de parcourir la partie. Dé
 - **partie depuis une position de départ particulière** : la position seule, comme avant (l'URL PGN ne prend pas de FEN de départ).
 
 Les erreurs d'entraînement gardent pour cela les coups de leur partie (`Mistake.game.sanMoves`, `initialFen`).
+
+## 2026-10-28 : plus d'onglet Aperçu, le profil arrive sur ses parties
+
+L'onglet Aperçu (cartes des comptes, Elo, bilans) était surtout cosmétique et ne montrait pas à quoi sert l'app. Le profil s'ouvre désormais sur l'onglet **Parties**.
+
+- **L'aperçu devient une fenêtre** (`ProfileButton`), ouverte par une icône profil entre le nom du joueur et l'étoile des favoris. Son contenu ne change pas (`PlayerOverview`).
+- **Adresses** : la recherche, les recherches récentes, les favoris et le nom du joueur mènent à `/player/history`. `/player` seul redirige vers `/player/history` (mêmes paramètres), pour les anciens liens.
