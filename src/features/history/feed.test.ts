@@ -99,6 +99,17 @@ describe('history feed', () => {
     expect(page.games.map((game) => game.id)).toEqual(['c-casual', 'casual', 'l1', 'c1'])
   })
 
+  it('skips a month Chess.com fails to serve', async () => {
+    const fetchers: FeedFetchers = {
+      lichessPage: async () => [],
+      chessComArchives: async () => ['m1', 'm2'],
+      chessComMonth: async (url: string) => (url === 'm2' ? null : [chessComGame('c1', 1, 1180)]),
+    }
+    const page = await nextPage(startFeed([{ source: 'chesscom', username: 'alice' }]), fetchers)
+    expect(page.games.map((game) => game.id)).toEqual(['c1'])
+    expect(page.state.failures).toEqual([])
+  })
+
   it('keeps going with the other platform when one fails', async () => {
     const fetchers: FeedFetchers = {
       lichessPage: async () => {

@@ -748,3 +748,10 @@ L'onglet Aperçu (cartes des comptes, Elo, bilans) était surtout cosmétique et
 
 - **L'aperçu devient une fenêtre** (`ProfileButton`), ouverte par une icône profil entre le nom du joueur et l'étoile des favoris. Son contenu ne change pas (`PlayerOverview`).
 - **Adresses** : la recherche, les recherches récentes, les favoris et le nom du joueur mènent à `/player/history`. `/player` seul redirige vers `/player/history` (mêmes paramètres), pour les anciens liens.
+
+## 2026-10-28 : un mois que Chess.com ne sert pas est sauté
+
+Chess.com liste dans les archives de certains comptes très actifs (Hikaru, Magnus Carlsen) le mois en cours, mais répond 404 « An internal error has occurred » quand on le demande. Toute la plateforme passait alors pour injoignable : aucune partie Chess.com dans l'onglet Parties.
+
+- `fetchArchiveGames` rend `null` sur un 404 : l'onglet Parties, la recherche de l'analyse et la recherche d'une partie sautent ce mois, sans erreur affichée.
+- Le magasin des parties ne marque pas ce mois comme lu : il est redemandé la fois suivante.

@@ -54,7 +54,8 @@ export type GameFetchers = {
     onGame?: (game: LichessGame) => void,
   ) => Promise<LichessGame[]>
   chessComArchives: (username: string, signal?: AbortSignal) => Promise<string[]>
-  chessComMonth: (archiveUrl: string, signal?: AbortSignal) => Promise<ChessComGame[]>
+  /** null: a month Chess.com fails to serve (see fetchArchiveGames), skipped */
+  chessComMonth: (archiveUrl: string, signal?: AbortSignal) => Promise<ChessComGame[] | null>
 }
 
 const API_FETCHERS: GameFetchers = {
@@ -203,7 +204,7 @@ async function findChessComGames(
   report(0, 0)
   // Newest month first, one request at a time (Chess.com limits parallel requests).
   for (const [index, archive] of archives.entries()) {
-    const month = await fetchers.chessComMonth(archive, signal)
+    const month = (await fetchers.chessComMonth(archive, signal)) ?? []
     for (const game of month) {
       const review = fromChessComGame(game, username)
       if (review && matchesSelection(review, selection)) found.push(review)
@@ -400,9 +401,10 @@ async function findChessComGamesStored(
     } else {
       const requestedAt = now()
       const raw = await fetchers.chessComMonth(archive, signal)
-      games = raw.flatMap((game) => toStoredGame('chesscom', username, game) ?? [])
+      games = (raw ?? []).flatMap((game) => toStoredGame('chesscom', username, game) ?? [])
       await store.put(games)
-      if (key) await store.markMonth(account, key, requestedAt)
+      // A month Chess.com failed to serve is not marked: read again next time.
+      if (key && raw) await store.markMonth(account, key, requestedAt)
     }
     for (const game of games) {
       const summary = storedSummary(game, username)
@@ -496,7 +498,8 @@ export async function findGames(
 
 export type SingleGameFetchers = {
   lichessGame: (id: string, signal?: AbortSignal) => Promise<LichessGame | undefined>
-  chessComMonth: (archiveUrl: string, signal?: AbortSignal) => Promise<ChessComGame[]>
+  /** null: a month Chess.com fails to serve (see fetchArchiveGames), skipped */
+  chessComMonth: (archiveUrl: string, signal?: AbortSignal) => Promise<ChessComGame[] | null>
 }
 
 const SINGLE_GAME_FETCHERS: SingleGameFetchers = {
@@ -531,7 +534,7 @@ export async function findGame(
         archiveUrl(account.username, ref.year, ref.month),
         signal,
       )
-      const raw = month.find((item) => item.uuid === ref.id)
+      const raw = month?.find((item) => item.uuid === ref.id)
       game = raw && fromChessComGame(raw, account.username)
     }
     return { games: game ? [game] : [], failures: [] }

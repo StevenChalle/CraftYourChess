@@ -204,4 +204,33 @@ describe('findGames with the game store, on Chess.com', () => {
     expect(ids(await run())).toEqual(['oct', 'sep'])
     expect(opened).toEqual(['a/2026/10'])
   })
+
+  it('reads again, next time, a month Chess.com failed to serve', async () => {
+    const months: Record<string, ChessComGame[] | null> = {
+      'a/2026/08': [chessComGame('aug', Date.UTC(2026, 7, 15))],
+      'a/2026/09': null,
+    }
+    const opened: string[] = []
+    const fetchers = {
+      chessComArchives: async () => Object.keys(months),
+      chessComMonth: async (url: string) => {
+        opened.push(url)
+        return months[url]
+      },
+    } as unknown as GameFetchers
+    now = Date.UTC(2026, 9, 20)
+    const run = () =>
+      findGames(
+        [{ source: 'chesscom', username: 'alice' }],
+        { ...defaultSelection(['chesscom']), scope: { kind: 'latest', count: 5 } },
+        { fetchers, store, now: () => now },
+      )
+    const first = await run()
+    expect(ids(first)).toEqual(['aug'])
+    expect(first.failures).toEqual([])
+    opened.length = 0
+    months['a/2026/09'] = [chessComGame('sep', Date.UTC(2026, 8, 15))]
+    expect(ids(await run())).toEqual(['sep', 'aug'])
+    expect(opened).toEqual(['a/2026/09'])
+  })
 })

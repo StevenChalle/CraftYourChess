@@ -47,7 +47,8 @@ export type FeedFetchers = {
     signal?: AbortSignal,
   ) => Promise<LichessGame[]>
   chessComArchives: (username: string, signal?: AbortSignal) => Promise<string[]>
-  chessComMonth: (archiveUrl: string, signal?: AbortSignal) => Promise<ChessComGame[]>
+  /** null: a month Chess.com fails to serve (see fetchArchiveGames), skipped */
+  chessComMonth: (archiveUrl: string, signal?: AbortSignal) => Promise<ChessComGame[] | null>
 }
 
 export function startFeed(accounts: HistoryAccount[]): FeedState {
@@ -78,7 +79,7 @@ async function refill(feed: SourceFeed, fetchers: FeedFetchers, signal?: AbortSi
       feed.archives ??= await fetchers.chessComArchives(feed.username, signal)
       const archive = feed.archives.pop()
       if (archive) {
-        const month = await fetchers.chessComMonth(archive, signal)
+        const month = (await fetchers.chessComMonth(archive, signal)) ?? []
         feed.buffer = month.flatMap((game) => keep(summarizeChessComGame(game, feed.username)))
         feed.buffer.sort(byNewest)
       }

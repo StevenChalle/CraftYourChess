@@ -45,6 +45,7 @@
 - CORS : `access-control-allow-origin: *`. Le navigateur interdit de définir le `User-Agent` : on reste donc strictement en série.
 - Les pseudos sont **redirigés en 301 vers leur version en minuscules** : le client met le pseudo en minuscules avant d'appeler l'API. La casse d'affichage se trouve dans l'URL du profil (`url`).
 - Joueur inconnu : 404 avec `{"code":0,"message":"User ... not found."}`. Sans `User-Agent`, `curl` reçoit un 403, mais pas le navigateur.
+- Le 2026-10-28, le mois en cours de certains comptes très actifs (`hikaru`, `magnuscarlsen`) figurait dans `/games/archives` mais répondait 404 `{"code":0,"message":"An internal error has occurred. ..."}`, depuis le navigateur aussi. L'app saute ce mois (`fetchArchiveGames` rend `null`).
 - `/stats` : `chess_{bullet,blitz,rapid,daily}` et `chess960_daily`, chacun avec `last` (Elo actuel), `best` (meilleur Elo et partie associée) et `record` (V/N/D). S'y ajoutent `tactics`, `puzzle_rush` et `fide` (déclaratif). Il n'y a pas de cadence « classique ».
 - `status` : `basic`, `premium`, `staff`, `closed` ou `closed:fair_play_violations`.
 - Parties d'un mois : `pgn` (avec `[%clk]`), `time_control` (`"180+2"`, `"600"`, `"1/86400"` pour le daily), `time_class`, `rules` (`chess`, `chess960`…), `rated`, `end_time`, `white`/`black` (`username`, `rating`, `result`). **Aucune évaluation par coup** : seulement `accuracies: { white, black }` quand une Game Review existe (fréquent mais pas garanti).

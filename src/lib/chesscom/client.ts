@@ -1,5 +1,5 @@
 import { withActivity } from '@/lib/activity'
-import { fetchJson } from '@/lib/http'
+import { fetchJson, orNullIfNotFound } from '@/lib/http'
 import type { ChessComGame, ChessComPlayer, ChessComProfile, ChessComStats } from './types'
 
 const BASE_URL = 'https://api.chess.com/pub'
@@ -50,14 +50,18 @@ export function archiveUrl(username: string, year: number, month: number): strin
   return `${playerUrl(username)}/games/${year}/${String(month).padStart(2, '0')}`
 }
 
-/** Games of one monthly archive (a URL from fetchArchives), oldest first. */
+/**
+ * Games of one monthly archive (a URL from fetchArchives), oldest first. Null when Chess.com
+ * answers 404 for it: it happens to a listed month ("An internal error has occurred", seen on the
+ * current month of very active accounts), so callers skip that month rather than fail.
+ */
 export async function fetchArchiveGames(
   archiveUrl: string,
   signal?: AbortSignal,
   background = false,
-): Promise<ChessComGame[]> {
-  const { games } = await gamesRequest(background, () =>
-    fetchJson<{ games: ChessComGame[] }>('chesscom', archiveUrl, signal),
+): Promise<ChessComGame[] | null> {
+  const archive = await gamesRequest(background, () =>
+    orNullIfNotFound(fetchJson<{ games: ChessComGame[] }>('chesscom', archiveUrl, signal)),
   )
-  return games
+  return archive?.games ?? null
 }
