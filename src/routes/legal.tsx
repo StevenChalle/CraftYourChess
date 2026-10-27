@@ -55,6 +55,7 @@ function LegalPage() {
           <li>{m.legal_privacy_local_analyses()}</li>
           <li>{m.legal_privacy_local_training()}</li>
           <li>{m.legal_privacy_local_board()}</li>
+          <li>{m.legal_privacy_local_rating_chart()}</li>
           <li>{m.legal_privacy_local_app()}</li>
         </ul>
         <h3 className="pt-2 font-semibold">{m.legal_privacy_thirdparty_title()}</h3>

@@ -764,3 +764,12 @@ Trois groupes de puces à choix multiple au-dessus de la liste (`features/histor
 - **Filtrage** : Lichess filtre lui-même les cadences (`perfType`) ; le reste se fait en local, dans le flux (`matchesFilter`). Chaque combinaison de filtres a sa propre requête TanStack Query ; « Mettre à jour » les vide toutes.
 - **12 requêtes au plus par plateforme et par page** (`HISTORY_FETCH_BUDGET`) : un filtre rare (les parties longues de Hikaru sur Chess.com) lirait sinon toute une carrière, mois par mois. La page s'arrête alors plus tôt, éventuellement vide (« Parties plus anciennes » cherche plus loin), sans casser l'ordre par date.
 - Les filtres sont gardés en mémoire tant que la page est ouverte (on peut changer d'onglet), rien n'est stocké.
+
+## 2026-10-28 : graphique de l'évolution de l'Elo dans le profil
+
+Dans la fenêtre du profil, un graphique de l'Elo jour par jour (`features/player/rating/`), dans le style de celui de l'évaluation : SVG fait main, courbe dans la couleur d'accent sur le fond `field`, survol (ou doigt) pour lire un jour et son écart avec le précédent.
+
+- **Filtres** : plateforme (Chess.com par défaut, l'autre si le compte manque ; jamais les deux mélangées, les Elo ne se comparent pas), cadence (blitz par défaut), période (7 jours, **30 jours** par défaut, 3 mois, 1 an). Gardés dans `localStorage` (`craftyourchess:rating-chart`), déclarés sur `/legal`.
+- **Lichess** : son historique (`/api/user/{name}/rating-history`, une requête pour tout). Il revient parfois vide (vu sur des comptes très actifs, 2026-10-28) : on retombe alors sur les parties.
+- **Chess.com** n'a pas d'historique : l'Elo après la dernière partie classée de chaque jour, depuis les parties de la période, prises dans le magasin des parties (`findGames` avec `gameStore`). Les mois déjà lus ne se retéléchargent pas. Le bullet Lichess reconstruit ainsi laisse de côté l'UltraBullet, qui a son propre Elo.
+- Une longue période sur un compte très actif peut prendre une minute (Lichess envoie environ 20 parties par seconde) : un compteur de parties s'affiche pendant le chargement.

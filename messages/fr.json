@@ -215,7 +215,7 @@
   "legal_privacy_public_data": "Les profils et parties affichés proviennent des API publiques de Lichess et de Chess.com. Ils sont récupérés à la demande et ne sont pas conservés par nous.",
   "legal_privacy_policies": "Leurs politiques de confidentialité :",
   "legal_clear_title": "Supprimer vos données locales",
-  "legal_clear_body": "Supprime votre choix de langue, vos recherches récentes, vos réglages d'analyse, vos parties et analyses enregistrées, vos options d'entraînement et l'apparence de l'échiquier de ce navigateur.",
+  "legal_clear_body": "Supprime votre choix de langue, vos recherches récentes, vos réglages d'analyse, vos parties et analyses enregistrées, vos options d'entraînement, l'apparence de l'échiquier et les filtres du graphique de l'Elo de ce navigateur.",
   "legal_clear_button": "Supprimer mes données locales",
   "legal_clear_done": "Données locales supprimées.",
   "legal_license_title": "Licence et crédits",
@@ -624,5 +624,14 @@
   "install_firefox_step1": "Ouvrez le menu du navigateur ⋮",
   "install_firefox_step2": "Choisissez « Installer »",
   "install_ok": "Compris",
-  "deepen_paused": "en pause pendant que Stockfish sert ailleurs, reprend ensuite"
+  "deepen_paused": "en pause pendant que Stockfish sert ailleurs, reprend ensuite",
+  "rating_chart_title": "Évolution de l'Elo",
+  "rating_chart_label": "Elo au fil du temps",
+  "rating_chart_empty": "Aucune partie classée dans cette cadence sur cette période.",
+  "rating_range_week": "7 jours",
+  "rating_range_month": "30 jours",
+  "rating_range_3months": "3 mois",
+  "rating_range_year": "1 an",
+  "legal_privacy_local_rating_chart": "les filtres du graphique de l'Elo (plateforme, cadence, période) ;",
+  "rating_chart_loading_games": "Chargement des parties : {games} pour l'instant…"
 }

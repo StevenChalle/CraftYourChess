@@ -6,6 +6,7 @@ import { earliestJoin, latestActivity, SOURCE_LABELS, sumRecords, totalGames } f
 import { usePlayerAccounts } from '../usePlayerAccounts'
 import { AccountCard } from './AccountCard'
 import { CurrentRatings } from './CurrentRatings'
+import { RatingHistory } from '../rating/RatingHistory'
 import { GamesByCategory } from './GamesByCategory'
 import { Panel, StatTile } from './Panel'
 import { ResultBar } from './ResultBar'
@@ -76,6 +77,8 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
               }
             />
           </div>
+
+          <RatingHistory accounts={accounts} />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <CurrentRatings accounts={accounts} sources={linked} />

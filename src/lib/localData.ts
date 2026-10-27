@@ -5,7 +5,7 @@ export const LOCAL_DATA_CLEARED = 'craftyourchess:local-data-cleared'
 
 /**
  * Deletes everything CraftYourChess keeps in this browser: localStorage (language choice, recent
- * searches, analysis settings, training options, board look) and the IndexedDB database
+ * searches, analysis settings, training options, board look, rating chart filters) and the IndexedDB database
  * (accounts' games, analysis cache). The app's offline files (service worker cache) are left alone.
  * False if something could not be deleted.
  */
