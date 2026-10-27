@@ -116,17 +116,19 @@ async function exportOneGame(id: string, signal?: AbortSignal): Promise<LichessG
 /**
  * One page of the game history: standard games, rated or casual (like the review), newest first,
  * without moves. `until` (Unix ms, exclusive upper bound on the start date) pages backwards.
+ * `perfTypes`: only these Lichess perfs (standard ones), instead of all of them.
  */
 export function fetchGamesPage(
   username: string,
   max: number,
   until: number | undefined,
   signal?: AbortSignal,
+  perfTypes?: string[],
 ): Promise<LichessGame[]> {
   const params: Record<string, string> = {
     max: String(max),
     moves: 'false',
-    perfType: STANDARD_PERFS,
+    perfType: perfTypes?.join(',') ?? STANDARD_PERFS,
   }
   if (until !== undefined) params.until = String(until)
   return exportGames(username, params, signal)

@@ -755,3 +755,12 @@ Chess.com liste dans les archives de certains comptes très actifs (Hikaru, Magn
 
 - `fetchArchiveGames` rend `null` sur un 404 : l'onglet Parties, la recherche de l'analyse et la recherche d'une partie sautent ce mois, sans erreur affichée.
 - Le magasin des parties ne marque pas ce mois comme lu : il est redemandé la fois suivante.
+
+## 2026-10-28 : filtres simples sur l'onglet Parties
+
+Trois groupes de puces à choix multiple au-dessus de la liste (`features/history/components/HistoryFilters.tsx`), bien plus simples que les filtres d'analyse :
+
+- **Plateformes** (seulement avec deux comptes), les deux par défaut ; **cadences**, « Toutes » par défaut (choisir une cadence l'enlève, n'en garder aucune ou toutes la remet) ; **résultat** : victoires, nulles, défaites, toutes par défaut. Un groupe n'est jamais vide.
+- **Filtrage** : Lichess filtre lui-même les cadences (`perfType`) ; le reste se fait en local, dans le flux (`matchesFilter`). Chaque combinaison de filtres a sa propre requête TanStack Query ; « Mettre à jour » les vide toutes.
+- **12 requêtes au plus par plateforme et par page** (`HISTORY_FETCH_BUDGET`) : un filtre rare (les parties longues de Hikaru sur Chess.com) lirait sinon toute une carrière, mois par mois. La page s'arrête alors plus tôt, éventuellement vide (« Parties plus anciennes » cherche plus loin), sans casser l'ordre par date.
+- Les filtres sont gardés en mémoire tant que la page est ouverte (on peut changer d'onglet), rien n'est stocké.

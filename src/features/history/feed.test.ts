@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ChessComGame } from '@/lib/chesscom/types'
 import type { LichessGame } from '@/lib/lichess/types'
-import { nextPage, startFeed, type FeedFetchers } from './feed'
+import { HISTORY_FETCH_BUDGET, nextPage, startFeed, type FeedFetchers } from './feed'
 
 const DAY = 86_400_000
 
@@ -127,5 +127,57 @@ describe('history feed', () => {
     )
     expect(page.games.map((game) => game.id)).toEqual(['c1'])
     expect(page.state.failures.map((failure) => failure.source)).toEqual(['lichess'])
+  })
+
+  it('keeps the time controls and results of the filter, Lichess filtering its perfs itself', async () => {
+    const asked: (string[] | undefined)[] = []
+    const fetchers: FeedFetchers = {
+      lichessPage: async (_user, _max, _until, _signal, perfs) => {
+        asked.push(perfs)
+        return [
+          lichessGame('l-win', 30, { speed: 'bullet', perf: 'bullet' }),
+          lichessGame('l-loss', 29, { speed: 'bullet', perf: 'bullet', winner: 'black' }),
+        ]
+      },
+      chessComArchives: async () => ['m1'],
+      chessComMonth: async () => [
+        chessComGame('c-blitz', 28, 1200),
+        chessComGame('c-bullet', 27, 1200, 'bullet'),
+      ],
+    }
+    const page = await nextPage(
+      startFeed(
+        [
+          { source: 'lichess', username: 'alice' },
+          { source: 'chesscom', username: 'alice' },
+        ],
+        { categories: ['bullet'], results: ['win'] },
+      ),
+      fetchers,
+    )
+    expect(page.games.map((game) => game.id)).toEqual(['l-win', 'c-bullet'])
+    expect(asked[0]).toEqual(['ultraBullet', 'bullet'])
+  })
+
+  it('stops a page short after its requests, keeping the order, and searches on with the next', async () => {
+    const months = Array.from({ length: HISTORY_FETCH_BUDGET + 2 }, (_, index) => `m${index}`)
+    const fetchers: FeedFetchers = {
+      lichessPage: async () => [],
+      chessComArchives: async () => months,
+      // Only the oldest month has a classical game.
+      chessComMonth: async (url: string) => [
+        chessComGame(url, Number(url.slice(1)) + 1, 1200, url === 'm0' ? 'classical' : 'blitz'),
+      ],
+    }
+    const filter = { categories: ['classical' as const], results: ['win' as const] }
+    const first = await nextPage(
+      startFeed([{ source: 'chesscom', username: 'alice' }], filter),
+      fetchers,
+    )
+    expect(first.games).toEqual([])
+    expect(first.hasMore).toBe(true)
+    const second = await nextPage(first.state, fetchers)
+    expect(second.games.map((game) => game.id)).toEqual(['m0'])
+    expect(second.hasMore).toBe(false)
   })
 })
