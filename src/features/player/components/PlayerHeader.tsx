@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { countryName } from '@/lib/format'
 import { m } from '@/paraglide/messages'
 import type { PlayerUsernames } from '../search'
 import { SOURCE_LABELS, type AccountSummary } from '../summary'
@@ -8,9 +7,9 @@ import { ExternalLink } from './ExternalLink'
 import { SourceDot } from './SourceBadge'
 
 /**
- * Name, titles, avatar and country, gathered from whichever accounts were found, with a link to
+ * Name, titles and avatar, gathered from whichever accounts were found, with a link to
  * each account on its platform (its username when they differ); `nameAction`
- * right after the name and country, `actions` on the right. The name always leads to the profile of
+ * right after the name, `actions` on the right. The name always leads to the profile of
  * these accounts (`profileLink`).
  */
 export function PlayerHeader({
@@ -25,7 +24,6 @@ export function PlayerHeader({
   profileLink: PlayerUsernames
 }) {
   const avatarUrl = accounts.find((account) => account.avatarUrl)?.avatarUrl
-  const country = accounts.map((account) => countryName(account.countryCode)).find(Boolean)
   const titles = accounts.filter((account) => account.title)
   const sameTitle =
     titles.length > 1 && titles.every((account) => account.title === titles[0]!.title)
@@ -63,7 +61,6 @@ export function PlayerHeader({
           </h1>
 
           <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted-foreground">
-            {country && <span>{country}</span>}
             {[main, ...others].map(
               (account) =>
                 account && (

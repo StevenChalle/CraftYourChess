@@ -64,7 +64,6 @@ describe('fromLichess', () => {
       username: 'Alice',
       url: 'https://lichess.org/@/Alice',
       title: 'FM',
-      countryCode: 'FR',
       closed: false,
       record: { win: 100, loss: 80, draw: 20 },
     })
@@ -98,9 +97,8 @@ describe('fromLichess', () => {
 describe('fromChessCom', () => {
   const summary = fromChessCom(chessComPlayer)
 
-  it('uses the display casing from the profile URL and the country code', () => {
+  it('uses the display casing from the profile URL', () => {
     expect(summary.username).toBe('Alice')
-    expect(summary.countryCode).toBe('BE')
   })
 
   it('converts Unix seconds to dates', () => {

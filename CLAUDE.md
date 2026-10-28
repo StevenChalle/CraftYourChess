@@ -56,7 +56,7 @@ src/
   lib/chesscom/       # idem pour l'API Chess.com
   lib/engine/         # Stockfish WASM : protocole UCI, Worker, pool de moteurs
   lib/http.ts         # fetchJson, ApiError, null sur 404, politique de retry
-  lib/format.ts       # formats (nombres, dates, pays…) dans la langue courante
+  lib/format.ts       # formats (nombres, dates…) dans la langue courante
   lib/contact.ts      # envoi des retours via Web3Forms (clé VITE_WEB3FORMS_KEY)
   lib/db.ts           # base Dexie `craftyourchess` (parties des comptes, cache des analyses)
   lib/activity.ts     # activités du joueur (Stockfish, téléchargements de parties) : le travail de fond leur cède la place
@@ -89,7 +89,7 @@ L'interface existe en **anglais (langue de base) et en français**. Langue initi
 - Clés en `snake_case`, paramètres nommés : `"view_on": "View on {platform}"`. Pluriels avec `declarations` / `match` (exemple : `games_count`).
 - Les libellés définis au niveau du module sont des **fonctions** (`label: m.category_blitz`), appelées au rendu. Jamais `m.x()` au niveau du module.
 - Les noms de marques ne se traduisent pas (Lichess, Chess.com, Puzzle Storm, Daily…).
-- Nombres, dates, pays, listes : `lib/format.ts`, qui suit la langue courante. Ne pas créer d'`Intl.*` avec une locale codée en dur.
+- Nombres, dates, listes : `lib/format.ts`, qui suit la langue courante. Ne pas créer d'`Intl.*` avec une locale codée en dur.
 - `src/paraglide/` est régénéré par le plugin Vite (dev, build, tests) et par `pnpm i18n` (lancé par `pnpm typecheck`).
 
 ## Règles à respecter

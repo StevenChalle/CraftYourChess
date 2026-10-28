@@ -35,7 +35,6 @@ export type AccountSummary = {
   url: string
   title?: string
   avatarUrl?: string
-  countryCode?: string
   closed: boolean
   /** Lichess: terms of service violation. Chess.com: fair play closure. */
   flagged: boolean
@@ -73,7 +72,6 @@ export function fromLichess(user: LichessUser): AccountSummary {
     username: user.username,
     url: user.url ?? `https://lichess.org/@/${user.username}`,
     title: user.title,
-    countryCode: user.profile?.flag,
     closed: Boolean(user.disabled),
     flagged: Boolean(user.tosViolation),
     joinedAt: user.createdAt ? new Date(user.createdAt) : undefined,
@@ -122,7 +120,6 @@ export function fromChessCom({ profile, stats }: ChessComPlayer): AccountSummary
     url: profile.url,
     title: profile.title,
     avatarUrl: profile.avatar,
-    countryCode: profile.country?.split('/').pop(),
     closed: status.startsWith('closed'),
     flagged: status === 'closed:fair_play_violations',
     joinedAt: profile.joined ? new Date(profile.joined * 1000) : undefined,

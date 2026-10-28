@@ -32,7 +32,6 @@ const dateFormat = cachedPerLocale(
 const relativeFormat = cachedPerLocale(
   (locale) => new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
 )
-const regionNames = cachedPerLocale((locale) => new Intl.DisplayNames([locale], { type: 'region' }))
 const orList = cachedPerLocale((locale) => new Intl.ListFormat(locale, { type: 'disjunction' }))
 const andList = cachedPerLocale((locale) => new Intl.ListFormat(locale, { type: 'conjunction' }))
 
@@ -165,11 +164,4 @@ export function formatList(items: string[]): string {
 /** "a", "a or b", "a, b, or c" */
 export function formatOrList(items: string[]): string {
   return orList().format(items)
-}
-
-/** "FR" → "France" / "France". Returns undefined for codes that are not countries. */
-export function countryName(code: string | undefined): string | undefined {
-  if (!code || !/^[A-Z]{2}$/.test(code)) return undefined
-  const name = regionNames().of(code)
-  return name && name !== code ? name : undefined
 }
