@@ -101,7 +101,7 @@ Chess.com ne sert que des mois entiers, toutes cadences confondues : la couvertu
 ## Ce qui ne change pas (et pourquoi)
 
 - **Les évaluations Lichess ajoutées après coup** (analyse serveur demandée plus tard) ne sont pas rafraîchies. C'est sans gravité : notre propre moteur évalue ce qui manque, et le cache d'analyses le garde.
-- **Le profil et les statistiques** (fenêtre du profil) restent dans TanStack Query : ce sont des données courtes, toujours redemandées.
+- **Le profil et les statistiques** (Aperçu) restent dans TanStack Query : ce sont des données courtes, toujours redemandées.
 - **Une partie supprimée** ou un compte fermé sur la plateforme reste dans le magasin jusqu'à son éviction. On l'accepte.
 
 ## Place et éviction

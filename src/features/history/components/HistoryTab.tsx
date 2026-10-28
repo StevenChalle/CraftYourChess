@@ -119,15 +119,21 @@ export function HistoryTab({
   return (
     <div className="space-y-4">
       {/* The filters, and the buttons on their right while there is room */}
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
         <HistoryFiltersBar accounts={accounts} filters={filters} onChange={changeFilters} />
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" onClick={update} disabled={query.isFetching}>
+          {/* Icon only: the filters need the room */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={update}
+            disabled={query.isFetching}
+            aria-label={m.history_update()}
+            title={m.history_update()}
+          >
             <RefreshCw
-              data-icon="inline-start"
               className={cn(query.isRefetching || query.isPending ? 'animate-spin' : undefined)}
             />
-            {m.history_update()}
           </Button>
           <Button
             variant="outline"

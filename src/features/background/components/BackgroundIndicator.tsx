@@ -166,7 +166,7 @@ export function BackgroundIndicator() {
                 ))}
               </span>
               <Link
-                to="/player/history"
+                to="/player"
                 search={search}
                 title={m.favorite_open_profile({ player: name })}
                 onClick={() => setOpen(false)}

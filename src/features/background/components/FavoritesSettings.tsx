@@ -90,7 +90,7 @@ function FavoritesList({
                 </span>
               </Accordion.Trigger>
               <Link
-                to="/player/history"
+                to="/player"
                 search={{ lichess: player.lichess, chesscom: player.chesscom }}
                 title={m.favorite_open_profile({ player: name })}
                 onClick={onOpenProfile}

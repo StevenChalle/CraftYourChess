@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PlayerHeader } from '@/features/player/components/PlayerHeader'
 import { PlayerTabs } from '@/features/player/components/PlayerTabs'
-import { ProfileButton } from '@/features/player/components/ProfileButton'
 import { useRememberSearch } from '@/features/player/recentSearches'
 import {
   hasAnyUsername,
@@ -40,9 +39,9 @@ type PlayerSearch = ProfileSearch & {
 
 /**
  * /player?lichess=<name>&chesscom=<name>: either or both, names may differ. The profile and the
- * analysis of these accounts, in tabs: games, analysis, its results, trainings; the profile itself
- * in a dialog of the header (ProfileButton). /player?import=true: the same for the games imported
- * last (no profile), never mixed with an account's.
+ * analysis of these accounts, in tabs: overview, games, analysis, its results, trainings.
+ * /player?import=true: the same for the games imported last (no overview), never mixed with an
+ * account's.
  */
 export const Route = createFileRoute('/player')({
   validateSearch: (search: Record<string, unknown>): PlayerSearch => ({
@@ -74,7 +73,7 @@ function PlayerLayout() {
   )
 }
 
-/** Imported games: the same tabs, but no account. */
+/** Imported games: the same tabs, but no overview and no account. */
 function ImportLayout({ start, game, train }: { start?: 'last'; game?: string; train?: true }) {
   const imported = useImportedGames()
   const library = useMemo(() => imported && importLibrary(imported.games), [imported])
@@ -139,12 +138,7 @@ function AccountsLayout() {
         <PlayerHeader
           accounts={accounts}
           profileLink={usernames}
-          nameAction={
-            <div className="flex items-center">
-              <ProfileButton usernames={usernames} />
-              <FavoriteButton accounts={reviewable.accounts} />
-            </div>
-          }
+          nameAction={<FavoriteButton accounts={reviewable.accounts} />}
           actions={reviewable.accounts.length > 0 && <ReviewButtons usernames={usernames} />}
         />
         <PlayerTabs usernames={usernames} canAnalyse={reviewable.accounts.length > 0} />

@@ -114,25 +114,6 @@ export function RatingHistory({
       }
     >
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        {accounts.length > 1 && (
-          <Choice
-            value={account.source}
-            options={accounts.map((item) => item.source)}
-            label={(source) => (
-              <>
-                <SourceDot source={source} />
-                {SOURCE_LABELS[source]}
-              </>
-            )}
-            onChange={(source) => update({ source })}
-          />
-        )}
-        <Choice<ChartCategory>
-          value={settings.category}
-          options={CHART_CATEGORIES}
-          label={categoryLabel}
-          onChange={(category) => update({ category })}
-        />
         <div className="flex items-center gap-1.5 text-sm">
           <DateField
             label={m.setup_from()}
@@ -160,6 +141,25 @@ export function RatingHistory({
             }
           />
         </div>
+        {accounts.length > 1 && (
+          <Choice
+            value={account.source}
+            options={accounts.map((item) => item.source)}
+            label={(source) => (
+              <>
+                <SourceDot source={source} />
+                {SOURCE_LABELS[source]}
+              </>
+            )}
+            onChange={(source) => update({ source })}
+          />
+        )}
+        <Choice<ChartCategory>
+          value={settings.category}
+          options={CHART_CATEGORIES}
+          label={categoryLabel}
+          onChange={(category) => update({ category })}
+        />
       </div>
       {query.isPending ? (
         <p className="text-sm text-muted-foreground">

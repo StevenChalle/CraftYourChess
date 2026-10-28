@@ -59,7 +59,7 @@ export function AccountSearchForm({
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!canSubmit) return
-    void navigate({ to: '/player/history', search: { lichess, chesscom } })
+    void navigate({ to: '/player', search: { lichess, chesscom } })
   }
 
   /** Skips the profile: straight to the review of the last game. */

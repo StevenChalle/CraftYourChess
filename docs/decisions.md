@@ -782,3 +782,9 @@ Dans la fenêtre du profil, un graphique de l'Elo jour par jour (`features/playe
 - **Période** : de vraies dates. Quand elle finit aujourd'hui, elle est gardée comme « les N derniers jours » et glisse avec le temps ; sinon les dates restent telles quelles.
 - **Onglet Parties** : les filtres sur la même ligne que « Mettre à jour » et les flèches quand il y a la place ; plus de « Parties 1 à 30 ».
 - **Filtres gardés par joueur** dans `localStorage` (`craftyourchess:rating-chart`, `craftyourchess:games-filters`), les 50 profils les plus récemment réglés (`features/player/profileSettings.ts`), déclarés sur `/legal`.
+
+## 2026-10-28 : retour de l'onglet Aperçu
+
+Le profil dans une fenêtre (icône après le nom) se trouvait mal : l'**Aperçu** redevient un onglet, le premier, et le point d'arrivée d'une recherche (`/player`), comme avant. L'icône profil disparaît. Ce qui a été fait entre-temps reste : pas de cartes Lichess / Chess.com (liens sous le nom), graphique de l'Elo (dates en premier dans ses filtres).
+
+- **Onglet Parties** : pour que filtres et boutons tiennent sur une ligne (largeur de page de 1 120 px, en anglais comme en français), « Mettre à jour » n'est plus qu'une icône (avec infobulle) et les groupes sont un peu plus serrés.
