@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Microscope, RefreshCw, Swords } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { GamesTable } from '@/features/games/components/GamesTable'
 import type { GameSummary } from '@/features/games/normalize'
@@ -110,6 +110,41 @@ export function HistoryTab({
     }
     setPageIndex((index) => index + 1)
   }
+  const rootRef = useRef<HTMLDivElement>(null)
+  /** Under the list, a new page starts back at its top. */
+  const arrows = (fromBottom = false) => {
+    const turned = () => fromBottom && rootRef.current?.scrollIntoView({ block: 'start' })
+    return (
+      <>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={pageIndex === 0}
+          onClick={() => {
+            setPageIndex((index) => index - 1)
+            turned()
+          }}
+          aria-label={m.history_previous()}
+          title={m.history_previous()}
+        >
+          <ChevronLeft />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!canGoNext || query.isFetchingNextPage}
+          onClick={async () => {
+            await goNext()
+            turned()
+          }}
+          aria-label={m.history_next()}
+          title={m.history_next()}
+        >
+          {query.isFetchingNextPage ? <RefreshCw className="animate-spin" /> : <ChevronRight />}
+        </Button>
+      </>
+    )
+  }
   const update = async () => {
     setPageIndex(0)
     // Every filter of these accounts: the others would show older games later.
@@ -117,7 +152,7 @@ export function HistoryTab({
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={rootRef} className="scroll-mt-4 space-y-4">
       {/* The filters, and the buttons on their right while there is room */}
       <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
         <HistoryFiltersBar accounts={accounts} filters={filters} onChange={changeFilters} />
@@ -135,26 +170,7 @@ export function HistoryTab({
               className={cn(query.isRefetching || query.isPending ? 'animate-spin' : undefined)}
             />
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={pageIndex === 0}
-            onClick={() => setPageIndex((index) => index - 1)}
-            aria-label={m.history_previous()}
-            title={m.history_previous()}
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={!canGoNext || query.isFetchingNextPage}
-            onClick={goNext}
-            aria-label={m.history_next()}
-            title={m.history_next()}
-          >
-            {query.isFetchingNextPage ? <RefreshCw className="animate-spin" /> : <ChevronRight />}
-          </Button>
+          {arrows()}
         </div>
       </div>
 
@@ -177,18 +193,21 @@ export function HistoryTab({
               : m.history_no_games()}
         </p>
       ) : (
-        <div className="panel-etabli px-2">
-          <GamesTable
-            games={page.games}
-            action={(game) => (
-              <AnalyzeLink
-                game={game}
-                usernames={usernames}
-                analysed={analysed.has(gameRef(game))}
-              />
-            )}
-          />
-        </div>
+        <>
+          <div className="panel-etabli px-2">
+            <GamesTable
+              games={page.games}
+              action={(game) => (
+                <AnalyzeLink
+                  game={game}
+                  usernames={usernames}
+                  analysed={analysed.has(gameRef(game))}
+                />
+              )}
+            />
+          </div>
+          <div className="flex justify-end gap-2">{arrows(true)}</div>
+        </>
       )}
     </div>
   )
