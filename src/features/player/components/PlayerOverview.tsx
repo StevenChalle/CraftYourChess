@@ -4,9 +4,10 @@ import { m } from '@/paraglide/messages'
 import type { PlayerUsernames } from '../search'
 import { earliestJoin, latestActivity, SOURCE_LABELS, sumRecords, totalGames } from '../summary'
 import { usePlayerAccounts } from '../usePlayerAccounts'
-import { AccountCard } from './AccountCard'
+import { SourceStatus } from './SourceStatus'
 import { CurrentRatings } from './CurrentRatings'
 import { RatingHistory } from '../rating/RatingHistory'
+import { profileKey } from '../profileSettings'
 import { GamesByCategory } from './GamesByCategory'
 import { Panel, StatTile } from './Panel'
 import { ResultBar } from './ResultBar'
@@ -25,11 +26,20 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Always show both platforms, so a missing link stays visible */}
-        <AccountCard source="lichess" state={states.lichess} />
-        <AccountCard source="chesscom" state={states.chesscom} />
-      </div>
+      {/* A platform searched but not shown says why; the links to the accounts are in the header. */}
+      {linked.map((source) => {
+        const state = states[source]
+        if (state.status === 'unlinked') return null
+        if (state.status !== 'found')
+          return <SourceStatus key={source} source={source} state={state} />
+        if (!state.account.closed) return null
+        return (
+          <p key={source} className="text-sm text-loss">
+            {SOURCE_LABELS[source]} ·{' '}
+            {state.account.flagged ? m.account_closed_tos() : m.account_closed()}
+          </p>
+        )
+      })}
 
       {accounts.length > 0 && (
         <>
@@ -78,7 +88,7 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
             />
           </div>
 
-          <RatingHistory accounts={accounts} />
+          <RatingHistory profile={profileKey(usernames)} accounts={accounts} />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <CurrentRatings accounts={accounts} sources={linked} />

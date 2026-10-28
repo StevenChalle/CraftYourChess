@@ -1,59 +1,61 @@
 import type { ApiSource } from '@/lib/http'
-import { CATEGORIES, type Category } from '../summary'
-import { RATING_RANGES, type RatingRange } from './history'
+import { profileSettingsStore } from '../profileSettings'
+import { CHART_CATEGORIES, type ChartCategory, type RatingPeriod } from './history'
 
 /**
- * The rating chart's filters, per browser (localStorage), shown again next time. Declared on the
- * /legal page; cleared by clearLocalData().
+ * The rating chart's filters, per profile and per browser (localStorage), shown again on the next
+ * visit. Declared on the /legal page; cleared by clearLocalData().
  */
 
-const STORAGE_KEY = 'craftyourchess:rating-chart'
-
-export type RatingChartSettings = { source: ApiSource; category: Category; range: RatingRange }
+export type RatingChartSettings = {
+  source: ApiSource
+  category: ChartCategory
+  period: RatingPeriod
+}
 
 export const DEFAULT_RATING_CHART: RatingChartSettings = {
   source: 'chesscom',
   category: 'blitz',
-  range: '30d',
+  period: { kind: 'last', days: 30 },
+}
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/
+
+function parsePeriod(value: unknown): RatingPeriod | undefined {
+  const period = value as Partial<Record<string, unknown>> | null
+  if (period?.kind === 'last' && Number.isInteger(period.days) && (period.days as number) >= 1) {
+    return { kind: 'last', days: period.days as number }
+  }
+  if (
+    period?.kind === 'dates' &&
+    typeof period.from === 'string' &&
+    typeof period.to === 'string' &&
+    DATE.test(period.from) &&
+    DATE.test(period.to)
+  ) {
+    return { kind: 'dates', from: period.from, to: period.to }
+  }
+  return undefined
 }
 
 /** Anything unknown falls back to its default, field by field. */
-export function parseRatingChartSettings(raw: string | null): RatingChartSettings {
-  let saved: Partial<Record<keyof RatingChartSettings, unknown>> = {}
-  try {
-    const parsed: unknown = raw ? JSON.parse(raw) : {}
-    if (parsed && typeof parsed === 'object') saved = parsed
-  } catch {
-    // Unreadable: defaults
-  }
+export function parseRatingChartSettings(value: unknown): RatingChartSettings {
+  const saved = (value && typeof value === 'object' ? value : {}) as Partial<
+    Record<keyof RatingChartSettings, unknown>
+  >
   return {
     source:
       saved.source === 'lichess' || saved.source === 'chesscom'
         ? saved.source
         : DEFAULT_RATING_CHART.source,
-    category: CATEGORIES.includes(saved.category as Category)
-      ? (saved.category as Category)
+    category: CHART_CATEGORIES.includes(saved.category as ChartCategory)
+      ? (saved.category as ChartCategory)
       : DEFAULT_RATING_CHART.category,
-    range: RATING_RANGES.includes(saved.range as RatingRange)
-      ? (saved.range as RatingRange)
-      : DEFAULT_RATING_CHART.range,
+    period: parsePeriod(saved.period) ?? DEFAULT_RATING_CHART.period,
   }
 }
 
-export function loadRatingChartSettings(): RatingChartSettings {
-  let raw: string | null = null
-  try {
-    raw = localStorage.getItem(STORAGE_KEY)
-  } catch {
-    // Storage unavailable (private mode, blocked site data): defaults
-  }
-  return parseRatingChartSettings(raw)
-}
+const store = profileSettingsStore('craftyourchess:rating-chart', 2, parseRatingChartSettings)
 
-export function saveRatingChartSettings(settings: RatingChartSettings) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-  } catch {
-    // Not saved: the filters still apply until the page closes
-  }
-}
+export const loadRatingChartSettings = store.load
+export const saveRatingChartSettings = store.save

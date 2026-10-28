@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { CHIP_CLASS } from '@/components/chip'
+import { DateField } from '@/components/DateField'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { toDateInput } from '@/lib/dateInput'
 import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import type { ApiSource } from '@/lib/http'
 import { cn } from '@/lib/utils'
@@ -9,8 +11,8 @@ import { m } from '@/paraglide/messages'
 import { Panel } from '../components/Panel'
 import { SourceDot } from '../components/SourceBadge'
 import { categoryLabel, sourceErrorMessage } from '../sources'
-import { CATEGORIES, SOURCE_LABELS, type Category } from '../summary'
-import { RATING_RANGES, rangeStart, type RatingRange } from './history'
+import { SOURCE_LABELS } from '../summary'
+import { CHART_CATEGORIES, periodBounds, periodFromDates, type ChartCategory } from './history'
 import { ratingHistoryQueryOptions } from './queries'
 import { RatingChart } from './RatingChart'
 import {
@@ -18,13 +20,6 @@ import {
   saveRatingChartSettings,
   type RatingChartSettings,
 } from './settings'
-
-const RANGE_LABELS: Record<RatingRange, () => string> = {
-  '7d': m.rating_range_week,
-  '30d': m.rating_range_month,
-  '90d': m.rating_range_3months,
-  '365d': m.rating_range_year,
-}
 
 /** One choice among a few chips: clicking the chosen one keeps it. */
 function Choice<T extends string>({
@@ -56,20 +51,25 @@ function Choice<T extends string>({
 
 /**
  * The player's rating over time, on one platform and in one time control (never mixed: ratings
- * of two platforms do not compare). Its filters are kept in this browser (settings.ts); a platform
- * without account falls back to the other one.
+ * of two platforms do not compare), over a period of dates. Its filters are kept per profile in
+ * this browser (settings.ts); a platform without account falls back to the other one.
  */
 export function RatingHistory({
+  profile,
   accounts,
 }: {
+  /** settings.ts's profileKey */
+  profile: string
   accounts: { source: ApiSource; username: string }[]
 }) {
-  const [settings, setSettings] = useState(loadRatingChartSettings)
-  /** Games downloaded so far, when the points come from the games */
+  const [settings, setSettings] = useState(() => loadRatingChartSettings(profile))
+  /** Games downloaded so far, while the points load */
   const [found, setFound] = useState(0)
+  // The date inputs' today: when the chart opened.
+  const [now] = useState(Date.now)
   const update = (patch: Partial<RatingChartSettings>) => {
     const next = { ...settings, ...patch }
-    saveRatingChartSettings(next)
+    saveRatingChartSettings(profile, next)
     setSettings(next)
     setFound(0)
   }
@@ -79,13 +79,17 @@ export function RatingHistory({
       account?.source ?? 'chesscom',
       account?.username ?? '',
       settings.category,
-      settings.range,
+      settings.period,
       setFound,
     ),
     enabled: account !== undefined,
   })
   if (!account) return null
 
+  const shown = periodBounds(settings.period, now)
+  const from = toDateInput(shown.from)
+  const to = toDateInput(shown.to)
+  const today = toDateInput(now)
   const points = query.data ?? []
   const first = points[0]
   const last = points.at(-1)
@@ -109,7 +113,7 @@ export function RatingHistory({
         )
       }
     >
-      <div className="mb-4 flex flex-wrap gap-x-6 gap-y-3">
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         {accounts.length > 1 && (
           <Choice
             value={account.source}
@@ -123,18 +127,39 @@ export function RatingHistory({
             onChange={(source) => update({ source })}
           />
         )}
-        <Choice<Category>
+        <Choice<ChartCategory>
           value={settings.category}
-          options={CATEGORIES}
+          options={CHART_CATEGORIES}
           label={categoryLabel}
           onChange={(category) => update({ category })}
         />
-        <Choice<RatingRange>
-          value={settings.range}
-          options={RATING_RANGES}
-          label={(range) => RANGE_LABELS[range]()}
-          onChange={(range) => update({ range })}
-        />
+        <div className="flex items-center gap-1.5 text-sm">
+          <DateField
+            label={m.setup_from()}
+            hideLabel
+            value={from}
+            max={to}
+            onChange={(value) =>
+              value && value <= to && update({ period: periodFromDates(value, to, now) })
+            }
+          />
+          <span aria-hidden className="text-muted-foreground">
+            –
+          </span>
+          <DateField
+            label={m.setup_to()}
+            hideLabel
+            value={to}
+            min={from}
+            max={today}
+            onChange={(value) =>
+              value &&
+              value >= from &&
+              value <= today &&
+              update({ period: periodFromDates(from, value, now) })
+            }
+          />
+        </div>
       </div>
       {query.isPending ? (
         <p className="text-sm text-muted-foreground">
@@ -147,12 +172,8 @@ export function RatingHistory({
       ) : points.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.rating_chart_empty()}</p>
       ) : (
-        // The range as the query saw it, when it fetched the points.
-        <RatingChart
-          points={points}
-          from={rangeStart(settings.range, query.dataUpdatedAt)}
-          to={query.dataUpdatedAt}
-        />
+        // The period as the query saw it, when it fetched the points.
+        <RatingChart points={points} {...periodBounds(settings.period, query.dataUpdatedAt)} />
       )}
     </Panel>
   )

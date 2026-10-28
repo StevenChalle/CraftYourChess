@@ -1,23 +1,11 @@
 import { withActivity } from '@/lib/activity'
 import { fetchJson, fetchOk } from '@/lib/http'
-import type { LichessGame, LichessRatingHistory, LichessUser } from './types'
+import type { LichessGame, LichessUser } from './types'
 
 const BASE_URL = 'https://lichess.org'
 
 export function fetchUser(username: string, signal?: AbortSignal): Promise<LichessUser> {
   return fetchJson('lichess', `${BASE_URL}/api/user/${encodeURIComponent(username)}`, signal)
-}
-
-/** Every perf's rating, day by day. Lichess sometimes answers an empty list (seen on very active accounts). */
-export function fetchRatingHistory(
-  username: string,
-  signal?: AbortSignal,
-): Promise<LichessRatingHistory> {
-  return fetchJson(
-    'lichess',
-    `${BASE_URL}/api/user/${encodeURIComponent(username)}/rating-history`,
-    signal,
-  )
 }
 
 /** Standard chess only: variants are left out of the export by listing these perfs. */

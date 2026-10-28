@@ -35,8 +35,6 @@
   "view_on": "Voir sur {platform}",
   "account_closed": "Compte fermé.",
   "account_closed_tos": "Compte fermé (violation des conditions d’utilisation).",
-  "member_since": "Membre depuis",
-  "last_seen": "Dernière connexion",
   "games_played": "Parties jouées",
   "playing_since": "Joue depuis",
   "last_activity": "Dernière activité",
@@ -186,7 +184,6 @@
   "history_update": "Mettre à jour",
   "history_previous": "Parties plus récentes",
   "history_next": "Parties plus anciennes",
-  "history_range": "Parties {from} à {to}",
   "history_no_games": "Aucune partie trouvée.",
   "history_failed": "Impossible de charger les parties.",
   "history_filter_all": "Toutes",
@@ -215,7 +212,7 @@
   "legal_privacy_public_data": "Les profils et parties affichés proviennent des API publiques de Lichess et de Chess.com. Ils sont récupérés à la demande et ne sont pas conservés par nous.",
   "legal_privacy_policies": "Leurs politiques de confidentialité :",
   "legal_clear_title": "Supprimer vos données locales",
-  "legal_clear_body": "Supprime votre choix de langue, vos recherches récentes, vos réglages d'analyse, vos parties et analyses enregistrées, vos options d'entraînement, l'apparence de l'échiquier et les filtres du graphique de l'Elo de ce navigateur.",
+  "legal_clear_body": "Supprime votre choix de langue, vos recherches récentes, vos réglages d'analyse, vos parties et analyses enregistrées, vos options d'entraînement, l'apparence de l'échiquier et les filtres du graphique de l'Elo et de la liste des parties de ce navigateur.",
   "legal_clear_button": "Supprimer mes données locales",
   "legal_clear_done": "Données locales supprimées.",
   "legal_license_title": "Licence et crédits",
@@ -632,6 +629,6 @@
   "rating_range_month": "30 jours",
   "rating_range_3months": "3 mois",
   "rating_range_year": "1 an",
-  "legal_privacy_local_rating_chart": "les filtres du graphique de l'Elo (plateforme, cadence, période) ;",
+  "legal_privacy_local_rating_chart": "les filtres du graphique de l'Elo et de la liste des parties, pour chaque joueur consulté (plateforme, cadence, période, résultats) ;",
   "rating_chart_loading_games": "Chargement des parties : {games} pour l'instant…"
 }

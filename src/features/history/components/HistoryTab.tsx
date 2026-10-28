@@ -9,18 +9,18 @@ import type { PlayerUsernames, ProfileSearch } from '@/features/player/search'
 import { sourceErrorMessage } from '@/features/player/sources'
 import { gameRef } from '@/features/review/gameRef'
 import { useAnalysedRefs } from '@/features/review/useAnalysedRefs'
-import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
-import { ALL_GAMES, HISTORY_PAGE_SIZE, type HistoryAccount } from '../feed'
+import { ALL_GAMES, type HistoryAccount } from '../feed'
 import { historyKeys, historyQueryOptions } from '../queries'
-import { HistoryFiltersBar, type HistoryFilters } from './HistoryFilters'
-
-/**
- * The filters of each player, kept while the page is open (switching tabs unmounts this one), not
- * stored.
- */
-const keptFilters = new Map<string, HistoryFilters>()
+import { profileKey } from '@/features/player/profileSettings'
+import {
+  loadHistoryFilters,
+  saveHistoryFilters,
+  shownAccounts as platformsShown,
+  type HistoryFilters,
+} from '../filters'
+import { HistoryFiltersBar } from './HistoryFilters'
 
 /**
  * Straight to the analysis of this game alone, then its training. Already analysed: straight to
@@ -75,31 +75,26 @@ export function HistoryTab({
   usernames: PlayerUsernames
 }) {
   const queryClient = useQueryClient()
-  const accountsKey = historyKeys.accounts(accounts).join('|')
-  const [filters, setFilters] = useState<HistoryFilters>(
-    () =>
-      keptFilters.get(accountsKey) ?? {
-        ...ALL_GAMES,
-        sources: accounts.map((account) => account.source),
-      },
-  )
-  const shownAccounts = useMemo(
-    () => accounts.filter((account) => filters.sources.includes(account.source)),
-    [accounts, filters.sources],
-  )
+  const profile = profileKey(usernames)
+  const [saved, setSaved] = useState(() => loadHistoryFilters(profile))
+  const shownAccounts = useMemo(() => platformsShown(accounts, saved), [accounts, saved])
+  const filters: HistoryFilters = {
+    ...saved,
+    sources: shownAccounts.map((account) => account.source),
+  }
   const filter = useMemo(
-    () => ({ categories: filters.categories, results: filters.results }),
-    [filters.categories, filters.results],
+    () => ({ categories: saved.categories, results: saved.results }),
+    [saved.categories, saved.results],
   )
   const query = useInfiniteQuery(historyQueryOptions(shownAccounts, filter))
   const [pageIndex, setPageIndex] = useState(0)
   const filtered =
     shownAccounts.length < accounts.length ||
-    filters.categories.length > 0 ||
-    filters.results.length < ALL_GAMES.results.length
+    saved.categories.length > 0 ||
+    saved.results.length < ALL_GAMES.results.length
   const changeFilters = (next: HistoryFilters) => {
-    keptFilters.set(accountsKey, next)
-    setFilters(next)
+    saveHistoryFilters(profile, next)
+    setSaved(next)
     setPageIndex(0)
   }
   const pages = query.data?.pages ?? []
@@ -121,19 +116,12 @@ export function HistoryTab({
     await queryClient.resetQueries({ queryKey: historyKeys.accounts(accounts) })
   }
 
-  const from = pageIndex * HISTORY_PAGE_SIZE + 1
-  const to = pageIndex * HISTORY_PAGE_SIZE + (page?.games.length ?? 0)
-
   return (
     <div className="space-y-4">
-      <HistoryFiltersBar accounts={accounts} filters={filters} onChange={changeFilters} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground tabular-nums">
-          {page && page.games.length > 0
-            ? m.history_range({ from: formatNumber(from), to: formatNumber(to) })
-            : null}
-        </p>
-        <div className="flex items-center gap-2">
+      {/* The filters, and the buttons on their right while there is room */}
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <HistoryFiltersBar accounts={accounts} filters={filters} onChange={changeFilters} />
+        <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" onClick={update} disabled={query.isFetching}>
             <RefreshCw
               data-icon="inline-start"

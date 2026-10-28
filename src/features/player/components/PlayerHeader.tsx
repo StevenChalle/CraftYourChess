@@ -4,10 +4,12 @@ import { countryName } from '@/lib/format'
 import { m } from '@/paraglide/messages'
 import type { PlayerUsernames } from '../search'
 import { SOURCE_LABELS, type AccountSummary } from '../summary'
+import { ExternalLink } from './ExternalLink'
 import { SourceDot } from './SourceBadge'
 
 /**
- * Name, titles, avatar and country, gathered from whichever accounts were found; `nameAction`
+ * Name, titles, avatar and country, gathered from whichever accounts were found, with a link to
+ * each account on its platform (its username when they differ); `nameAction`
  * right after the name and country, `actions` on the right. The name always leads to the games of
  * these accounts (`profileLink`).
  */
@@ -62,14 +64,22 @@ export function PlayerHeader({
 
           <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted-foreground">
             {country && <span>{country}</span>}
-            {!sameName &&
-              accounts.length > 1 &&
-              [main!, ...others].map((account) => (
-                <span key={account.source} className="inline-flex items-center gap-1.5">
-                  <SourceDot source={account.source} />
-                  {account.username}
-                </span>
-              ))}
+            {[main, ...others].map(
+              (account) =>
+                account && (
+                  <ExternalLink
+                    key={account.source}
+                    href={account.url}
+                    title={m.view_on({ platform: SOURCE_LABELS[account.source] })}
+                    className="gap-1.5 text-muted-foreground hover:text-primary"
+                  >
+                    <SourceDot source={account.source} />
+                    {sameName || accounts.length === 1
+                      ? SOURCE_LABELS[account.source]
+                      : account.username}
+                  </ExternalLink>
+                ),
+            )}
           </p>
         </div>
         {nameAction}

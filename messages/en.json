@@ -35,8 +35,6 @@
   "view_on": "View on {platform}",
   "account_closed": "Account closed.",
   "account_closed_tos": "Account closed (terms of service violation).",
-  "member_since": "Member since",
-  "last_seen": "Last seen",
   "games_played": "Games played",
   "playing_since": "Playing since",
   "last_activity": "Last activity",
@@ -186,7 +184,6 @@
   "history_update": "Update",
   "history_previous": "Newer games",
   "history_next": "Older games",
-  "history_range": "Games {from}–{to}",
   "history_no_games": "No games found.",
   "history_failed": "Couldn't load the games.",
   "history_filter_all": "All",
@@ -215,7 +212,7 @@
   "legal_privacy_public_data": "Profiles and games shown come from the public APIs of Lichess and Chess.com. They are fetched on demand and not stored by us.",
   "legal_privacy_policies": "Their privacy policies:",
   "legal_clear_title": "Delete your local data",
-  "legal_clear_body": "Removes your language choice, recent searches, analysis settings, saved games and analyses, training options, board look and rating chart filters from this browser.",
+  "legal_clear_body": "Removes your language choice, recent searches, analysis settings, saved games and analyses, training options, board look and the filters of the rating chart and games list from this browser.",
   "legal_clear_button": "Delete my local data",
   "legal_clear_done": "Local data deleted.",
   "legal_license_title": "License & credits",
@@ -632,6 +629,6 @@
   "rating_range_month": "30 days",
   "rating_range_3months": "3 months",
   "rating_range_year": "1 year",
-  "legal_privacy_local_rating_chart": "the filters of the rating chart (platform, time control, period);",
+  "legal_privacy_local_rating_chart": "the filters of the rating chart and of the games list, for each player you looked at (platform, time control, period, results);",
   "rating_chart_loading_games": "Loading the games: {games} so far…"
 }

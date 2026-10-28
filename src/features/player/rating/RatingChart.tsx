@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
-import { formatDate, formatNumber, formatSigned } from '@/lib/format'
+import { formatDate, formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import type { RatingPoint } from './history'
@@ -30,9 +30,9 @@ function ratingScale(points: RatingPoint[]) {
 
 /**
  * The player's rating day by day over [from, to], in the style of the evaluation chart: one curve
- * in the accent color over the field, three rating lines, the range's dates below. Hovering shows
- * the nearest day (its rating, the change since the day before it on the chart); on a phone, a tap
- * or a sliding finger does.
+ * in the accent color over the field, a dot per day played, three rating lines, the period's dates
+ * below. Hovering shows the nearest day (its rating, the change since the day played before it, its
+ * number of games); on a phone, a tap or a sliding finger does.
  */
 export function RatingChart({
   points,
@@ -148,10 +148,15 @@ export function RatingChart({
               strokeLinejoin="round"
               className="stroke-primary"
             />
-            {/* A lone day has no line to show it */}
-            {points.length === 1 && first && (
-              <circle cx={x(first.day)} cy={y(first.rating)} r={3} className="fill-primary" />
-            )}
+            {points.map((item) => (
+              <circle
+                key={item.day}
+                cx={x(item.day)}
+                cy={y(item.rating)}
+                r={points.length > 120 ? 2 : 3}
+                className="fill-primary"
+              />
+            ))}
             {point && (
               <>
                 <line
@@ -187,6 +192,7 @@ export function RatingChart({
               </span>
             )}
           </p>
+          <p className="text-xs text-muted-foreground">{formatGameCount(point.games)}</p>
         </div>
       )}
     </div>

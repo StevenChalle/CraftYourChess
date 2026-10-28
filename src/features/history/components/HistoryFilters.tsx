@@ -7,9 +7,8 @@ import { categoryLabel } from '@/features/player/sources'
 import { CATEGORIES, SOURCE_LABELS, type Category } from '@/features/player/summary'
 import type { ApiSource } from '@/lib/http'
 import { m } from '@/paraglide/messages'
-import type { HistoryAccount, HistoryFilter } from '../feed'
-
-export type HistoryFilters = HistoryFilter & { sources: ApiSource[] }
+import type { HistoryAccount } from '../feed'
+import type { HistoryFilters } from '../filters'
 
 const RESULTS: GameResult[] = ['win', 'draw', 'loss']
 
@@ -42,6 +41,7 @@ export function HistoryFiltersBar({
   onChange,
 }: {
   accounts: HistoryAccount[]
+  /** With the platforms shown (filters.ts's shownAccounts) */
   filters: HistoryFilters
   onChange: (filters: HistoryFilters) => void
 }) {
@@ -56,8 +56,9 @@ export function HistoryFiltersBar({
     update({ categories: all ? [] : (value.filter((item) => item !== ALL) as Category[]) })
   }
 
+  // Its groups only: they wrap in the caller's row, beside its buttons.
   return (
-    <div className="flex flex-wrap gap-x-8 gap-y-4">
+    <>
       {accounts.length > 1 && (
         <Group title={m.setup_platforms()}>
           <ToggleGroup
@@ -106,6 +107,6 @@ export function HistoryFiltersBar({
           ))}
         </ToggleGroup>
       </Group>
-    </div>
+    </>
   )
 }

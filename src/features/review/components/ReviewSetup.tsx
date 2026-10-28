@@ -1,6 +1,7 @@
 import type { Color } from 'chessops'
 import { useId, useState, type ReactNode } from 'react'
 import { CHIP_CLASS } from '@/components/chip'
+import { DateField } from '@/components/DateField'
 import { Expandable, ExpandableGroup } from '@/components/Expandable'
 import { InfoTip } from '@/components/InfoTip'
 import { LimitField } from '@/components/LimitField'
@@ -15,6 +16,7 @@ import { SourceDot } from '@/features/player/components/SourceBadge'
 import { categoryLabel, sourceLabel } from '@/features/player/sources'
 import { GAME_CATEGORIES, type GameCategory, type GameSource } from '@/features/games/normalize'
 import { CATEGORIES, SOURCE_LABELS } from '@/features/player/summary'
+import { fromDateInput, toDateInput } from '@/lib/dateInput'
 import { formatDate, formatNumber } from '@/lib/format'
 import type { ApiSource } from '@/lib/http'
 import { cn } from '@/lib/utils'
@@ -70,21 +72,6 @@ const RESULT_LABELS: Record<GameResult, () => string> = {
 }
 
 const SELECTED_SHORTCUT = 'bg-raised text-text-strong ring-1 ring-border-strong hover:bg-raised'
-
-/** yyyy-mm-dd in local time, for date inputs. */
-function toDateInput(time: number): string {
-  const date = new Date(time)
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
-function fromDateInput(value: string, endOfDay: boolean): number | undefined {
-  if (!value) return undefined
-  const [year, month, day] = value.split('-').map(Number)
-  return endOfDay
-    ? new Date(year!, month! - 1, day!, 23, 59, 59, 999).getTime()
-    : new Date(year!, month! - 1, day!).getTime()
-}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -528,32 +515,6 @@ function RadioField({ value, children }: { value: string; children: ReactNode })
         {children}
       </Label>
     </div>
-  )
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-}) {
-  const id = useId()
-  return (
-    <span className="flex items-center gap-1.5">
-      <Label htmlFor={id} className="font-normal text-muted-foreground">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        type="date"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-8 w-auto bg-muted [color-scheme:dark]"
-      />
-    </span>
   )
 }
 

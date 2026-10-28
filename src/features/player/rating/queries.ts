@@ -3,39 +3,41 @@ import { gameStore } from '@/features/games/store'
 import { findGames } from '@/features/review/fetch'
 import { defaultSelection } from '@/features/review/selection'
 import { shouldRetry, type ApiSource } from '@/lib/http'
-import { fetchRatingHistory } from '@/lib/lichess/client'
-import type { Category } from '../summary'
-import { gamePoints, lichessHistoryPoints, rangeStart, type RatingRange } from './history'
+import { toDateInput } from '@/lib/dateInput'
+import { gamePoints, periodBounds, type ChartCategory, type RatingPeriod } from './history'
 
 /**
- * A player's rating in a time control over the range, day by day. Lichess publishes the history;
- * Chess.com does not, so it comes from the rated games of the range, kept in the game store
- * (docs/game-store.md) like the analysis's. Lichess too when its history comes back empty.
- * `onGames`: the number of games found so far, while they download.
+ * A player's rating in a time control over the period, day by day, with each day's number of
+ * games: from the rated games of the period, kept in the game store (docs/game-store.md) like the
+ * analysis's, so a period read once is not downloaded again. `onGames`: the number of games found
+ * so far, while they download.
  */
 export function ratingHistoryQueryOptions(
   source: ApiSource,
   username: string,
-  category: Category,
-  range: RatingRange,
+  category: ChartCategory,
+  period: RatingPeriod,
   onGames?: (count: number) => void,
 ) {
   return queryOptions({
-    queryKey: ['rating-history', source, username.toLowerCase(), category, range] as const,
+    // Today too: a sliding period moves on the next day.
+    queryKey: [
+      'rating-history',
+      source,
+      username.toLowerCase(),
+      category,
+      period,
+      toDateInput(Date.now()),
+    ] as const,
     queryFn: async ({ signal }) => {
-      const now = Date.now()
-      const from = rangeStart(range, now)
-      if (source === 'lichess') {
-        const history = await fetchRatingHistory(username, signal)
-        if (history.length > 0) return lichessHistoryPoints(history, category, from)
-      }
+      const { from, to } = periodBounds(period, Date.now())
       const found = await findGames(
         [{ source, username }],
         {
           ...defaultSelection([source]),
           ratings: ['rated'],
           categories: [category],
-          scope: { kind: 'range', from, to: now },
+          scope: { kind: 'range', from, to },
         },
         {
           signal,

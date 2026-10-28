@@ -1,22 +1,22 @@
 import type { GameSummary } from '@/features/games/normalize'
-import type { LichessRatingHistory } from '@/lib/lichess/types'
+import { fromDateInput, toDateInput } from '@/lib/dateInput'
 import type { Category } from '../summary'
 
-/** A day's rating: the last one of that day (local midnight, Unix ms). */
-export type RatingPoint = { day: number; rating: number }
+/** A day's rating: the one after its last rated game (day: local midnight, Unix ms). */
+export type RatingPoint = { day: number; rating: number; games: number }
 
-export type RatingRange = '7d' | '30d' | '90d' | '365d'
-export const RATING_RANGES: RatingRange[] = ['7d', '30d', '90d', '365d']
+/** The chart's time controls: correspondence ratings move too slowly to be worth a curve. */
+export type ChartCategory = Exclude<Category, 'daily'>
+export const CHART_CATEGORIES: ChartCategory[] = ['bullet', 'blitz', 'rapid', 'classical']
+
+/**
+ * The period shown: the last `days` days, today included (it slides with time), or fixed dates
+ * (yyyy-mm-dd, local).
+ */
+export type RatingPeriod =
+  { kind: 'last'; days: number } | { kind: 'dates'; from: string; to: string }
 
 const DAY = 86_400_000
-const RANGE_DAYS: Record<RatingRange, number> = { '7d': 7, '30d': 30, '90d': 90, '365d': 365 }
-
-/** First day of the range (local midnight): today and the days before it. */
-export function rangeStart(range: RatingRange, now: number): number {
-  const start = new Date(now - (RANGE_DAYS[range] - 1) * DAY)
-  start.setHours(0, 0, 0, 0)
-  return start.getTime()
-}
 
 function dayOf(time: number): number {
   const day = new Date(time)
@@ -24,33 +24,25 @@ function dayOf(time: number): number {
   return day.getTime()
 }
 
-/** Lichess perf names in its rating history: no UltraBullet in the bullet curve. */
-const LICHESS_PERF: Record<Category, string> = {
-  bullet: 'bullet',
-  blitz: 'blitz',
-  rapid: 'rapid',
-  classical: 'classical',
-  daily: 'correspondence',
+/** The period's first day, and its end (never after now). */
+export function periodBounds(period: RatingPeriod, now: number): { from: number; to: number } {
+  if (period.kind === 'last') {
+    // Days, not 24 h: a day can last 23 or 25 hours.
+    const from = new Date(dayOf(now))
+    from.setDate(from.getDate() - (period.days - 1))
+    return { from: from.getTime(), to: now }
+  }
+  const from = fromDateInput(period.from, false) ?? dayOf(now)
+  const to = Math.min(fromDateInput(period.to, true) ?? now, now)
+  return { from: Math.min(from, dayOf(to)), to }
 }
 
-/**
- * The category's points from `from` on, from Lichess's history. The rating the player had when
- * the range began starts the curve, so it spans the whole range even after days without games.
- */
-export function lichessHistoryPoints(
-  history: LichessRatingHistory,
-  category: Category,
-  from: number,
-): RatingPoint[] {
-  const perf = history.find((item) => item.name.toLowerCase() === LICHESS_PERF[category])
-  const all = (perf?.points ?? [])
-    .map(([year, month, day, rating]) => ({ day: new Date(year, month, day).getTime(), rating }))
-    .sort((a, b) => a.day - b.day)
-  const before = all.filter((point) => point.day < from).at(-1)
-  const inside = all.filter((point) => point.day >= from)
-  return before && inside[0]?.day !== from
-    ? [{ day: from, rating: before.rating }, ...inside]
-    : inside
+/** The period of the date inputs: up to today, it slides from then on. */
+export function periodFromDates(from: string, to: string, now: number): RatingPeriod {
+  const today = toDateInput(now)
+  if (to < today) return { kind: 'dates', from, to }
+  const start = fromDateInput(from, false) ?? dayOf(now)
+  return { kind: 'last', days: Math.max(1, Math.round((dayOf(now) - start) / DAY) + 1) }
 }
 
 /** Lichess's UltraBullet (under 30 s, as Lichess estimates a game): a rating of its own. */
@@ -63,19 +55,23 @@ function isUltraBullet(game: Pick<GameSummary, 'source' | 'timeControl'>): boole
   )
 }
 
-/** The rating after the last rated game of each day, oldest first. */
+/** Each day's rating after its last rated game, with that day's number of games, oldest first. */
 export function gamePoints(
   games: Pick<GameSummary, 'source' | 'playedAt' | 'rating' | 'rated' | 'timeControl'>[],
 ): RatingPoint[] {
-  const days = new Map<number, { time: number; rating: number }>()
+  const days = new Map<number, { time: number; rating: number; games: number }>()
   for (const game of games) {
     if (!game.rated || game.rating === undefined || isUltraBullet(game)) continue
     const time = game.playedAt.getTime()
     const day = dayOf(time)
     const kept = days.get(day)
-    if (!kept || kept.time < time) days.set(day, { time, rating: game.rating })
+    if (!kept) days.set(day, { time, rating: game.rating, games: 1 })
+    else {
+      kept.games++
+      if (kept.time < time) Object.assign(kept, { time, rating: game.rating })
+    }
   }
   return [...days.entries()]
-    .map(([day, { rating }]) => ({ day, rating }))
+    .map(([day, { rating, games }]) => ({ day, rating, games }))
     .sort((a, b) => a.day - b.day)
 }

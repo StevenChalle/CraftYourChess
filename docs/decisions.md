@@ -773,3 +773,12 @@ Dans la fenêtre du profil, un graphique de l'Elo jour par jour (`features/playe
 - **Lichess** : son historique (`/api/user/{name}/rating-history`, une requête pour tout). Il revient parfois vide (vu sur des comptes très actifs, 2026-10-28) : on retombe alors sur les parties.
 - **Chess.com** n'a pas d'historique : l'Elo après la dernière partie classée de chaque jour, depuis les parties de la période, prises dans le magasin des parties (`findGames` avec `gameStore`). Les mois déjà lus ne se retéléchargent pas. Le bullet Lichess reconstruit ainsi laisse de côté l'UltraBullet, qui a son propre Elo.
 - Une longue période sur un compte très actif peut prendre une minute (Lichess envoie environ 20 parties par seconde) : un compteur de parties s'affiche pendant le chargement.
+
+## 2026-10-28 : profil allégé, filtres sur une ligne et gardés par joueur
+
+- **Plus de cartes Lichess / Chess.com** en haut de la fenêtre du profil (« membre depuis », « vu il y a ») : les liens vers les comptes passent dans l'en-tête du profil, sous le nom, après le pays (le nom de la plateforme, ou le pseudo quand les deux diffèrent). La fenêtre ne dit plus qu'une plateforme pose problème (introuvable, injoignable, compte fermé).
+- **Graphique de l'Elo** : filtres sur une ligne (plateforme, cadence, deux champs de date) ; plus de cadence « correspondance » (un Elo qui bouge trop peu). Un point par jour joué ; l'infobulle donne aussi le nombre de parties du jour.
+- **Les points viennent toujours des parties**, Lichess compris : son historique d'Elo ne dit pas combien de parties chaque jour (et revient parfois vide). Plus lent au premier affichage d'une longue période, instantané ensuite grâce au magasin des parties.
+- **Période** : de vraies dates. Quand elle finit aujourd'hui, elle est gardée comme « les N derniers jours » et glisse avec le temps ; sinon les dates restent telles quelles.
+- **Onglet Parties** : les filtres sur la même ligne que « Mettre à jour » et les flèches quand il y a la place ; plus de « Parties 1 à 30 ».
+- **Filtres gardés par joueur** dans `localStorage` (`craftyourchess:rating-chart`, `craftyourchess:games-filters`), les 50 profils les plus récemment réglés (`features/player/profileSettings.ts`), déclarés sur `/legal`.
