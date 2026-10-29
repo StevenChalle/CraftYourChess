@@ -4,11 +4,7 @@ import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { peakPoint, type RatingPoint } from './history'
 
-const CURVE_HEIGHT = 180
-/** The band of the games per day, under the curve, and the room between them */
-const VOLUME = 32
-const VOLUME_GAP = 12
-const DAY = 86_400_000
+const HEIGHT = 180
 /** Room for the rating labels on the left, and for the last point on the right */
 const PAD_LEFT = 40
 const PAD_RIGHT = 10
@@ -37,8 +33,7 @@ function ratingScale(points: RatingPoint[]) {
 /**
  * The player's rating day by day over [from, to], in the style of the evaluation chart: one curve
  * in the accent color over the field, a dot per day played (up to MAX_DOTS), three rating lines,
- * the period's dates below. Under the curve, a bar per day for its number of games, when known: a
- * drop that follows a long session shows at once. Hovering shows the nearest day (its rating, the change since the day
+ * the period's dates below. Hovering shows the nearest day (its rating, the change since the day
  * played before it, its number of games when known); on a phone, a tap or a sliding finger does.
  */
 export function RatingChart({
@@ -64,20 +59,11 @@ export function RatingChart({
   }, [])
 
   const { low, high } = ratingScale(points)
-  // Lichess's rating history has no games count: no band then.
-  const maxGames = Math.max(0, ...points.map((item) => item.games ?? 0))
-  const volume = maxGames > 0
-  const height = CURVE_HEIGHT + (volume ? VOLUME + VOLUME_GAP : 0)
   const span = Math.max(to - from, 1)
-  const plotWidth = width - PAD_LEFT - PAD_RIGHT
-  const x = (time: number) => PAD_LEFT + ((time - from) / span) * plotWidth
+  const x = (time: number) => PAD_LEFT + ((time - from) / span) * (width - PAD_LEFT - PAD_RIGHT)
   const y = (rating: number) =>
-    PAD_TOP + ((high - rating) / (high - low)) * (CURVE_HEIGHT - PAD_TOP - PAD_BOTTOM)
-  const bottom = CURVE_HEIGHT - PAD_BOTTOM
-  /** The band's foot, where the dates sit above */
-  const volumeBottom = height - PAD_BOTTOM
-  // A bar a little thinner than a day, between 1 and 8 px.
-  const barWidth = Math.min(Math.max((plotWidth / (span / DAY)) * 0.7, 1), 8)
+    PAD_TOP + ((high - rating) / (high - low)) * (HEIGHT - PAD_TOP - PAD_BOTTOM)
+  const bottom = HEIGHT - PAD_BOTTOM
   const curve = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'}${x(point.day)} ${y(point.rating)}`)
     .join(' ')
@@ -109,7 +95,7 @@ export function RatingChart({
     <div ref={wrapRef} className="relative">
       <svg
         width="100%"
-        height={height}
+        height={HEIGHT}
         role="img"
         aria-label={m.rating_chart_label()}
         className="block cursor-crosshair touch-pan-y rounded-md border border-border bg-field select-none"
@@ -146,35 +132,17 @@ export function RatingChart({
                 </text>
               </g>
             ))}
-            <text x={PAD_LEFT} y={height - 6} className="fill-muted-foreground text-[10px]">
+            <text x={PAD_LEFT} y={HEIGHT - 6} className="fill-muted-foreground text-[10px]">
               {formatDate(new Date(from))}
             </text>
             <text
               x={width - PAD_RIGHT}
-              y={height - 6}
+              y={HEIGHT - 6}
               textAnchor="end"
               className="fill-muted-foreground text-[10px]"
             >
               {formatDate(new Date(to))}
             </text>
-            {volume && (
-              <g>
-                {points.map((item) =>
-                  item.games ? (
-                    <rect
-                      key={item.day}
-                      x={x(item.day) - barWidth / 2}
-                      width={barWidth}
-                      y={volumeBottom - (item.games / maxGames) * VOLUME}
-                      height={(item.games / maxGames) * VOLUME}
-                      className={cn(
-                        item === point ? 'fill-primary/70' : 'fill-muted-foreground/35',
-                      )}
-                    />
-                  ) : null,
-                )}
-              </g>
-            )}
             <path d={area} className="fill-primary/10" />
             <path
               d={curve}
@@ -210,7 +178,7 @@ export function RatingChart({
                   x1={x(point.day)}
                   x2={x(point.day)}
                   y1={PAD_TOP}
-                  y2={volume ? volumeBottom : bottom}
+                  y2={bottom}
                   className="stroke-text-strong/40"
                 />
                 <circle

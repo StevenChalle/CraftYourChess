@@ -806,6 +806,6 @@ L'Aperçu ne garde que ce qui sert à suivre sa progression et à la comprendre 
 
 - **Retirés** : « Parties jouées », « Joueur depuis », « Dernière activité », le tableau des Elo actuels, le bilan global de la carrière (des chiffres de vitrine, sans lien avec la progression).
 - **Résumé de la période**, sous le graphique, avec ses filtres : parties, score, Elo moyen des adversaires, performance (adversaire moyen + 400 × (victoires − défaites) / parties, l'estimation linéaire usuelle), puis la barre victoires / nulles / défaites. Calculé sur les parties déjà téléchargées pour la courbe ; absent pour « Depuis toujours » sur Lichess (son historique d'Elo n'a pas les parties), ce que la page dit.
-- **Volume** : une barre par jour sous la courbe, le nombre de parties ; une chute après une longue session se voit d'un coup d'œil.
+- **Volume** : essayé (une barre par jour sous la courbe), retiré le jour même, trop chargé ; le nombre de parties du jour reste dans l'infobulle.
 - **Elo actuel** de chaque cadence dans la liste des cadences (« Blitz 3 219 »), à la place du tableau.
 - Plus tard : relier la progression à l'analyse (erreurs par partie dans le temps, thèmes, phases).
