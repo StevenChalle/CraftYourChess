@@ -31,7 +31,8 @@ export function DateField({
         min={min}
         max={max}
         onChange={(event) => onChange(event.target.value)}
-        className="h-8 w-auto bg-muted [color-scheme:dark]"
+        // As high as the selects: the input's own height (h-control) would win otherwise.
+        className="h-8! w-auto bg-muted px-2.5 [color-scheme:dark]"
       />
     </span>
   )

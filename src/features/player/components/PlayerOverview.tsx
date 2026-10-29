@@ -8,7 +8,6 @@ import { SourceStatus } from './SourceStatus'
 import { CurrentRatings } from './CurrentRatings'
 import { RatingHistory } from '../rating/RatingHistory'
 import { profileKey } from '../profileSettings'
-import { GamesByCategory } from './GamesByCategory'
 import { Panel, StatTile } from './Panel'
 import { ResultBar } from './ResultBar'
 import { SourceLabel } from './SourceBadge'
@@ -43,6 +42,8 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
 
       {accounts.length > 0 && (
         <>
+          <RatingHistory profile={profileKey(usernames)} accounts={accounts} />
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatTile
               label={
@@ -88,38 +89,33 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
             />
           </div>
 
-          <RatingHistory profile={profileKey(usernames)} accounts={accounts} />
-
           <div className="grid gap-4 lg:grid-cols-2">
             <CurrentRatings accounts={accounts} sources={linked} />
-            <div className="space-y-4">
-              <Panel
-                title={m.overall_record()}
-                aside={
-                  (withRecord.length > 1 || hasChessCom) && (
-                    <span className="inline-flex items-center gap-1.5">
-                      {withRecord.length > 1 && m.all_games_both_sites()}
-                      {hasChessCom && <InfoTip text={m.chesscom_rated_only()} />}
-                    </span>
-                  )
-                }
-              >
-                <ResultBar record={record} />
-                {withRecord.length > 1 && (
-                  <div className="mt-4 space-y-3 border-t pt-3">
-                    {withRecord.map((account) => (
-                      <div key={account.source} className="space-y-1.5">
-                        <div className="text-xs">
-                          <SourceLabel source={account.source} />
-                        </div>
-                        <ResultBar record={account.record!} compact />
+            <Panel
+              title={m.overall_record()}
+              aside={
+                (withRecord.length > 1 || hasChessCom) && (
+                  <span className="inline-flex items-center gap-1.5">
+                    {withRecord.length > 1 && m.all_games_both_sites()}
+                    {hasChessCom && <InfoTip text={m.chesscom_rated_only()} />}
+                  </span>
+                )
+              }
+            >
+              <ResultBar record={record} />
+              {withRecord.length > 1 && (
+                <div className="mt-4 space-y-3 border-t pt-3">
+                  {withRecord.map((account) => (
+                    <div key={account.source} className="space-y-1.5">
+                      <div className="text-xs">
+                        <SourceLabel source={account.source} />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Panel>
-              <GamesByCategory accounts={accounts} />
-            </div>
+                      <ResultBar record={account.record!} compact />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
           </div>
         </>
       )}
