@@ -20,7 +20,7 @@ export function CurrentRatings({
   const rows = CATEGORIES.filter((key) => accounts.some((account) => account.categories[key]))
 
   return (
-    <Panel title={m.current_ratings()} aside={m.ratings_not_comparable()}>
+    <Panel title={m.current_ratings()}>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.no_rated_games()}</p>
       ) : (
