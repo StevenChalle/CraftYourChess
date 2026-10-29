@@ -633,6 +633,6 @@
   "rating_preset_lifetime": "Lifetime",
   "rating_preset_custom": "Custom",
   "rating_current": "Current",
-  "rating_change": "Change",
+  "rating_change": "Change over the period",
   "rating_peak": "Peak"
 }

@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toDateInput } from '@/lib/dateInput'
-import { formatDate, formatGameCount, formatNumber, formatSigned } from '@/lib/format'
+import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import type { ApiSource } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -66,23 +66,21 @@ function Picker<T extends string>({
   )
 }
 
-/** A figure of the period, on one line: its label, its value, a date after it. */
+/** A figure of the period, on one line: its label, its value, then `children` (the change). */
 function Figure({
   label,
   value,
-  hint,
-  className,
+  children,
 }: {
   label: string
   value: string
-  hint?: string
-  className?: string
+  children?: ReactNode
 }) {
   return (
     <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
       <span className="label-etabli text-[11px]">{label}</span>
-      <span className={cn('num text-base font-semibold text-text-strong', className)}>{value}</span>
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      <span className="num text-base font-semibold text-text-strong">{value}</span>
+      {children}
     </span>
   )
 }
@@ -212,20 +210,20 @@ export function RatingHistory({
         {/* The period's figures, on the right of the filters while there is room */}
         {first && last && peak && (
           <div className="ml-auto flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <Figure label={m.rating_current()} value={formatNumber(last.rating)} />
-            <Figure
-              label={m.rating_change()}
-              value={formatSigned(last.rating - first.rating)}
-              className={cn(
-                last.rating > first.rating && 'text-win',
-                last.rating < first.rating && 'text-loss',
+            <Figure label={m.rating_current()} value={formatNumber(last.rating)}>
+              {last.rating !== first.rating && (
+                <span
+                  title={m.rating_change()}
+                  className={cn(
+                    'num text-sm font-semibold',
+                    last.rating > first.rating ? 'text-win' : 'text-loss',
+                  )}
+                >
+                  {formatSigned(last.rating - first.rating)}
+                </span>
               )}
-            />
-            <Figure
-              label={m.rating_peak()}
-              value={formatNumber(peak.rating)}
-              hint={formatDate(new Date(peak.day))}
-            />
+            </Figure>
+            <Figure label={m.rating_peak()} value={formatNumber(peak.rating)} />
           </div>
         )}
       </div>
