@@ -19,10 +19,14 @@ export function fetchStats(username: string, signal?: AbortSignal): Promise<Ches
   return fetchJson('chesscom', `${playerUrl(username)}/stats`, signal)
 }
 
-/** Profile then stats, one after the other: Chess.com rate-limits parallel requests. */
+/**
+ * Profile then stats, one after the other: Chess.com rate-limits parallel requests. Only a missing
+ * profile means a missing account: Chess.com also answers 404 ("An internal error has occurred")
+ * for the stats of some existing accounts, which then just have no ratings.
+ */
 export async function fetchPlayer(username: string, signal?: AbortSignal): Promise<ChessComPlayer> {
   const profile = await fetchProfile(username, signal)
-  const stats = await fetchStats(username, signal)
+  const stats = (await orNullIfNotFound(fetchStats(username, signal))) ?? {}
   return { profile, stats }
 }
 
