@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { gameStore } from '@/features/games/store'
 import { findGames } from '@/features/review/fetch'
+import type { ReviewGame } from '@/features/review/games'
 import { defaultSelection } from '@/features/review/selection'
 import { shouldRetry, type ApiSource } from '@/lib/http'
 import { toDateInput } from '@/lib/dateInput'
@@ -33,7 +34,7 @@ export function ratingHistoryQueryOptions(
   joinedAt: number | undefined,
   onGames?: (count: number) => void,
 ) {
-  return queryOptions<{ points: RatingPoint[]; summary?: PeriodSummary }>({
+  return queryOptions<{ points: RatingPoint[]; summary?: PeriodSummary; games?: ReviewGame[] }>({
     // Today too: a sliding period moves on the next day.
     queryKey: [
       'rating-history',
@@ -67,7 +68,12 @@ export function ratingHistoryQueryOptions(
       )
       const failure = found.failures[0]
       if (failure) throw failure.error
-      return { points: gamePoints(found.games), summary: periodSummary(found.games) }
+      return {
+        points: gamePoints(found.games),
+        summary: periodSummary(found.games),
+        // For the period's errors (errors.ts)
+        games: found.games,
+      }
     },
     staleTime: 5 * 60_000,
     retry: shouldRetry,

@@ -632,5 +632,13 @@
   "rating_opponents": "Adversaires",
   "rating_performance": "Performance",
   "rating_performance_hint": "L'Elo que valent ces résultats face à ces adversaires",
-  "rating_summary_unavailable": "L'historique d'Elo de Lichess ne donne pas les résultats : choisissez une période plus courte pour les voir."
+  "rating_summary_unavailable": "L'historique d'Elo de Lichess ne donne pas les résultats : choisissez une période plus courte pour les voir.",
+  "rating_errors": "Erreurs",
+  "rating_errors_per_game": "par partie",
+  "rating_errors_analysed": "sur {analysed} parties analysées sur {games}",
+  "rating_errors_where": "Où",
+  "rating_errors_recurring": "Récurrentes",
+  "rating_errors_train": "Rejouer ces {count} erreurs",
+  "rating_errors_none_analysed": "Aucune de ces parties n'est encore analysée : analysez-les pour voir d'où viennent vos erreurs.",
+  "rating_errors_analyse": "Analyser"
 }

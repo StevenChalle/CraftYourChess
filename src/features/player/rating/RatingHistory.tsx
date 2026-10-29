@@ -30,6 +30,8 @@ import {
   type PeriodSummary,
 } from './history'
 import { ratingHistoryQueryOptions } from './queries'
+import { Figure } from './Figure'
+import { PeriodErrorsView } from './PeriodErrors'
 import { RatingChart } from './RatingChart'
 import {
   loadRatingChartSettings,
@@ -64,25 +66,6 @@ function Picker<T extends string>({
         ))}
       </SelectContent>
     </Select>
-  )
-}
-
-/** A figure of the period, on one line: its label, its value, then `children` (the change). */
-function Figure({
-  label,
-  value,
-  children,
-}: {
-  label: string
-  value: string
-  children?: ReactNode
-}) {
-  return (
-    <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
-      <span className="label-etabli text-[11px]">{label}</span>
-      <span className="num text-base font-semibold text-text-strong">{value}</span>
-      {children}
-    </span>
   )
 }
 
@@ -287,7 +270,22 @@ export function RatingHistory({
           />
           <div className="mt-4 border-t pt-4">
             {summary ? (
-              <PeriodFigures summary={summary} />
+              <>
+                <PeriodFigures summary={summary} />
+                {query.data?.games && (
+                  <PeriodErrorsView
+                    games={query.data.games}
+                    queryKey={[
+                      'period-errors',
+                      account.source,
+                      account.username.toLowerCase(),
+                      settings.category,
+                      settings.period,
+                      query.dataUpdatedAt,
+                    ]}
+                  />
+                )}
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">{m.rating_summary_unavailable()}</p>
             )}

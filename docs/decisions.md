@@ -809,3 +809,11 @@ L'Aperçu ne garde que ce qui sert à suivre sa progression et à la comprendre 
 - **Volume** : essayé (une barre par jour sous la courbe), retiré le jour même, trop chargé ; le nombre de parties du jour reste dans l'infobulle.
 - **Elo actuel** de chaque cadence dans la liste des cadences (« Blitz 3 219 »), à la place du tableau.
 - Plus tard : relier la progression à l'analyse (erreurs par partie dans le temps, thèmes, phases).
+
+## 2026-10-29 : les erreurs de la période dans l'Aperçu
+
+Sous le résumé de la période, ce qui revient dans les erreurs du joueur, pour relier la courbe à « quoi travailler » (`features/player/rating/errors.ts`, `PeriodErrors.tsx`).
+
+- **Rien n'est analysé ici** : seulement les parties de la période déjà analysées (cache des analyses, `analysedGames`), jugées sans Stockfish (`reviewFromCache`) avec les seuils actuels de l'analyse. La page dit sur combien de parties (« sur 30 parties analysées sur 30 ») ; aucune : un lien vers l'onglet Analyse. Pour un favori, l'analyse de fond les couvre d'elle-même.
+- **Erreurs par partie**, puis **où** (ouverture comme l'entraînement la compte, finale selon la règle de Lichess, milieu de partie sinon) et les **3 thèmes les plus fréquents** parmi : garder l'avantage, résilience, mats, zeitnot, types de finale.
+- **Chaque groupe est un bouton** qui ouvre un entraînement sur ses erreurs (`trainMistakes` de la session : un onglet d'entraînement sans analyse lancée, avec les options par défaut).

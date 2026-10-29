@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Mistake, ReviewOutcome } from './analyze'
+import type { ReviewCriteria } from './criteria'
 import type { FetchProgress, FoundGames, ReviewAccount } from './fetch'
 import type { GameLibrary } from './library'
 import type { ReviewProgress } from './progress'
@@ -79,6 +80,11 @@ export type Session = {
   newTraining: () => void
   /** Opens a training tab replaying these errors right away, with the default options */
   trainGame: (mistakes: Mistake[]) => void
+  /**
+   * The same, for errors found outside an analysis (the profile's, from the cache), judged with
+   * these criteria
+   */
+  trainMistakes: (mistakes: Mistake[], criteria: ReviewCriteria) => void
   /** Starts the training of a tab with these options, remembered for next time */
   launchTraining: (number: number, settings: TrainingSettings) => void
   /** The same training again, in a new draw */

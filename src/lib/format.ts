@@ -48,6 +48,15 @@ export function formatPositionCount(count: number): string {
   return m.positions_count({ count, formatted: formatNumber(count) })
 }
 
+const tenthsFormat = cachedPerLocale(
+  (locale) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
+)
+
+/** At most one decimal: "1.8" / "1,8", "2" */
+export function formatTenths(value: number): string {
+  return tenthsFormat().format(value)
+}
+
 export function formatPercent(ratio: number): string {
   return percentFormat().format(ratio)
 }

@@ -632,5 +632,13 @@
   "rating_opponents": "Opponents",
   "rating_performance": "Performance",
   "rating_performance_hint": "The rating these results are worth against these opponents",
-  "rating_summary_unavailable": "Lichess's rating history gives no results: pick a shorter period to see them."
+  "rating_summary_unavailable": "Lichess's rating history gives no results: pick a shorter period to see them.",
+  "rating_errors": "Errors",
+  "rating_errors_per_game": "per game",
+  "rating_errors_analysed": "on {analysed} analysed games out of {games}",
+  "rating_errors_where": "Where",
+  "rating_errors_recurring": "Recurring",
+  "rating_errors_train": "Replay these {count} errors",
+  "rating_errors_none_analysed": "None of these games is analysed yet: analyse them to see where your errors come from.",
+  "rating_errors_analyse": "Analyze"
 }

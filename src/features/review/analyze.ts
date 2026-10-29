@@ -333,6 +333,23 @@ export async function analyzeGames(
   return finish(works, criteria)
 }
 
+/**
+ * The games whose every position the cache evaluates, judged with `criteria`, without Stockfish:
+ * the others are left out. For a look at the errors of games analysed before (the profile).
+ */
+export async function reviewFromCache(
+  games: ReviewGame[],
+  criteria: ReviewCriteria,
+  cache: EvaluationCache = analysisCache,
+): Promise<ReviewedGame[]> {
+  const works = games.map(prepare)
+  await fillFromCache(works, cache)
+  return finish(
+    works.filter((work) => work.positions.length > 1 && missing(work).length === 0),
+    criteria,
+  )
+}
+
 /** What an analysis of some games would still have to compute, the cache taken into account. */
 export type WorkLeft = {
   /** Per game with positions not evaluated yet: how many (their deep pass is not known yet) */
