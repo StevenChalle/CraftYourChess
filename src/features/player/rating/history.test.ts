@@ -3,6 +3,7 @@ import type { GameSummary } from '@/features/games/normalize'
 import {
   gamePoints,
   lichessHistoryPoints,
+  peakPoint,
   periodBounds,
   periodFromDates,
   periodPreset,
@@ -81,6 +82,19 @@ describe('rating points', () => {
       { day: day(9, 2), rating: 1190, games: 1 },
       { day: day(9, 3), rating: 1210, games: 2 },
     ])
+  })
+})
+
+describe('rating peak', () => {
+  it('is the highest rating, its first day when reached again', () => {
+    const points = [
+      { day: 1, rating: 1500 },
+      { day: 2, rating: 1540 },
+      { day: 3, rating: 1520 },
+      { day: 4, rating: 1540 },
+    ]
+    expect(peakPoint(points)).toEqual({ day: 2, rating: 1540 })
+    expect(peakPoint([])).toBeUndefined()
   })
 })
 

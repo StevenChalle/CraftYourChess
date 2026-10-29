@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { formatDate, formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
-import type { RatingPoint } from './history'
+import { peakPoint, type RatingPoint } from './history'
 
 const HEIGHT = 180
 /** Room for the rating labels on the left, and for the last point on the right */
@@ -72,6 +72,7 @@ export function RatingChart({
   const area =
     first && last ? `${curve} L${x(last.day)} ${bottom} L${x(first.day)} ${bottom} Z` : ''
   const levels = [high, Math.round((high + low) / 2), low]
+  const peak = peakPoint(points)
 
   /** The point nearest to the pointer, by date. */
   const nearest = (event: PointerEvent<SVGSVGElement>) => {
@@ -161,6 +162,16 @@ export function RatingChart({
                   className="fill-primary"
                 />
               ))}
+            {/* The period's peak: a ring around its point */}
+            {peak && (
+              <circle
+                cx={x(peak.day)}
+                cy={y(peak.rating)}
+                r={5.5}
+                strokeWidth={1.5}
+                className="fill-none stroke-primary"
+              />
+            )}
             {point && (
               <>
                 <line

@@ -631,5 +631,8 @@
   "rating_preset_semester": "Dernier semestre",
   "rating_preset_year": "Dernière année",
   "rating_preset_lifetime": "Depuis toujours",
-  "rating_preset_custom": "Personnalisée"
+  "rating_preset_custom": "Personnalisée",
+  "rating_current": "Actuel",
+  "rating_change": "Évolution",
+  "rating_peak": "Record"
 }

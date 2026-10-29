@@ -152,3 +152,11 @@ export function gamePoints(
     .map(([day, { rating, games }]) => ({ day, rating, games }))
     .sort((a, b) => a.day - b.day)
 }
+
+/** The highest rating of the points, its first day when reached several times. */
+export function peakPoint(points: RatingPoint[]): RatingPoint | undefined {
+  return points.reduce<RatingPoint | undefined>(
+    (best, point) => (!best || point.rating > best.rating ? point : best),
+    undefined,
+  )
+}

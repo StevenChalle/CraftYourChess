@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toDateInput } from '@/lib/dateInput'
-import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
+import { formatDate, formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import type { ApiSource } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -22,6 +22,7 @@ import {
   PERIOD_PRESETS,
   periodBounds,
   periodFromDates,
+  peakPoint,
   periodPreset,
   presetPeriod,
   type ChartCategory,
@@ -62,6 +63,29 @@ function Picker<T extends string>({
         ))}
       </SelectContent>
     </Select>
+  )
+}
+
+/** A figure of the period, above the chart: its label, its value, a date under it. */
+function Figure({
+  label,
+  value,
+  hint,
+  className,
+}: {
+  label: string
+  value: string
+  hint?: string
+  className?: string
+}) {
+  return (
+    <div>
+      <div className="label-etabli text-[11px]">{label}</div>
+      <div className={cn('num text-xl leading-7 font-semibold text-text-strong', className)}>
+        {value}
+      </div>
+      {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
+    </div>
   )
 }
 
@@ -124,23 +148,31 @@ export function RatingHistory({
   const points = query.data ?? []
   const first = points[0]
   const last = points.at(-1)
+  const peak = peakPoint(points)
 
   return (
     <Panel
       title={m.rating_chart_title()}
       aside={
+        first &&
         last &&
-        first && (
-          <span className="num inline-flex items-baseline gap-2">
-            <span className="text-sm font-medium text-text-strong">
-              {formatNumber(last.rating)}
-            </span>
-            {last.rating !== first.rating && (
-              <span className={cn(last.rating > first.rating ? 'text-win' : 'text-loss')}>
-                {formatSigned(last.rating - first.rating)}
-              </span>
-            )}
-          </span>
+        peak && (
+          <div className="flex items-start gap-6 text-right">
+            <Figure label={m.rating_current()} value={formatNumber(last.rating)} />
+            <Figure
+              label={m.rating_change()}
+              value={formatSigned(last.rating - first.rating)}
+              className={cn(
+                last.rating > first.rating && 'text-win',
+                last.rating < first.rating && 'text-loss',
+              )}
+            />
+            <Figure
+              label={m.rating_peak()}
+              value={formatNumber(peak.rating)}
+              hint={formatDate(new Date(peak.day))}
+            />
+          </div>
         )
       }
     >

@@ -631,5 +631,8 @@
   "rating_preset_semester": "Last 6 months",
   "rating_preset_year": "Last year",
   "rating_preset_lifetime": "Lifetime",
-  "rating_preset_custom": "Custom"
+  "rating_preset_custom": "Custom",
+  "rating_current": "Current",
+  "rating_change": "Change",
+  "rating_peak": "Peak"
 }
