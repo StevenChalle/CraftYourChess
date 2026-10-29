@@ -17,7 +17,16 @@ import { Panel } from '../components/Panel'
 import { SourceDot } from '../components/SourceBadge'
 import { categoryLabel, sourceErrorMessage } from '../sources'
 import { SOURCE_LABELS } from '../summary'
-import { CHART_CATEGORIES, periodBounds, periodFromDates, type ChartCategory } from './history'
+import {
+  CHART_CATEGORIES,
+  PERIOD_PRESETS,
+  periodBounds,
+  periodFromDates,
+  periodPreset,
+  presetPeriod,
+  type ChartCategory,
+  type PeriodPreset,
+} from './history'
 import { ratingHistoryQueryOptions } from './queries'
 import { RatingChart } from './RatingChart'
 import {
@@ -56,10 +65,21 @@ function Picker<T extends string>({
   )
 }
 
+const PRESET_LABELS: Record<PeriodPreset | 'custom', () => string> = {
+  today: m.rating_preset_today,
+  week: m.rating_preset_week,
+  month: m.rating_preset_month,
+  semester: m.rating_preset_semester,
+  year: m.rating_preset_year,
+  lifetime: m.rating_preset_lifetime,
+  custom: m.rating_preset_custom,
+}
+
 /**
  * The player's rating over time, on one platform and in one time control (never mixed: ratings
- * of two platforms do not compare), over a period of dates. Its filters are kept per profile in
- * this browser (settings.ts); a platform without account falls back to the other one.
+ * of two platforms do not compare), over a period: a preset, or dates. The period on the left, the
+ * platform and time control on the right. Its filters are kept per profile in this browser
+ * (settings.ts); a platform without account falls back to the other one.
  */
 export function RatingHistory({
   profile,
@@ -67,7 +87,8 @@ export function RatingHistory({
 }: {
   /** settings.ts's profileKey */
   profile: string
-  accounts: { source: ApiSource; username: string }[]
+  /** joinedAt: where the lifetime starts */
+  accounts: { source: ApiSource; username: string; joinedAt?: Date }[]
 }) {
   const [settings, setSettings] = useState(() => loadRatingChartSettings(profile))
   /** Games downloaded so far, while the points load */
@@ -87,13 +108,16 @@ export function RatingHistory({
       account?.username ?? '',
       settings.category,
       settings.period,
+      account?.joinedAt?.getTime(),
       setFound,
     ),
     enabled: account !== undefined,
   })
   if (!account) return null
 
-  const shown = periodBounds(settings.period, now)
+  const joinedAt = account.joinedAt?.getTime()
+  const shown = periodBounds(settings.period, now, joinedAt)
+  const preset = periodPreset(settings.period) ?? 'custom'
   const from = toDateInput(shown.from)
   const to = toDateInput(shown.to)
   const today = toDateInput(now)
@@ -121,6 +145,14 @@ export function RatingHistory({
       }
     >
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Picker<PeriodPreset | 'custom'>
+          value={preset}
+          ariaLabel={m.rating_period()}
+          // "Custom" only says the dates were typed: it is never picked.
+          options={preset === 'custom' ? [...PERIOD_PRESETS, 'custom'] : PERIOD_PRESETS}
+          label={(option) => PRESET_LABELS[option]()}
+          onChange={(option) => option !== 'custom' && update({ period: presetPeriod(option) })}
+        />
         <div className="flex items-center gap-1.5 text-sm">
           <DateField
             label={m.setup_from()}
@@ -148,27 +180,29 @@ export function RatingHistory({
             }
           />
         </div>
-        {accounts.length > 1 && (
-          <Picker
-            value={account.source}
-            ariaLabel={m.review_col_platform()}
-            options={accounts.map((item) => item.source)}
-            label={(source) => (
-              <>
-                <SourceDot source={source} />
-                {SOURCE_LABELS[source]}
-              </>
-            )}
-            onChange={(source) => update({ source })}
+        <div className="ml-auto flex items-center gap-3">
+          {accounts.length > 1 && (
+            <Picker
+              value={account.source}
+              ariaLabel={m.review_col_platform()}
+              options={accounts.map((item) => item.source)}
+              label={(source) => (
+                <>
+                  <SourceDot source={source} />
+                  {SOURCE_LABELS[source]}
+                </>
+              )}
+              onChange={(source) => update({ source })}
+            />
+          )}
+          <Picker<ChartCategory>
+            value={settings.category}
+            ariaLabel={m.time_control()}
+            options={CHART_CATEGORIES}
+            label={categoryLabel}
+            onChange={(category) => update({ category })}
           />
-        )}
-        <Picker<ChartCategory>
-          value={settings.category}
-          ariaLabel={m.time_control()}
-          options={CHART_CATEGORIES}
-          label={categoryLabel}
-          onChange={(category) => update({ category })}
-        />
+        </div>
       </div>
       {query.isPending ? (
         <p className="text-sm text-muted-foreground">
@@ -182,7 +216,10 @@ export function RatingHistory({
         <p className="text-sm text-muted-foreground">{m.rating_chart_empty()}</p>
       ) : (
         // The period as the query saw it, when it fetched the points.
-        <RatingChart points={points} {...periodBounds(settings.period, query.dataUpdatedAt)} />
+        <RatingChart
+          points={points}
+          {...periodBounds(settings.period, query.dataUpdatedAt, joinedAt)}
+        />
       )}
     </Panel>
   )

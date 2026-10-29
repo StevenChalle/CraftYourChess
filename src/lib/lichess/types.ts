@@ -127,3 +127,6 @@ export type LichessUser = {
   }
   url?: string
 }
+
+/** A perf's rating history: [year, month (0-11), day, rating] for each day played. */
+export type LichessRatingHistory = { name: string; points: [number, number, number, number][] }[]

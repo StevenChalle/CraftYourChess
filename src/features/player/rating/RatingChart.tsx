@@ -11,6 +11,8 @@ const PAD_RIGHT = 10
 /** Room above the curve, and below it for the dates */
 const PAD_TOP = 12
 const PAD_BOTTOM = 22
+/** Beyond this many days played, no dots: the curve alone */
+const MAX_DOTS = 200
 /** Smallest span of ratings shown, so a few points of change do not look like a cliff */
 const MIN_SPAN = 40
 
@@ -30,9 +32,9 @@ function ratingScale(points: RatingPoint[]) {
 
 /**
  * The player's rating day by day over [from, to], in the style of the evaluation chart: one curve
- * in the accent color over the field, a dot per day played, three rating lines, the period's dates
- * below. Hovering shows the nearest day (its rating, the change since the day played before it, its
- * number of games); on a phone, a tap or a sliding finger does.
+ * in the accent color over the field, a dot per day played (up to MAX_DOTS), three rating lines,
+ * the period's dates below. Hovering shows the nearest day (its rating, the change since the day
+ * played before it, its number of games when known); on a phone, a tap or a sliding finger does.
  */
 export function RatingChart({
   points,
@@ -148,15 +150,17 @@ export function RatingChart({
               strokeLinejoin="round"
               className="stroke-primary"
             />
-            {points.map((item) => (
-              <circle
-                key={item.day}
-                cx={x(item.day)}
-                cy={y(item.rating)}
-                r={points.length > 120 ? 2 : 3}
-                className="fill-primary"
-              />
-            ))}
+            {/* A dot per day, while they stay apart: a whole career would blur the curve. */}
+            {points.length <= MAX_DOTS &&
+              points.map((item) => (
+                <circle
+                  key={item.day}
+                  cx={x(item.day)}
+                  cy={y(item.rating)}
+                  r={points.length > 120 ? 2 : 3}
+                  className="fill-primary"
+                />
+              ))}
             {point && (
               <>
                 <line
@@ -192,7 +196,9 @@ export function RatingChart({
               </span>
             )}
           </p>
-          <p className="text-xs text-muted-foreground">{formatGameCount(point.games)}</p>
+          {point.games !== undefined && (
+            <p className="text-xs text-muted-foreground">{formatGameCount(point.games)}</p>
+          )}
         </div>
       )}
     </div>

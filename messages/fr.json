@@ -624,10 +624,14 @@
   "rating_chart_title": "Évolution de l'Elo",
   "rating_chart_label": "Elo au fil du temps",
   "rating_chart_empty": "Aucune partie classée dans cette cadence sur cette période.",
-  "rating_range_week": "7 jours",
-  "rating_range_month": "30 jours",
-  "rating_range_3months": "3 mois",
-  "rating_range_year": "1 an",
   "legal_privacy_local_rating_chart": "les filtres du graphique de l'Elo et de la liste des parties, pour chaque joueur consulté (plateforme, cadence, période, résultats) ;",
-  "rating_chart_loading_games": "Chargement des parties : {games} pour l'instant…"
+  "rating_chart_loading_games": "Chargement des parties : {games} pour l'instant…",
+  "rating_period": "Période",
+  "rating_preset_today": "Aujourd'hui",
+  "rating_preset_week": "7 derniers jours",
+  "rating_preset_month": "Dernier mois",
+  "rating_preset_semester": "Dernier semestre",
+  "rating_preset_year": "Dernière année",
+  "rating_preset_lifetime": "Depuis toujours",
+  "rating_preset_custom": "Personnalisée"
 }

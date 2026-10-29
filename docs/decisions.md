@@ -792,3 +792,10 @@ Le profil dans une fenêtre (icône après le nom) se trouvait mal : l'**Aperçu
 ## 2026-10-29 : listes déroulantes dans les filtres du graphique de l'Elo
 
 La plateforme et la cadence du graphique de l'Elo se choisissent dans des listes déroulantes (`components/ui/select.tsx`, le Select de shadcn sur Radix, sans nouvelle dépendance) plutôt qu'avec des pastilles : un seul choix à la fois, et la ligne de filtres reste courte.
+
+## 2026-10-29 : périodes prédéfinies pour le graphique de l'Elo
+
+Une liste déroulante avant les dates : aujourd'hui, 7 derniers jours, dernier mois (30 jours), dernier semestre (182 jours), dernière année (365 jours), depuis toujours. Des dates tapées qui tombent sur l'une d'elles l'affichent, sinon « Personnalisée ». La plateforme et la cadence passent à droite de la ligne.
+
+- **Depuis toujours** part de la création du compte. Sur Lichess, il vient de son historique d'Elo, en une requête, sans le nombre de parties par jour (une carrière peut compter 100 000 parties) ; des parties seulement quand cet historique revient vide. Sur Chess.com, il n'y a que les parties : toute la carrière se télécharge, mois par mois, une seule fois grâce au magasin des parties.
+- Au-delà de 200 jours joués, la courbe n'a plus de points (ils la brouilleraient).

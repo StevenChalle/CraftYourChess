@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { GameSummary } from '@/features/games/normalize'
-import { gamePoints, periodBounds, periodFromDates } from './history'
+import {
+  gamePoints,
+  lichessHistoryPoints,
+  periodBounds,
+  periodFromDates,
+  periodPreset,
+  presetPeriod,
+} from './history'
 import { profileKey } from '../profileSettings'
 import {
   loadRatingChartSettings,
@@ -23,6 +30,21 @@ describe('rating periods', () => {
       to: new Date(2026, 8, 30, 23, 59, 59, 999).getTime(),
     })
     expect(periodBounds({ kind: 'dates', from: '2026-10-01', to: '2026-12-31' }, now).to).toBe(now)
+  })
+
+  it('turns presets into periods, and periods back into presets', () => {
+    expect(presetPeriod('today')).toEqual({ kind: 'last', days: 1 })
+    expect(presetPeriod('lifetime')).toEqual({ kind: 'lifetime' })
+    expect(periodPreset({ kind: 'last', days: 182 })).toBe('semester')
+    expect(periodPreset({ kind: 'last', days: 12 })).toBeUndefined()
+    expect(periodPreset({ kind: 'dates', from: '2026-01-01', to: '2026-01-31' })).toBeUndefined()
+  })
+
+  it('starts a lifetime on the day the account was created', () => {
+    expect(periodBounds({ kind: 'lifetime' }, now, day(1, 3, 18))).toEqual({
+      from: day(1, 3),
+      to: now,
+    })
   })
 
   it('slides when the dates end today, stays put otherwise', () => {
@@ -62,6 +84,28 @@ describe('rating points', () => {
   })
 })
 
+describe("Lichess's rating history", () => {
+  it('keeps the period, starting with the rating it began with, without games count', () => {
+    const history = [
+      { name: 'bullet', points: [[2026, 9, 1, 2000] as [number, number, number, number]] },
+      {
+        name: 'blitz',
+        points: [
+          [2026, 8, 1, 1500],
+          [2026, 8, 20, 1520],
+          [2026, 9, 25, 1540],
+          [2026, 9, 27, 1560],
+        ] as [number, number, number, number][],
+      },
+    ]
+    expect(lichessHistoryPoints(history, 'blitz', day(9, 1), day(9, 26))).toEqual([
+      { day: day(9, 1), rating: 1520 },
+      { day: day(9, 25), rating: 1540 },
+    ])
+    expect(lichessHistoryPoints(history, 'rapid', day(9, 1), day(9, 26))).toEqual([])
+  })
+})
+
 describe('rating chart settings', () => {
   beforeEach(() => localStorage.clear())
 
@@ -74,6 +118,9 @@ describe('rating chart settings', () => {
     expect(
       parseRatingChartSettings({ source: 'lichess', category: 'daily', period: { kind: 'x' } }),
     ).toEqual({ source: 'lichess', category: 'blitz', period: { kind: 'last', days: 30 } })
+    expect(parseRatingChartSettings({ period: { kind: 'lifetime' } }).period).toEqual({
+      kind: 'lifetime',
+    })
   })
 
   it('keeps them per profile, whatever the case of the usernames', () => {

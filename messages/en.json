@@ -624,10 +624,14 @@
   "rating_chart_title": "Rating history",
   "rating_chart_label": "Rating over time",
   "rating_chart_empty": "No rated games in this time control over this period.",
-  "rating_range_week": "7 days",
-  "rating_range_month": "30 days",
-  "rating_range_3months": "3 months",
-  "rating_range_year": "1 year",
   "legal_privacy_local_rating_chart": "the filters of the rating chart and of the games list, for each player you looked at (platform, time control, period, results);",
-  "rating_chart_loading_games": "Loading the games: {games} so far…"
+  "rating_chart_loading_games": "Loading the games: {games} so far…",
+  "rating_period": "Period",
+  "rating_preset_today": "Today",
+  "rating_preset_week": "Last 7 days",
+  "rating_preset_month": "Last month",
+  "rating_preset_semester": "Last 6 months",
+  "rating_preset_year": "Last year",
+  "rating_preset_lifetime": "Lifetime",
+  "rating_preset_custom": "Custom"
 }
