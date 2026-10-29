@@ -788,3 +788,7 @@ Dans la fenêtre du profil, un graphique de l'Elo jour par jour (`features/playe
 Le profil dans une fenêtre (icône après le nom) se trouvait mal : l'**Aperçu** redevient un onglet, le premier, et le point d'arrivée d'une recherche (`/player`), comme avant. L'icône profil disparaît. Ce qui a été fait entre-temps reste : pas de cartes Lichess / Chess.com (liens sous le nom), graphique de l'Elo (dates en premier dans ses filtres).
 
 - **Onglet Parties** : pour que filtres et boutons tiennent sur une ligne (largeur de page de 1 120 px, en anglais comme en français), « Mettre à jour » n'est plus qu'une icône (avec infobulle) et les groupes sont un peu plus serrés.
+
+## 2026-10-29 : listes déroulantes dans les filtres du graphique de l'Elo
+
+La plateforme et la cadence du graphique de l'Elo se choisissent dans des listes déroulantes (`components/ui/select.tsx`, le Select de shadcn sur Radix, sans nouvelle dépendance) plutôt qu'avec des pastilles : un seul choix à la fois, et la ligne de filtres reste courte.

@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { CHIP_CLASS } from '@/components/chip'
 import { DateField } from '@/components/DateField'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toDateInput } from '@/lib/dateInput'
 import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import type { ApiSource } from '@/lib/http'
@@ -21,31 +26,33 @@ import {
   type RatingChartSettings,
 } from './settings'
 
-/** One choice among a few chips: clicking the chosen one keeps it. */
-function Choice<T extends string>({
+/** One choice in a short list, the width of its longest option. */
+function Picker<T extends string>({
   value,
   options,
   label,
+  ariaLabel,
   onChange,
 }: {
   value: T
   options: T[]
   label: (option: T) => ReactNode
+  ariaLabel: string
   onChange: (value: T) => void
 }) {
   return (
-    <ToggleGroup
-      type="single"
-      value={value}
-      onValueChange={(next) => next && onChange(next as T)}
-      className="flex-wrap"
-    >
-      {options.map((option) => (
-        <ToggleGroupItem key={option} value={option} size="sm" className={CHIP_CLASS}>
-          {label(option)}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <Select value={value} onValueChange={(next) => onChange(next as T)}>
+      <SelectTrigger aria-label={ariaLabel} className="h-8 bg-muted">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option} value={option}>
+            {label(option)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
@@ -113,7 +120,7 @@ export function RatingHistory({
         )
       }
     >
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex items-center gap-1.5 text-sm">
           <DateField
             label={m.setup_from()}
@@ -142,8 +149,9 @@ export function RatingHistory({
           />
         </div>
         {accounts.length > 1 && (
-          <Choice
+          <Picker
             value={account.source}
+            ariaLabel={m.review_col_platform()}
             options={accounts.map((item) => item.source)}
             label={(source) => (
               <>
@@ -154,8 +162,9 @@ export function RatingHistory({
             onChange={(source) => update({ source })}
           />
         )}
-        <Choice<ChartCategory>
+        <Picker<ChartCategory>
           value={settings.category}
+          ariaLabel={m.time_control()}
           options={CHART_CATEGORIES}
           label={categoryLabel}
           onChange={(category) => update({ category })}
