@@ -7,6 +7,7 @@ import {
   periodBounds,
   periodFromDates,
   periodPreset,
+  periodSummary,
   presetPeriod,
 } from './history'
 import { profileKey } from '../profileSettings'
@@ -82,6 +83,43 @@ describe('rating points', () => {
       { day: day(9, 2), rating: 1190, games: 1 },
       { day: day(9, 3), rating: 1210, games: 2 },
     ])
+  })
+})
+
+describe('period summary', () => {
+  const game = (result: 'win' | 'draw' | 'loss', opponent: number | undefined, rated = true) =>
+    ({
+      source: 'chesscom',
+      playedAt: new Date(day(9, 1)),
+      rating: 1500,
+      rated,
+      timeControl: { kind: 'clock', initial: 180, increment: 0 },
+      result,
+      opponent: { name: 'x', rating: opponent },
+    }) as GameSummary
+
+  it('counts the rated games, their opponents and the performance', () => {
+    expect(
+      periodSummary([
+        game('win', 1500),
+        game('win', 1600),
+        game('draw', 1400),
+        game('loss', 1500),
+        game('win', 1000, false),
+      ]),
+    ).toEqual({
+      games: 4,
+      record: { win: 2, draw: 1, loss: 1 },
+      opponentAverage: 1500,
+      performance: 1600,
+    })
+  })
+
+  it('has no performance without opponent ratings', () => {
+    expect(periodSummary([game('win', undefined)])).toEqual({
+      games: 1,
+      record: { win: 1, draw: 0, loss: 0 },
+    })
   })
 })
 

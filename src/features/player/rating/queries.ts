@@ -9,16 +9,19 @@ import {
   gamePoints,
   lichessHistoryPoints,
   periodBounds,
+  periodSummary,
+  type PeriodSummary,
+  type RatingPoint,
   type ChartCategory,
   type RatingPeriod,
 } from './history'
 
 /**
  * A player's rating in a time control over the period, day by day, with each day's number of
- * games: from the rated games of the period, kept in the game store (docs/game-store.md) like the
+ * games, and the period's summary (its results, the opponents, the performance): from the rated games of the period, kept in the game store (docs/game-store.md) like the
  * analysis's, so a period read once is not downloaded again. On Lichess, a lifetime comes from its
  * rating history instead, in one request (a career can be a hundred thousand games), without the
- * games count; from the games when that history comes back empty. `joinedAt`: the account's
+ * games count nor the summary; from the games when that history comes back empty. `joinedAt`: the account's
  * creation (Unix ms), where a lifetime starts. `onGames`: the number of games found so far, while
  * they download.
  */
@@ -30,7 +33,7 @@ export function ratingHistoryQueryOptions(
   joinedAt: number | undefined,
   onGames?: (count: number) => void,
 ) {
-  return queryOptions({
+  return queryOptions<{ points: RatingPoint[]; summary?: PeriodSummary }>({
     // Today too: a sliding period moves on the next day.
     queryKey: [
       'rating-history',
@@ -44,7 +47,9 @@ export function ratingHistoryQueryOptions(
       const { from, to } = periodBounds(period, Date.now(), joinedAt)
       if (source === 'lichess' && period.kind === 'lifetime') {
         const history = await fetchRatingHistory(username, signal)
-        if (history.length > 0) return lichessHistoryPoints(history, category, from, to)
+        if (history.length > 0) {
+          return { points: lichessHistoryPoints(history, category, from, to) }
+        }
       }
       const found = await findGames(
         [{ source, username }],
@@ -62,7 +67,7 @@ export function ratingHistoryQueryOptions(
       )
       const failure = found.failures[0]
       if (failure) throw failure.error
-      return gamePoints(found.games)
+      return { points: gamePoints(found.games), summary: periodSummary(found.games) }
     },
     staleTime: 5 * 60_000,
     retry: shouldRetry,

@@ -129,9 +129,7 @@ export function fromChessCom({ profile, stats }: ChessComPlayer): AccountSummary
   }
 }
 
-/* ---------- Combining accounts: only for additive data (counts, dates), never ratings ---------- */
-
-export function sumRecords(records: (GameRecord | undefined)[]): GameRecord {
+function sumRecords(records: (GameRecord | undefined)[]): GameRecord {
   return records.reduce<GameRecord>(
     (total, record) => ({
       win: total.win + (record?.win ?? 0),
@@ -142,41 +140,7 @@ export function sumRecords(records: (GameRecord | undefined)[]): GameRecord {
   )
 }
 
+/** Every game of a record, whatever its result. */
 export function totalGames(record: GameRecord): number {
   return record.win + record.loss + record.draw
-}
-
-export function earliestJoin(accounts: AccountSummary[]): AccountSummary | undefined {
-  return accounts
-    .filter((account) => account.joinedAt)
-    .sort((a, b) => a.joinedAt!.getTime() - b.joinedAt!.getTime())[0]
-}
-
-export function latestActivity(accounts: AccountSummary[]): AccountSummary | undefined {
-  return accounts
-    .filter((account) => account.lastSeenAt)
-    .sort((a, b) => b.lastSeenAt!.getTime() - a.lastSeenAt!.getTime())[0]
-}
-
-export type CategoryGames = {
-  category: Category
-  bySource: { source: ApiSource; games: number }[]
-  total: number
-}
-
-/** Rated games per category, split by source, most played first. Empty categories are dropped. */
-export function gamesByCategory(accounts: AccountSummary[]): CategoryGames[] {
-  return CATEGORIES.map((key) => {
-    const bySource = accounts.map((account) => ({
-      source: account.source,
-      games: account.categories[key]?.games ?? 0,
-    }))
-    return {
-      category: key,
-      bySource,
-      total: bySource.reduce((sum, { games }) => sum + games, 0),
-    }
-  })
-    .filter(({ total }) => total > 0)
-    .sort((a, b) => b.total - a.total)
 }

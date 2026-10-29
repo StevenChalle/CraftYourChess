@@ -9,14 +9,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toDateInput } from '@/lib/dateInput'
-import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
-import type { ApiSource } from '@/lib/http'
+import { formatGameCount, formatNumber, formatPercent, formatSigned } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { Panel } from '../components/Panel'
+import { ResultBar } from '../components/ResultBar'
 import { SourceDot } from '../components/SourceBadge'
 import { categoryLabel, sourceErrorMessage } from '../sources'
-import { SOURCE_LABELS } from '../summary'
+import { SOURCE_LABELS, type AccountSummary } from '../summary'
 import {
   CHART_CATEGORIES,
   PERIOD_PRESETS,
@@ -27,6 +27,7 @@ import {
   presetPeriod,
   type ChartCategory,
   type PeriodPreset,
+  type PeriodSummary,
 } from './history'
 import { ratingHistoryQueryOptions } from './queries'
 import { RatingChart } from './RatingChart'
@@ -85,6 +86,34 @@ function Figure({
   )
 }
 
+/**
+ * The period's results under the chart: games, score, the opponents' average rating and the
+ * performance, then the wins, draws and losses.
+ */
+function PeriodFigures({ summary }: { summary: PeriodSummary }) {
+  const { games, record, opponentAverage, performance } = summary
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+        <Figure label={m.rating_games()} value={formatNumber(games)} />
+        <Figure
+          label={m.rating_score()}
+          value={formatPercent((record.win + record.draw / 2) / games)}
+        />
+        {opponentAverage !== undefined && (
+          <Figure label={m.rating_opponents()} value={formatNumber(opponentAverage)} />
+        )}
+        {performance !== undefined && (
+          <span title={m.rating_performance_hint()}>
+            <Figure label={m.rating_performance()} value={formatNumber(performance)} />
+          </span>
+        )}
+      </div>
+      <ResultBar record={record} />
+    </div>
+  )
+}
+
 const PRESET_LABELS: Record<PeriodPreset | 'custom', () => string> = {
   today: m.rating_preset_today,
   week: m.rating_preset_week,
@@ -107,8 +136,8 @@ export function RatingHistory({
 }: {
   /** settings.ts's profileKey */
   profile: string
-  /** joinedAt: where the lifetime starts */
-  accounts: { source: ApiSource; username: string; joinedAt?: Date }[]
+  /** joinedAt: where the lifetime starts; categories: the current ratings, in the time controls */
+  accounts: Pick<AccountSummary, 'source' | 'username' | 'joinedAt' | 'categories'>[]
 }) {
   const [settings, setSettings] = useState(() => loadRatingChartSettings(profile))
   /** Games downloaded so far, while the points load */
@@ -141,7 +170,8 @@ export function RatingHistory({
   const from = toDateInput(shown.from)
   const to = toDateInput(shown.to)
   const today = toDateInput(now)
-  const points = query.data ?? []
+  const points = query.data?.points ?? []
+  const summary = query.data?.summary
   const first = points[0]
   const last = points.at(-1)
   const peak = peakPoint(points)
@@ -203,7 +233,18 @@ export function RatingHistory({
             value={settings.category}
             ariaLabel={m.time_control()}
             options={CHART_CATEGORIES}
-            label={categoryLabel}
+            // Each with the current rating on this platform
+            label={(category) => {
+              const rating = account.categories[category]?.rating
+              return (
+                <>
+                  {categoryLabel(category)}
+                  {rating !== undefined && (
+                    <span className="num text-muted-foreground">{formatNumber(rating)}</span>
+                  )}
+                </>
+              )
+            }}
             onChange={(category) => update({ category })}
           />
         </div>
@@ -238,11 +279,20 @@ export function RatingHistory({
       ) : points.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.rating_chart_empty()}</p>
       ) : (
-        // The period as the query saw it, when it fetched the points.
-        <RatingChart
-          points={points}
-          {...periodBounds(settings.period, query.dataUpdatedAt, joinedAt)}
-        />
+        <>
+          {/* The period as the query saw it, when it fetched the points. */}
+          <RatingChart
+            points={points}
+            {...periodBounds(settings.period, query.dataUpdatedAt, joinedAt)}
+          />
+          <div className="mt-4 border-t pt-4">
+            {summary ? (
+              <PeriodFigures summary={summary} />
+            ) : (
+              <p className="text-sm text-muted-foreground">{m.rating_summary_unavailable()}</p>
+            )}
+          </div>
+        </>
       )}
     </Panel>
   )

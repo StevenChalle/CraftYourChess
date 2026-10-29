@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ChessComPlayer } from '@/lib/chesscom/types'
 import type { LichessUser } from '@/lib/lichess/types'
-import {
-  earliestJoin,
-  fromChessCom,
-  fromLichess,
-  gamesByCategory,
-  latestActivity,
-  sumRecords,
-} from './summary'
+import { fromChessCom, fromLichess } from './summary'
 
 const lichessUser: LichessUser = {
   id: 'alice',
@@ -122,54 +115,5 @@ describe('fromChessCom', () => {
       profile: { ...chessComPlayer.profile, status: 'closed:fair_play_violations' },
     })
     expect(closed).toMatchObject({ closed: true, flagged: true })
-  })
-})
-
-describe('combining accounts', () => {
-  const accounts = [fromLichess(lichessUser), fromChessCom(chessComPlayer)]
-
-  it('sums records, ignoring missing ones', () => {
-    expect(
-      sumRecords([{ win: 1, loss: 2, draw: 3 }, undefined, { win: 1, loss: 0, draw: 0 }]),
-    ).toEqual({ win: 2, loss: 2, draw: 3 })
-  })
-
-  it('finds the oldest account and the latest activity', () => {
-    expect(earliestJoin(accounts)?.source).toBe('chesscom')
-    expect(latestActivity(accounts)?.source).toBe('lichess')
-  })
-
-  it('splits games per category by source, most played first', () => {
-    expect(gamesByCategory(accounts)).toEqual([
-      {
-        category: 'blitz',
-        bySource: [
-          { source: 'lichess', games: 120 },
-          { source: 'chesscom', games: 60 },
-        ],
-        total: 180,
-      },
-      {
-        category: 'bullet',
-        bySource: [
-          { source: 'lichess', games: 0 },
-          { source: 'chesscom', games: 10 },
-        ],
-        total: 10,
-      },
-      {
-        category: 'daily',
-        bySource: [
-          { source: 'lichess', games: 3 },
-          { source: 'chesscom', games: 0 },
-        ],
-        total: 3,
-      },
-    ])
-  })
-
-  it('works with a single account', () => {
-    expect(gamesByCategory([fromChessCom(chessComPlayer)])).toHaveLength(2)
-    expect(earliestJoin([])).toBeUndefined()
   })
 })

@@ -34,15 +34,7 @@
   "view_on": "Voir sur {platform}",
   "account_closed": "Compte fermé.",
   "account_closed_tos": "Compte fermé (violation des conditions d’utilisation).",
-  "games_played": "Parties jouées",
-  "playing_since": "Joue depuis",
-  "last_activity": "Dernière activité",
-  "on_platform": "sur {platform}",
-  "overall_record": "Bilan global",
-  "all_games_both_sites": "Toutes parties, les deux sites",
-  "current_ratings": "Elo actuel",
   "time_control": "Cadence",
-  "no_rated_games": "Aucune partie classée.",
   "category_bullet": "Bullet",
   "category_blitz": "Blitz",
   "category_rapid": "Rapide",
@@ -634,5 +626,11 @@
   "rating_preset_custom": "Personnalisée",
   "rating_current": "Actuel",
   "rating_change": "Évolution sur la période",
-  "rating_peak": "Record"
+  "rating_peak": "Record",
+  "rating_games": "Parties",
+  "rating_score": "Score",
+  "rating_opponents": "Adversaires",
+  "rating_performance": "Performance",
+  "rating_performance_hint": "L'Elo que valent ces résultats face à ces adversaires",
+  "rating_summary_unavailable": "L'historique d'Elo de Lichess ne donne pas les résultats : choisissez une période plus courte pour les voir."
 }

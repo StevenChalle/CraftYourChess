@@ -799,3 +799,13 @@ Une liste déroulante avant les dates : aujourd'hui, 7 derniers jours, dernier m
 
 - **Depuis toujours** part de la création du compte. Sur Lichess, il vient de son historique d'Elo, en une requête, sans le nombre de parties par jour (une carrière peut compter 100 000 parties) ; des parties seulement quand cet historique revient vide. Sur Chess.com, il n'y a que les parties : toute la carrière se télécharge, mois par mois, une seule fois grâce au magasin des parties.
 - Au-delà de 200 jours joués, la courbe n'a plus de points (ils la brouilleraient).
+
+## 2026-10-29 : un Aperçu centré sur la progression
+
+L'Aperçu ne garde que ce qui sert à suivre sa progression et à la comprendre vite : le graphique de l'Elo, et le résumé de sa période.
+
+- **Retirés** : « Parties jouées », « Joueur depuis », « Dernière activité », le tableau des Elo actuels, le bilan global de la carrière (des chiffres de vitrine, sans lien avec la progression).
+- **Résumé de la période**, sous le graphique, avec ses filtres : parties, score, Elo moyen des adversaires, performance (adversaire moyen + 400 × (victoires − défaites) / parties, l'estimation linéaire usuelle), puis la barre victoires / nulles / défaites. Calculé sur les parties déjà téléchargées pour la courbe ; absent pour « Depuis toujours » sur Lichess (son historique d'Elo n'a pas les parties), ce que la page dit.
+- **Volume** : une barre par jour sous la courbe, le nombre de parties ; une chute après une longue session se voit d'un coup d'œil.
+- **Elo actuel** de chaque cadence dans la liste des cadences (« Blitz 3 219 »), à la place du tableau.
+- Plus tard : relier la progression à l'analyse (erreurs par partie dans le temps, thèmes, phases).

@@ -34,15 +34,7 @@
   "view_on": "View on {platform}",
   "account_closed": "Account closed.",
   "account_closed_tos": "Account closed (terms of service violation).",
-  "games_played": "Games played",
-  "playing_since": "Playing since",
-  "last_activity": "Last activity",
-  "on_platform": "on {platform}",
-  "overall_record": "Overall record",
-  "all_games_both_sites": "All games, both sites",
-  "current_ratings": "Current ratings",
   "time_control": "Time control",
-  "no_rated_games": "No rated games.",
   "category_bullet": "Bullet",
   "category_blitz": "Blitz",
   "category_rapid": "Rapid",
@@ -634,5 +626,11 @@
   "rating_preset_custom": "Custom",
   "rating_current": "Current",
   "rating_change": "Change over the period",
-  "rating_peak": "Peak"
+  "rating_peak": "Peak",
+  "rating_games": "Games",
+  "rating_score": "Score",
+  "rating_opponents": "Opponents",
+  "rating_performance": "Performance",
+  "rating_performance_hint": "The rating these results are worth against these opponents",
+  "rating_summary_unavailable": "Lichess's rating history gives no results: pick a shorter period to see them."
 }
