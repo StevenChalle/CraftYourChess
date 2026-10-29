@@ -66,7 +66,7 @@ function Picker<T extends string>({
   )
 }
 
-/** A figure of the period, above the chart: its label, its value, a date under it. */
+/** A figure of the period, on one line: its label, its value, a date after it. */
 function Figure({
   label,
   value,
@@ -79,13 +79,11 @@ function Figure({
   className?: string
 }) {
   return (
-    <div>
-      <div className="label-etabli text-[11px]">{label}</div>
-      <div className={cn('num text-xl leading-7 font-semibold text-text-strong', className)}>
-        {value}
-      </div>
-      {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
-    </div>
+    <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+      <span className="label-etabli text-[11px]">{label}</span>
+      <span className={cn('num text-base font-semibold text-text-strong', className)}>{value}</span>
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    </span>
   )
 }
 
@@ -151,31 +149,7 @@ export function RatingHistory({
   const peak = peakPoint(points)
 
   return (
-    <Panel
-      title={m.rating_chart_title()}
-      aside={
-        first &&
-        last &&
-        peak && (
-          <div className="flex items-start gap-6 text-right">
-            <Figure label={m.rating_current()} value={formatNumber(last.rating)} />
-            <Figure
-              label={m.rating_change()}
-              value={formatSigned(last.rating - first.rating)}
-              className={cn(
-                last.rating > first.rating && 'text-win',
-                last.rating < first.rating && 'text-loss',
-              )}
-            />
-            <Figure
-              label={m.rating_peak()}
-              value={formatNumber(peak.rating)}
-              hint={formatDate(new Date(peak.day))}
-            />
-          </div>
-        )
-      }
-    >
+    <Panel title={m.rating_chart_title()}>
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <Picker<PeriodPreset | 'custom'>
           value={preset}
@@ -212,7 +186,7 @@ export function RatingHistory({
             }
           />
         </div>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="flex items-center gap-3">
           {accounts.length > 1 && (
             <Picker
               value={account.source}
@@ -235,6 +209,25 @@ export function RatingHistory({
             onChange={(category) => update({ category })}
           />
         </div>
+        {/* The period's figures, on the right of the filters while there is room */}
+        {first && last && peak && (
+          <div className="ml-auto flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <Figure label={m.rating_current()} value={formatNumber(last.rating)} />
+            <Figure
+              label={m.rating_change()}
+              value={formatSigned(last.rating - first.rating)}
+              className={cn(
+                last.rating > first.rating && 'text-win',
+                last.rating < first.rating && 'text-loss',
+              )}
+            />
+            <Figure
+              label={m.rating_peak()}
+              value={formatNumber(peak.rating)}
+              hint={formatDate(new Date(peak.day))}
+            />
+          </div>
+        )}
       </div>
       {query.isPending ? (
         <p className="text-sm text-muted-foreground">
