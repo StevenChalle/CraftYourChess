@@ -817,3 +817,12 @@ Sous le résumé de la période, ce qui revient dans les erreurs du joueur, pour
 - **Rien n'est analysé ici** : seulement les parties de la période déjà analysées (cache des analyses, `analysedGames`), jugées sans Stockfish (`reviewFromCache`) avec les seuils actuels de l'analyse. La page dit sur combien de parties (« sur 30 parties analysées sur 30 ») ; aucune : un lien vers l'onglet Analyse. Pour un favori, l'analyse de fond les couvre d'elle-même.
 - **Erreurs par partie**, puis **où** (ouverture comme l'entraînement la compte, finale selon la règle de Lichess, milieu de partie sinon) et les **3 thèmes les plus fréquents** parmi : garder l'avantage, résilience, mats, zeitnot, types de finale.
 - **Chaque groupe est un bouton** qui ouvre un entraînement sur ses erreurs (`trainMistakes` de la session : un onglet d'entraînement sans analyse lancée, avec les options par défaut).
+
+## 2026-11-01 : les favoris suivis toutes les 15 s pendant qu'ils jouent
+
+Pour qu'une partie qu'on vient de jouer (l'app ouverte à côté) soit déjà analysée quand on veut la revoir, l'analyse de fond cherche les nouvelles parties **toutes les 15 s tant qu'un favori a fini une partie il y a moins d'une heure**, toutes les 10 minutes sinon (`PLAYING_RECHECK_MS`, `recheckDelay` dans `runner.ts`).
+
+- **Mesuré le 2026-11-01** : le mois en cours de Chess.com est servi avec `max-age=5`, et une partie finie depuis 2 minutes y figurait déjà (la doc parle d'un rafraîchissement « au plus toutes les 12 ou 24 h », qui ne vaut visiblement pas pour lui). Les requêtes en série ne sont pas limitées ; plus souvent que 5 s ne servirait à rien (cache de leur CDN).
+- **Lichess** : une petite requête (les parties depuis la dernière enregistrée), une à la fois ; un 429 fait déjà attendre 60 s.
+- 10 s envisagées, 15 s retenues : une partie de blitz dure plusieurs minutes et son analyse quelques dizaines de secondes, quelques secondes de plus pour la trouver ne changent rien, et le mois de Chess.com se retélécharge à chaque fois.
+- Une passe qui approfondit des parties (option « analyse approfondie ») va jusqu'au bout avant de chercher à nouveau : la première fois, une nouvelle partie peut attendre plus longtemps.

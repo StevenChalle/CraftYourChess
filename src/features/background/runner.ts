@@ -105,6 +105,20 @@ export const IDLE_MS = 3000
 export const POLL_MS = 2000
 /** Up to date: looking for new games this often (and whenever the page shows again) */
 export const RECHECK_MS = 10 * 60_000
+/**
+ * While a favorite is playing (a game of theirs ended less than PLAYING_MS ago): looking this
+ * often, so that each game is analysed about a minute after it ends. Chess.com caches the current
+ * month 5 s and allows serial requests; Lichess only sends the games since the last one stored.
+ */
+export const PLAYING_RECHECK_MS = 15_000
+export const PLAYING_MS = 60 * 60_000
+
+/** How long to wait for new games, up to date: less while a favorite is playing. */
+export function recheckDelay(lastPlayedAt: number | undefined, now: number): number {
+  return lastPlayedAt !== undefined && now - lastPlayedAt < PLAYING_MS
+    ? PLAYING_RECHECK_MS
+    : RECHECK_MS
+}
 /** After a 429 or a failure */
 export const RETRY_MS = 60_000
 /** How often the working tab says it is alive */
@@ -147,7 +161,8 @@ type Counts = Pick<PlayerProgress, 'games' | 'analysed' | 'deepened'>
  * the favorites with the deep option, newest first again. A favorite's games not all fetched
  * (rate limit, network): no deepening in this pass, the next one fetches and analyses them first.
  * Rejects as soon as the signal aborts. Each report says how far each favorite is, starting from
- * `previous` (the last pass) until their games are fetched again.
+ * `previous` (the last pass) until their games are fetched again. `lastPlayedAt`: when the most
+ * recent of their games ended (Unix ms), to know whether someone is playing.
  */
 export async function runCycle(
   favorites: Favorites,
@@ -155,7 +170,7 @@ export async function runCycle(
   signal: AbortSignal,
   report: (state: BackgroundState) => void,
   previous: PlayerProgress[] = [],
-): Promise<{ rateLimited: boolean }> {
+): Promise<{ rateLimited: boolean; lastPlayedAt?: number }> {
   const { players } = favorites
   const names = players.map(playerName)
   const counts: Counts[] = names.map((name, index) => {
@@ -209,6 +224,7 @@ export async function runCycle(
     loading[index] = false
     send({ phase: 'syncing' })
   }
+  const lastPlayedAt = Math.max(...[...byKey.values()].map((game) => game.playedAt.getTime()))
   const total = byKey.size
   const games = [...byKey.values()].filter((game) => game.sanMoves.length > 0)
   const deepGames = games.filter((game) => deepKeys.has(`${game.source}:${game.id}`))
@@ -267,7 +283,7 @@ export async function runCycle(
       send({ phase: 'deepening', done: deepDone, total: deepTotal })
     }
   }
-  return { rateLimited }
+  return { rateLimited, ...(Number.isFinite(lastPlayedAt) && { lastPlayedAt }) }
 }
 
 /** The same progress for every favorite (a new report of it is not news for the other tabs). */
@@ -498,7 +514,7 @@ export class BackgroundRunner {
       }, POLL_MS)
       let next: { phase: BackgroundPhase; ms: number }
       try {
-        const { rateLimited } = await runCycle(
+        const { rateLimited, lastPlayedAt } = await runCycle(
           this.favorites,
           this.deps,
           run.signal,
@@ -507,7 +523,7 @@ export class BackgroundRunner {
         )
         next = rateLimited
           ? { phase: 'rate-limited', ms: RETRY_MS }
-          : { phase: 'up-to-date', ms: RECHECK_MS }
+          : { phase: 'up-to-date', ms: recheckDelay(lastPlayedAt, this.deps.now()) }
       } catch (error) {
         // The player needs the engines, paused, or the runner stops: the loop sees which.
         if (run.signal.aborted) continue

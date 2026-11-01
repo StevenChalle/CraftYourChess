@@ -9,7 +9,9 @@ import {
   HEARTBEAT_MS,
   IDLE_MS,
   POLL_MS,
+  PLAYING_RECHECK_MS,
   RECHECK_MS,
+  recheckDelay,
   runCycle,
   STALE_MS,
   type BackgroundDeps,
@@ -174,7 +176,7 @@ describe('runCycle', () => {
       states.push(state),
     )
     await vi.runAllTimersAsync()
-    expect(await cycle).toEqual({ rateLimited: false })
+    expect(await cycle).toEqual({ rateLimited: false, lastPlayedAt: 0 })
     expect(analysed).toEqual([
       ['m3', 'm4', 'm5', 'm6', 'm7'],
       ['m8', 'm9', 'm10', 'm11'],
@@ -404,6 +406,29 @@ describe('BackgroundRunner', () => {
     await vi.advanceTimersByTimeAsync(10)
     expect(find).toHaveBeenCalledTimes(3)
     runner.stop()
+  })
+
+  it('looks every few seconds while a favorite is playing', async () => {
+    const find = vi.fn<BackgroundDeps['find']>(async () => ({
+      games: [{ ...game('live'), playedAt: new Date(Date.now() - 60_000) }],
+      failures: [],
+    }))
+    const runner = new BackgroundRunner(profile, deps({ find }))
+    runner.start()
+    await vi.advanceTimersByTimeAsync(batchMs + 10)
+    expect(find).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(PLAYING_RECHECK_MS)
+    expect(find).toHaveBeenCalledTimes(2)
+    runner.stop()
+  })
+})
+
+describe('recheckDelay', () => {
+  it('is short for an hour after a game, then back to the usual wait', () => {
+    const now = 10 * 3_600_000
+    expect(recheckDelay(now - 5 * 60_000, now)).toBe(PLAYING_RECHECK_MS)
+    expect(recheckDelay(now - 2 * 3_600_000, now)).toBe(RECHECK_MS)
+    expect(recheckDelay(undefined, now)).toBe(RECHECK_MS)
   })
 })
 
