@@ -13,7 +13,7 @@ const TAB_CLASS =
   'tab-etabli inline-flex shrink-0 items-center gap-2 px-1 pb-2.5 whitespace-nowrap transition-colors [&>svg]:size-3.5 [&>svg]:opacity-70'
 
 /**
- * The profile's tabs: overview, games, the analysis filters, then its results once there is an
+ * The profile's tabs: the overview (an import's games instead), the analysis filters, then its results once there is an
  * analysis, and a closable tab per training. Switching tabs keeps the scroll position
  * (`resetScroll={false}`): a training tab places its board itself. The bar scrolls sideways when
  * the tabs overflow (several trainings on a phone): the underline sits on the bar's border instead
@@ -106,8 +106,19 @@ export function PlayerTabs({
       className="flex [scrollbar-width:none] gap-6 overflow-x-auto border-b"
       aria-label={m.tabs_label()}
     >
-      {/* Imported games have no profile to show */}
-      {!usernames.import && (
+      {/* Imported games have no profile: their list instead, the overview's without the chart */}
+      {usernames.import ? (
+        <Link
+          resetScroll={false}
+          to="/player/history"
+          data-path="/player/history"
+          search={usernames}
+          className={TAB_CLASS}
+        >
+          <List aria-hidden />
+          {m.tab_history()}
+        </Link>
+      ) : (
         <Link
           resetScroll={false}
           to="/player"
@@ -120,16 +131,6 @@ export function PlayerTabs({
           {m.tab_overview()}
         </Link>
       )}
-      <Link
-        resetScroll={false}
-        to="/player/history"
-        data-path="/player/history"
-        search={usernames}
-        className={TAB_CLASS}
-      >
-        <List aria-hidden />
-        {m.tab_history()}
-      </Link>
       {canAnalyse && (
         <Link
           resetScroll={false}

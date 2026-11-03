@@ -2,7 +2,7 @@
 
 Garder dans le navigateur les parties déjà récupérées sur Lichess et Chess.com, et ne plus demander aux plateformes que ce qui manque. Aujourd'hui, réanalyser 500 parties est instantané côté moteur (voir [analysis-cache.md](analysis-cache.md)) mais demande encore environ 20 s de téléchargement : Lichess envoie environ 20 parties par seconde sans token. Décision résumée dans [decisions.md](decisions.md) (2026-10-23).
 
-État : implémenté le 2026-10-23 pour la recherche des parties de l'analyse (`features/games/store.ts`, `features/games/periods.ts`, `features/review/fetch.ts`). L'onglet Parties télécharge encore lui-même ses pages.
+État : implémenté le 2026-10-23 pour la recherche des parties de l'analyse (`features/games/store.ts`, `features/games/periods.ts`, `features/review/fetch.ts`). Depuis le 2026-11-04, la liste des parties du profil (sous le graphique de l'Elo) passe aussi par lui.
 
 ## Principes
 
@@ -130,6 +130,5 @@ Chess.com ne sert que des mois entiers, toutes cadences confondues : la couvertu
 
 ## Plus tard
 
-- L'onglet **Parties** (`features/history`) lit le magasin au lieu de paginer l'API.
 - Proposer un **import complet** d'un compte, en arrière-plan, pour les joueurs qui le veulent.
 - Rafraîchir les évaluations Lichess des parties récentes sans analyse serveur.

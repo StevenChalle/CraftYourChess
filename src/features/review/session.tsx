@@ -20,7 +20,7 @@ import {
   withDeepPosition,
   type Mistake,
 } from './analyze'
-import { DEFAULT_CRITERIA, type ReviewCriteria } from './criteria'
+import { DEFAULT_CRITERIA } from './criteria'
 import type { FoundGames, ReviewAccount } from './fetch'
 import type { GameLibrary } from './library'
 import { parseGameRef } from './gameRef'
@@ -297,16 +297,12 @@ export function AnalysisSessionProvider({
     [navigate, usernames],
   )
 
-  /**
-   * A new tab on these errors, on its options or already running, judged with `criteria`: those of
-   * the current analysis by default.
-   */
+  /** A new tab on the errors of the current analysis, on its options or already running. */
   const openTraining = useCallback(
-    (mistakes: Mistake[], running: boolean, judgedWith?: ReviewCriteria) => {
-      const criteria =
-        judgedWith ?? (analysis.status === 'done' ? analysis.outcome.criteria : undefined)
-      if (!criteria) return
+    (mistakes: Mistake[], running: boolean) => {
+      if (analysis.status !== 'done') return
       runCount.current += 1
+      const { criteria } = analysis.outcome
       const tab: TrainingTab = {
         number: freeNumber(trainings),
         analysisId,
@@ -342,11 +338,6 @@ export function AnalysisSessionProvider({
 
   const trainGame = useCallback(
     (mistakes: Mistake[]) => openTraining(mistakes, true),
-    [openTraining],
-  )
-
-  const trainMistakes = useCallback(
-    (mistakes: Mistake[], criteria: ReviewCriteria) => openTraining(mistakes, true, criteria),
     [openTraining],
   )
 
@@ -593,7 +584,6 @@ export function AnalysisSessionProvider({
     launch,
     newTraining,
     trainGame,
-    trainMistakes,
     launchTraining,
     restartTraining,
     replayMissed,

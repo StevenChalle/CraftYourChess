@@ -1,7 +1,7 @@
 import type { GameSummary } from '@/features/games/normalize'
 import { fromDateInput, toDateInput } from '@/lib/dateInput'
 import type { LichessRatingHistory } from '@/lib/lichess/types'
-import type { Category, GameRecord } from '../summary'
+import type { Category } from '../summary'
 
 /**
  * A day's rating: the one after its last rated game (day: local midnight, Unix ms), with that day's
@@ -171,39 +171,4 @@ export function peakPoint(points: RatingPoint[]): RatingPoint | undefined {
     (best, point) => (!best || point.rating > best.rating ? point : best),
     undefined,
   )
-}
-
-/**
- * The period at a glance: its games, their results, the opponents' average rating, and the
- * performance, the rating these results are worth against them (average opponent + 400 × (wins −
- * losses) / games, the usual linear estimate).
- */
-export type PeriodSummary = {
-  games: number
-  record: GameRecord
-  opponentAverage?: number
-  performance?: number
-}
-
-export function periodSummary(games: RatedGame[]): PeriodSummary {
-  const record: GameRecord = { win: 0, draw: 0, loss: 0 }
-  let opponents = 0
-  let opponentTotal = 0
-  for (const game of games) {
-    if (!counts(game)) continue
-    record[game.result]++
-    if (game.opponent.rating !== undefined) {
-      opponents++
-      opponentTotal += game.opponent.rating
-    }
-  }
-  const total = record.win + record.draw + record.loss
-  if (opponents === 0) return { games: total, record }
-  const opponentAverage = Math.round(opponentTotal / opponents)
-  return {
-    games: total,
-    record,
-    opponentAverage,
-    performance: Math.round(opponentAverage + (400 * (record.win - record.loss)) / total),
-  }
 }

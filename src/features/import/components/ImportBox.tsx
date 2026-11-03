@@ -19,7 +19,7 @@ const hasFinePointer = () => window.matchMedia?.('(pointer: fine)').matches ?? t
 /**
  * Importing games instead of searching an account: a PGN file dropped or picked (on a computer),
  * or pasted. Once read, the dialog asks which side the player had; the games then open on the
- * profile page, Games tab, on their own (never mixed with an account's).
+ * profile page, in their own Games tab (never mixed with an account's).
  */
 export function ImportBox({ className }: { className?: string }) {
   const ids = { paste: useId(), file: useId() }

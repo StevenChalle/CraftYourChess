@@ -30,7 +30,7 @@
 - [x] Cache des évaluations dans le navigateur (Dexie) : une analyse relancée ou interrompue ne repart pas de zéro
 - [x] Parties des comptes gardées dans le navigateur, synchro incrémentale ([game-store.md](game-store.md)) pour la recherche de l'analyse
 - [x] Analyse de fond des joueurs favoris ([background-analysis.md](background-analysis.md))
-- [ ] Onglet Parties : lire le magasin des parties au lieu de paginer l'API
+- [x] Parties de la période sous le graphique de l'Elo, lues dans le magasin, mises à jour toutes les 15 s pendant qu'on joue (l'onglet Parties retiré)
 - [ ] Montrer le résultat de l'analyse de fond sur son propre profil (dernières parties déjà analysées, puis évolution)
 - [ ] Liste des parties filtrable, et visionneuse de partie (chessground + chessops)
 - [ ] Étendre l'effacement des données locales (page `/legal`) aux parties importées

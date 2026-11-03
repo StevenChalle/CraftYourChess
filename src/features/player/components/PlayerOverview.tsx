@@ -7,9 +7,9 @@ import { usePlayerAccounts } from '../usePlayerAccounts'
 import { SourceStatus } from './SourceStatus'
 
 /**
- * The profile, kept to what helps follow one's progress: the rating chart, with the period's
- * results under it. A platform searched but not shown says why; the links to the accounts are in
- * the header.
+ * The profile, kept to what helps follow one's progress: the rating chart, with the period's games
+ * under it. A platform searched but not shown says why; the links to the accounts are in the
+ * header.
  */
 export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
   const { states, linked, accounts: allAccounts } = usePlayerAccounts(usernames)
@@ -31,7 +31,9 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
           </p>
         )
       })}
-      {accounts.length > 0 && <RatingHistory profile={profileKey(usernames)} accounts={accounts} />}
+      {accounts.length > 0 && (
+        <RatingHistory profile={profileKey(usernames)} usernames={usernames} accounts={accounts} />
+      )}
     </div>
   )
 }

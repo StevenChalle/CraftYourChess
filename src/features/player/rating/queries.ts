@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import { gameStore } from '@/features/games/store'
-import { findGames } from '@/features/review/fetch'
+import { BACKGROUND_FETCHERS, findGames } from '@/features/review/fetch'
 import type { ReviewGame } from '@/features/review/games'
 import { defaultSelection } from '@/features/review/selection'
 import { shouldRetry, type ApiSource } from '@/lib/http'
@@ -10,8 +10,6 @@ import {
   gamePoints,
   lichessHistoryPoints,
   periodBounds,
-  periodSummary,
-  type PeriodSummary,
   type RatingPoint,
   type ChartCategory,
   type RatingPeriod,
@@ -19,12 +17,13 @@ import {
 
 /**
  * A player's rating in a time control over the period, day by day, with each day's number of
- * games, and the period's summary (its results, the opponents, the performance): from the rated games of the period, kept in the game store (docs/game-store.md) like the
- * analysis's, so a period read once is not downloaded again. On Lichess, a lifetime comes from its
- * rating history instead, in one request (a career can be a hundred thousand games), without the
- * games count nor the summary; from the games when that history comes back empty. `joinedAt`: the account's
- * creation (Unix ms), where a lifetime starts. `onGames`: the number of games found so far, while
- * they download.
+ * games, and the period's games, newest first: from the rated games of the period, kept in the
+ * game store (docs/game-store.md) like the analysis's, so a period read once is not downloaded
+ * again. On Lichess, a lifetime comes from its rating history instead, in one request (a career
+ * can be a hundred thousand games), without the games; from the games when that history comes
+ * back empty. `joinedAt`: the account's creation (Unix ms), where a lifetime starts. `onGames`:
+ * the number of games found so far, while they download. A refetch of points already shown (the
+ * automatic refresh, refresh.ts) downloads as the background analysis does: it never interrupts it.
  */
 export function ratingHistoryQueryOptions(
   source: ApiSource,
@@ -34,7 +33,7 @@ export function ratingHistoryQueryOptions(
   joinedAt: number | undefined,
   onGames?: (count: number) => void,
 ) {
-  return queryOptions<{ points: RatingPoint[]; summary?: PeriodSummary; games?: ReviewGame[] }>({
+  return queryOptions<{ points: RatingPoint[]; games?: ReviewGame[] }>({
     // Today too: a sliding period moves on the next day.
     queryKey: [
       'rating-history',
@@ -44,7 +43,7 @@ export function ratingHistoryQueryOptions(
       period,
       toDateInput(Date.now()),
     ] as const,
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal, client, queryKey }) => {
       const { from, to } = periodBounds(period, Date.now(), joinedAt)
       if (source === 'lichess' && period.kind === 'lifetime') {
         const history = await fetchRatingHistory(username, signal)
@@ -63,17 +62,13 @@ export function ratingHistoryQueryOptions(
         {
           signal,
           store: gameStore,
+          ...(client.getQueryData(queryKey) !== undefined && { fetchers: BACKGROUND_FETCHERS }),
           onProgress: (progress) => onGames?.(progress[source]?.games ?? 0),
         },
       )
       const failure = found.failures[0]
       if (failure) throw failure.error
-      return {
-        points: gamePoints(found.games),
-        summary: periodSummary(found.games),
-        // For the period's errors (errors.ts)
-        games: found.games,
-      }
+      return { points: gamePoints(found.games), games: found.games }
     },
     staleTime: 5 * 60_000,
     retry: shouldRetry,

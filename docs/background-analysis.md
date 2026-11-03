@@ -34,7 +34,7 @@ Le travail de fond **cède la place** dès que le joueur a besoin de Stockfish o
 
 - une analyse ou « Approfondir » ;
 - un entraînement **affiché et en cours** (de la première position jusqu'au bilan) : il doit répondre tout de suite à chaque coup. Le bilan, un onglet d'entraînement caché ou fermé libèrent Stockfish ; « Recommencer » ou « Rejouer les coups manqués » le reprennent ;
-- une recherche de parties (Lichess ou Chess.com), y compris l'onglet Parties.
+- une recherche de parties (Lichess ou Chess.com), sauf la mise à jour automatique des parties du profil, qui télécharge comme l'analyse de fond et ne l'interrompt pas.
 
 Mécanique, dans `lib/activity.ts` : chaque usage du joueur s'annonce (`beginActivity`) et se termine. Le travail de fond, lui, ne s'annonce pas : à la première activité, il **abandonne** ce qu'il fait (signal d'arrêt), et repart quelques secondes après la dernière. Rien n'est perdu : les positions évaluées sont dans le cache, les parties reçues dans le magasin. Repartir coûte le démarrage des moteurs (une seconde ou deux).
 

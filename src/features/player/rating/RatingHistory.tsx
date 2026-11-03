@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { DateField } from '@/components/DateField'
 import {
   Select,
@@ -8,13 +8,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PagedGamesTable } from '@/features/games/components/PagedGamesTable'
 import { toDateInput } from '@/lib/dateInput'
-import { formatGameCount, formatNumber, formatPercent, formatSigned } from '@/lib/format'
+import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
+import { ApiError } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { Panel } from '../components/Panel'
-import { ResultBar } from '../components/ResultBar'
 import { SourceDot } from '../components/SourceBadge'
+import type { ProfileSearch } from '../search'
 import { categoryLabel, sourceErrorMessage } from '../sources'
 import { SOURCE_LABELS, type AccountSummary } from '../summary'
 import {
@@ -27,17 +29,17 @@ import {
   presetPeriod,
   type ChartCategory,
   type PeriodPreset,
-  type PeriodSummary,
 } from './history'
 import { ratingHistoryQueryOptions } from './queries'
 import { Figure } from './Figure'
-import { PeriodErrorsView } from './PeriodErrors'
 import { RatingChart } from './RatingChart'
+import { periodIsLive } from './refresh'
 import {
   loadRatingChartSettings,
   saveRatingChartSettings,
   type RatingChartSettings,
 } from './settings'
+import { useAutoRefresh } from './useAutoRefresh'
 
 /** One choice in a short list, the width of its longest option. */
 function Picker<T extends string>({
@@ -69,34 +71,6 @@ function Picker<T extends string>({
   )
 }
 
-/**
- * The period's results under the chart: games, score, the opponents' average rating and the
- * performance, then the wins, draws and losses.
- */
-function PeriodFigures({ summary }: { summary: PeriodSummary }) {
-  const { games, record, opponentAverage, performance } = summary
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-        <Figure label={m.rating_games()} value={formatNumber(games)} />
-        <Figure
-          label={m.rating_score()}
-          value={formatPercent((record.win + record.draw / 2) / games)}
-        />
-        {opponentAverage !== undefined && (
-          <Figure label={m.rating_opponents()} value={formatNumber(opponentAverage)} />
-        )}
-        {performance !== undefined && (
-          <span title={m.rating_performance_hint()}>
-            <Figure label={m.rating_performance()} value={formatNumber(performance)} />
-          </span>
-        )}
-      </div>
-      <ResultBar record={record} />
-    </div>
-  )
-}
-
 const PRESET_LABELS: Record<PeriodPreset | 'custom', () => string> = {
   today: m.rating_preset_today,
   week: m.rating_preset_week,
@@ -109,16 +83,20 @@ const PRESET_LABELS: Record<PeriodPreset | 'custom', () => string> = {
 
 /**
  * The player's rating over time, on one platform and in one time control (never mixed: ratings
- * of two platforms do not compare), over a period: a preset, or dates. The period on the left, the
- * platform and time control on the right. Its filters are kept per profile in this browser
- * (settings.ts); a platform without account falls back to the other one.
+ * of two platforms do not compare), over a period: a preset, or dates; the period's games under
+ * it. The period on the left, the platform and time control on the right. Its filters are kept per
+ * profile in this browser (settings.ts); a platform without account falls back to the other one.
+ * A period up to today looks for new games by itself (useAutoRefresh).
  */
 export function RatingHistory({
   profile,
+  usernames,
   accounts,
 }: {
   /** settings.ts's profileKey */
   profile: string
+  /** The accounts searched, for the links to the analysis */
+  usernames: ProfileSearch
   /** joinedAt: where the lifetime starts; categories: the current ratings, in the time controls */
   accounts: Pick<AccountSummary, 'source' | 'username' | 'joinedAt' | 'categories'>[]
 }) {
@@ -145,6 +123,16 @@ export function RatingHistory({
     ),
     enabled: account !== undefined,
   })
+  const games = query.data?.games
+  const { refetch } = query
+  useAutoRefresh({
+    enabled: account !== undefined && games !== undefined && periodIsLive(settings.period),
+    account: { source: account?.source ?? 'chesscom', username: account?.username ?? '' },
+    lastPlayedAt: games?.[0]?.playedAt.getTime(),
+    updatedAt: Math.max(query.dataUpdatedAt, query.errorUpdatedAt),
+    rateLimited: query.error instanceof ApiError && query.error.isRateLimited,
+    refetch: useCallback(() => void refetch({ cancelRefetch: false }), [refetch]),
+  })
   if (!account) return null
 
   const joinedAt = account.joinedAt?.getTime()
@@ -154,7 +142,6 @@ export function RatingHistory({
   const to = toDateInput(shown.to)
   const today = toDateInput(now)
   const points = query.data?.points ?? []
-  const summary = query.data?.summary
   const first = points[0]
   const last = points.at(-1)
   const peak = peakPoint(points)
@@ -257,7 +244,7 @@ export function RatingHistory({
             ? m.rating_chart_loading_games({ games: formatGameCount(found) })
             : m.loading()}
         </p>
-      ) : query.isError ? (
+      ) : query.isError && !query.data ? (
         <p className="text-sm text-loss">{sourceErrorMessage(account.source, query.error)}</p>
       ) : points.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.rating_chart_empty()}</p>
@@ -268,26 +255,11 @@ export function RatingHistory({
             points={points}
             {...periodBounds(settings.period, query.dataUpdatedAt, joinedAt)}
           />
-          <div className="mt-4 border-t pt-4">
-            {summary ? (
-              <>
-                <PeriodFigures summary={summary} />
-                {query.data?.games && (
-                  <PeriodErrorsView
-                    games={query.data.games}
-                    queryKey={[
-                      'period-errors',
-                      account.source,
-                      account.username.toLowerCase(),
-                      settings.category,
-                      settings.period,
-                      query.dataUpdatedAt,
-                    ]}
-                  />
-                )}
-              </>
+          <div className="mt-4">
+            {games ? (
+              <PagedGamesTable games={games} usernames={usernames} />
             ) : (
-              <p className="text-sm text-muted-foreground">{m.rating_summary_unavailable()}</p>
+              <p className="text-sm text-muted-foreground">{m.rating_games_unavailable()}</p>
             )}
           </div>
         </>
