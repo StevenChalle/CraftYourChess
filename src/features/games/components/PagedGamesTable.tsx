@@ -8,10 +8,10 @@ import { pageSlice } from '@/lib/pagination'
 import { AnalyzeLink } from './AnalyzeLink'
 import { GamesTable } from './GamesTable'
 
-const PAGE_SIZE = 30
+const PAGE_SIZE = 20
 
 /**
- * Games already in memory, in their order (newest first), 30 per page, the arrows above and under
+ * Games already in memory, in their order (newest first), 20 per page, the arrows above and under
  * the list; each with its link to the analysis. New games arriving keep the page shown.
  * `usernames`: the accounts searched, or the import, for those links.
  */
