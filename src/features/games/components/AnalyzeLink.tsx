@@ -8,17 +8,28 @@ import { m } from '@/paraglide/messages'
 
 /**
  * Straight to the analysis of this game alone, then its training. Already analysed: straight to
- * the training (the analysis comes back from the cache at once).
+ * the training (the analysis comes back from the cache at once); `disabled` when it has no error
+ * to replay.
  */
 export function AnalyzeLink({
   game,
   usernames,
   analysed = false,
+  disabled = false,
 }: {
   game: GameSummary
   usernames: ProfileSearch
   analysed?: boolean
+  disabled?: boolean
 }) {
+  if (analysed && disabled) {
+    return (
+      <Button size="xs" disabled title={m.replay_game()}>
+        <Swords data-icon="inline-start" />
+        <span className="max-sm:sr-only">{m.replay_game_short()}</span>
+      </Button>
+    )
+  }
   if (analysed) {
     return (
       <Button size="xs" asChild>

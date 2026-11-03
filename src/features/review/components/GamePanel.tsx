@@ -12,9 +12,10 @@ import { EvalChart } from './EvalChart'
 
 /**
  * An analysed game, opened in the results: the columns hidden on a phone, the evaluation chart,
- * and deepening the positions that only had a quick look.
+ * and deepening the positions that only had a quick look. `deepen`: false outside the analysis's
+ * results (a game of the profile, judged from the cache), where the session cannot deepen it.
  */
-export function GamePanel({ game }: { game: ReviewedGame }) {
+export function GamePanel({ game, deepen = true }: { game: ReviewedGame; deepen?: boolean }) {
   return (
     <div className="space-y-3">
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:hidden">
@@ -33,7 +34,7 @@ export function GamePanel({ game }: { game: ReviewedGame }) {
         </span>
       </p>
       <EvalChart game={game} />
-      <DeepenGame game={game} />
+      {deepen && <DeepenGame game={game} />}
     </div>
   )
 }

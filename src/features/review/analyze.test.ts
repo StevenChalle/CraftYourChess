@@ -12,6 +12,7 @@ import {
   deepenPositions,
   gamesToDeepen,
   QUICK_NODES,
+  reviewFromCache,
 } from './analyze'
 import { createCache, positionKey, type EvaluationCache } from './cache'
 import { DEFAULT_CRITERIA } from './criteria'
@@ -150,6 +151,21 @@ describe('analyzeGames with the cache', () => {
     const [reviewed] = await analyze([game('g1', SCHOLAR)])
     expect(reviewed!.mistakes.map((mistake) => mistake.ply)).toEqual([5])
     warn.mockRestore()
+  })
+})
+
+describe('reviewFromCache', () => {
+  it('judges the games the cache fully knows, never with an engine, and leaves out the others', async () => {
+    await analyze([game('g1', SCHOLAR)])
+    vi.mocked(EnginePool.start).mockClear()
+    const reviewed = await reviewFromCache(
+      [game('g1', SCHOLAR), game('g2', ['d4', 'd5'])],
+      DEFAULT_CRITERIA,
+      cache,
+    )
+    expect(EnginePool.start).not.toHaveBeenCalled()
+    expect(reviewed.map((item) => item.id)).toEqual(['g1'])
+    expect(reviewed[0]!.mistakes.map((mistake) => mistake.ply)).toEqual([5])
   })
 })
 

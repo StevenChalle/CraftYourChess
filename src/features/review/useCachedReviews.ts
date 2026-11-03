@@ -1,0 +1,44 @@
+import { useEffect, useState } from 'react'
+import { useBackground } from '@/features/background/backgroundContext'
+import { RECIPE, reviewFromCache, type ReviewedGame } from './analyze'
+import { analysedRefs } from './cache'
+import type { ReviewCriteria } from './criteria'
+import { gameRef } from './gameRef'
+import type { ReviewGame } from './games'
+
+/**
+ * These games as the analysis would show them, by reference (gameRef), for those analysed before
+ * with the current recipe: judged from the analysis cache with `criteria`, never with Stockfish. Looked up again when the
+ * games or the criteria change, and as the background analysis moves.
+ */
+export function useCachedReviews(
+  games: ReviewGame[],
+  criteria: ReviewCriteria,
+): Map<string, ReviewedGame> {
+  const [reviewed, setReviewed] = useState<Map<string, ReviewedGame>>(() => new Map())
+  const done = useBackground()?.state.done
+  const key = games.map(gameRef).join()
+
+  useEffect(() => {
+    let current = true
+    analysedRefs(games.map(gameRef), RECIPE)
+      .then((analysed) =>
+        reviewFromCache(
+          games.filter((game) => analysed.has(gameRef(game))),
+          criteria,
+        ),
+      )
+      .then((found) => {
+        if (current) setReviewed(new Map(found.map((game) => [gameRef(game), game])))
+      })
+      // The cache unavailable: the games simply show as not analysed.
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+    // The games change with their references; looked up again as the background analysis moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, criteria, done])
+
+  return reviewed
+}

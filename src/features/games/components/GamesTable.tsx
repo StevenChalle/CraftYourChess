@@ -92,10 +92,12 @@ export function GamesTable<G extends GameSummary>({
   action?: (game: G) => ReactNode
   /**
    * Rows that open onto a full-width panel, one at a time, with a slide (the narrow-screen
-   * details then go into that panel). `onToggle` is told when one opens or closes.
+   * details then go into that panel). `onToggle` is told when one opens or closes. `canOpen`:
+   * only some rows have a panel (the others keep their narrow-screen details).
    */
   expandable?: {
     render: (game: G) => ReactNode
+    canOpen?: (game: G) => boolean
     onToggle?: (key: string, open: boolean) => void
     /** The row open at first */
     defaultOpen?: string
@@ -141,14 +143,15 @@ export function GamesTable<G extends GameSummary>({
         {games.map((game, index) => {
           const result = RESULTS[game.result]
           const key = `${game.source}-${game.id}`
-          const panelOpen = openKey === key
+          const openable = expandable !== undefined && (expandable.canOpen?.(game) ?? true)
+          const panelOpen = openable && openKey === key
           // Inline details on narrow screens, unless the row opens onto a panel.
-          const open = !expandable && expanded.has(key)
+          const open = !openable && expanded.has(key)
           // The whole row toggles its panel (or, where columns are hidden, its details), except
           // its links and buttons.
           const onRowClick = (event: MouseEvent) => {
             if ((event.target as Element).closest('a, button')) return
-            if (expandable) toggleOpen(key)
+            if (openable) toggleOpen(key)
             else if (window.matchMedia('(width < 48rem)').matches) toggle(key)
           }
           const row = (
@@ -156,27 +159,29 @@ export function GamesTable<G extends GameSummary>({
               key={key}
               onClick={onRowClick}
               className={cn(
-                expandable && 'cursor-pointer',
+                openable && 'cursor-pointer',
                 // Striped by hand: the panels' rows are not entries.
                 expandable && index % 2 === 1 && 'bg-field',
               )}
             >
               {expandable && (
                 <TableCell className="w-6 px-1 sm:w-8 sm:px-2 sm:pr-0">
-                  <button
-                    type="button"
-                    aria-expanded={panelOpen}
-                    aria-label={m.games_row_open()}
-                    onClick={() => toggleOpen(key)}
-                    className="align-middle text-muted-foreground hover:text-text-strong"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        'size-4 transition-transform duration-200',
-                        panelOpen && 'rotate-180',
-                      )}
-                    />
-                  </button>
+                  {openable && (
+                    <button
+                      type="button"
+                      aria-expanded={panelOpen}
+                      aria-label={m.games_row_open()}
+                      onClick={() => toggleOpen(key)}
+                      className="align-middle text-muted-foreground hover:text-text-strong"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          'size-4 transition-transform duration-200',
+                          panelOpen && 'rotate-180',
+                        )}
+                      />
+                    </button>
+                  )}
                 </TableCell>
               )}
               <TableCell className={cn('num whitespace-nowrap text-muted-foreground', HIDE.date)}>
@@ -203,7 +208,7 @@ export function GamesTable<G extends GameSummary>({
                   onClick={() => toggle(key)}
                   className={cn(
                     'mr-1 align-middle text-muted-foreground md:hidden',
-                    expandable && 'hidden',
+                    openable && 'hidden',
                   )}
                 >
                   <ChevronDown
@@ -266,7 +271,7 @@ export function GamesTable<G extends GameSummary>({
               </TableCell>
             </TableRow>
           )
-          if (!expandable) return row
+          if (!openable || !expandable) return row
           return (
             <Fragment key={key}>
               {row}
