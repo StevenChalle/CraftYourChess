@@ -8,18 +8,18 @@ import { useAnalysisSession } from '@/features/review/sessionContext'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
 import { formatNumber } from '@/lib/format'
 import { pageSlice } from '@/lib/pagination'
+import { loadPageSize, PAGE_SIZES, savePageSize } from '../pageSize'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { AnalyzeLink } from './AnalyzeLink'
 import { GamesTable } from './GamesTable'
 
-const PAGE_SIZE = 20
-
 /**
- * Games already in memory, in their order (newest first), 20 per page, the arrows above and under
- * the list; each with its link to the analysis. A game analysed before shows its errors and opens
- * onto its evaluation chart, as in the analysis's results (judged from the cache with the
+ * Games already in memory, in their order (newest first), 20 per page or as many as chosen (kept
+ * in this browser), the arrows under the list;
+ * each with its link to the analysis. A game analysed before shows its errors and opens onto its
+ * evaluation chart, as in the analysis's results (judged from the cache with the
  * analysis's criteria). New games arriving keep the page shown. `usernames`: the accounts
  * searched, or the import, for the links.
  */
@@ -37,8 +37,9 @@ export function PagedGamesTable({
   oneRating?: boolean
 }) {
   const [wanted, setWanted] = useState(0)
-  const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / PAGE_SIZE) - 1))
-  const shown = pageSlice(games, page, PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(loadPageSize)
+  const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / pageSize) - 1))
+  const shown = pageSlice(games, page, pageSize)
   const { draft, deepening } = useAnalysisSession()
   const reviewed = useCachedReviews(shown, draft.criteria, deepening?.gameKey)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -51,12 +52,6 @@ export function PagedGamesTable({
   }
   return (
     <div ref={rootRef} className="scroll-mt-4 space-y-3">
-      <TablePagination
-        page={page}
-        pageSize={PAGE_SIZE}
-        total={games.length}
-        onPageChange={setWanted}
-      />
       <div className="panel-etabli px-2">
         <GamesTable
           games={shown}
@@ -122,11 +117,18 @@ export function PagedGamesTable({
       {/* Under the list, a new page starts back at its top. */}
       <TablePagination
         page={page}
-        pageSize={PAGE_SIZE}
+        pageSize={pageSize}
         total={games.length}
         onPageChange={(next) => {
           setWanted(next)
           rootRef.current?.scrollIntoView({ block: 'start' })
+        }}
+        pageSizes={PAGE_SIZES}
+        onPageSizeChange={(size) => {
+          // The page holding the first game shown, at the new size.
+          setWanted(Math.floor((page * pageSize) / size))
+          setPageSize(size)
+          savePageSize(size)
         }}
       />
     </div>

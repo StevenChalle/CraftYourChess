@@ -7,6 +7,7 @@ import { GamesTable } from '@/features/games/components/GamesTable'
 import { sourceErrorMessage } from '@/features/player/sources'
 import { formatEstimate, formatGameCount, formatNumber } from '@/lib/format'
 import { pageSlice } from '@/lib/pagination'
+import { loadPageSize, PAGE_SIZES, savePageSize } from '@/features/games/pageSize'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { shallowPositions, type Mistake, type ReviewedGame, type ReviewOutcome } from '../analyze'
@@ -16,8 +17,6 @@ import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { GamePanel } from './GamePanel'
 import { ThemeBars } from './ThemeBars'
 import { TrainingPrompt } from './TrainingPrompt'
-
-const RESULTS_PAGE_SIZE = 20
 
 /**
  * The analysed games, paginated, with each game's errors and a button replaying them.
@@ -31,6 +30,7 @@ export function ReviewResults({
   onTrain: (mistakes: Mistake[]) => void
 }) {
   const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(loadPageSize)
   const { games, failures } = outcome
   const { deepening, stopDeepening } = useAnalysisSession()
 
@@ -48,7 +48,7 @@ export function ReviewResults({
           <ThemeBars mistakes={games.flatMap((game) => game.mistakes)} />
           <DeepenAll games={games} />
           <GamesTable
-            games={pageSlice(games, page, RESULTS_PAGE_SIZE)}
+            games={pageSlice(games, page, pageSize)}
             action={(game) => <ReviewLink game={game} compact className="max-sm:hidden" />}
             expandable={{
               render: (game) => (
@@ -103,9 +103,15 @@ export function ReviewResults({
           />
           <TablePagination
             page={page}
-            pageSize={RESULTS_PAGE_SIZE}
+            pageSize={pageSize}
             total={games.length}
             onPageChange={setPage}
+            pageSizes={PAGE_SIZES}
+            onPageSizeChange={(size) => {
+              setPage(Math.floor((page * pageSize) / size))
+              setPageSize(size)
+              savePageSize(size)
+            }}
           />
           <TrainingPrompt outcome={outcome} />
         </>

@@ -252,6 +252,8 @@
   "pagination_range": "{from} à {to} sur {total}",
   "pagination_previous": "Précédent",
   "pagination_next": "Suivant",
+  "pagination_page_size": "{count} par page",
+  "pagination_page_size_label": "Parties par page",
   "legal_privacy_local_review": "vos réglages d'analyse approfondie (filtres et seuils) ;",
   "recap_estimate": "Temps estimé : ≈ {time}",
   "recap_faster_on_desktop": "Environ {times} fois plus rapide sur un ordinateur.",
@@ -667,5 +669,6 @@
   "study_loading": "Chargement de la partie…",
   "study_review": "Revoir",
   "study_review_title": "Revoir cette partie : échiquier, moteur, variantes",
-  "legal_privacy_local_study": "si le moteur en direct de la page de revue d'une partie est allumé ;"
+  "legal_privacy_local_study": "si le moteur en direct de la page de revue d'une partie est allumé ;",
+  "legal_privacy_local_page_size": "le nombre de parties par page des listes ;"
 }

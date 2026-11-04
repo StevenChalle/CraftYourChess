@@ -252,6 +252,8 @@
   "pagination_range": "{from}–{to} of {total}",
   "pagination_previous": "Previous",
   "pagination_next": "Next",
+  "pagination_page_size": "{count} per page",
+  "pagination_page_size_label": "Games per page",
   "legal_privacy_local_review": "your advanced analysis settings (filters and thresholds);",
   "recap_estimate": "Estimated time: ≈ {time}",
   "recap_faster_on_desktop": "About {times}× faster on a computer.",
@@ -667,5 +669,6 @@
   "study_loading": "Loading the game…",
   "study_review": "Review",
   "study_review_title": "Review this game: board, engine, variations",
-  "legal_privacy_local_study": "whether the live engine of the game review page is on;"
+  "legal_privacy_local_study": "whether the live engine of the game review page is on;",
+  "legal_privacy_local_page_size": "how many games the lists show per page;"
 }
