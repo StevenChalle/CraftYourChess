@@ -47,12 +47,15 @@ export function deepShare(minDrop: number): number {
 }
 
 /** Positions of a game the engine has to evaluate (Lichess's own analysis covers the others). */
-export function enginePositions(game: Pick<ReviewGame, 'sanMoves' | 'serverCps'>): number {
+export function enginePositions(
+  game: Pick<ReviewGame, 'sanMoves' | 'serverCps' | 'initialFen'>,
+): number {
   const positions = game.sanMoves.length + 1
   if (positions < 2) return 0
   if (!game.serverCps) return positions
-  // Lichess evaluates the position after each move; the start position is never covered.
-  return 1 + game.serverCps.filter((cp) => cp === undefined).length
+  // Lichess evaluates the position after each move; the usual start position has a known value
+  // (START_CP), a set-up one needs the engine.
+  return (game.initialFen ? 1 : 0) + game.serverCps.filter((cp) => cp === undefined).length
 }
 
 /**
@@ -74,7 +77,7 @@ export function makespan(durations: number[], workers: number): number {
  * (analyzeGames). Positions Lichess already evaluated are not counted (enginePositions).
  */
 export function estimateSeconds(
-  games: Pick<ReviewGame, 'sanMoves' | 'serverCps'>[],
+  games: Pick<ReviewGame, 'sanMoves' | 'serverCps' | 'initialFen'>[],
   criteria: ReviewCriteria,
   device: DeviceProfile,
 ): number {
@@ -125,7 +128,7 @@ export function workSpeedup(
  * when the gain is too small to mention (under 1.5×).
  */
 export function desktopSpeedup(
-  games: Pick<ReviewGame, 'sanMoves' | 'serverCps'>[],
+  games: Pick<ReviewGame, 'sanMoves' | 'serverCps' | 'initialFen'>[],
   criteria: ReviewCriteria,
   device: DeviceProfile,
 ): number | undefined {

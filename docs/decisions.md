@@ -868,3 +868,11 @@ Pour étudier une partie sans partir sur Lichess ou Chess.com : `/player/review`
 - **Pas d'analyse automatique à l'ouverture** d'une partie non analysée : un bouton, parce que l'analyse et le moteur en direct se partageraient le processeur et ralentiraient l'exploration.
 - **Variantes** jouées sur l'échiquier ou depuis une ligne du moteur, affichées comme sur Lichess, non enregistrées pour l'instant ; promotion en dame.
 - **Le lien « Analyze on Lichess »** du panneau de la courbe devient un bouton Review, avec « Entraîner » à côté, en bas à gauche de l'encadré : à la même place pour le résumé de la partie et pour le coup survolé. Une icône Review sur chaque ligne des listes de parties.
+
+## 2026-11-05 : les parties analysées sur Lichess comptent comme analysées, sans Stockfish
+
+Une partie qu'on a fait analyser sur Lichess arrive avec ses évaluations (`evals=true`, `serverCps`). Elles servaient déjà à l'analyse, mais la partie ne paraissait analysée qu'une fois l'analyse lancée dans l'app. Désormais :
+
+- **Les listes et la page de revue** la traitent comme analysée d'emblée (`useCachedReviews` → `reviewFromCache`) : erreurs, courbe, entraînement, sans Stockfish ni attente. Seulement si Lichess a évalué **chaque coup** ; sinon elle reste « à analyser ».
+- **La position de départ** n'est jamais évaluée par Lichess : on lui donne +0,2 (`START_CP`, ce qu'en disent les moteurs). Une partie analysée par Lichess ne demande donc plus aucun calcul, même quand on lance l'analyse (estimation à jour : `enginePositions`). Une position de départ arrangée (`initialFen`) passe encore par Stockfish.
+- Limite : une partie analysée sur Lichess **après** avoir été téléchargée dans le magasin des parties garde l'ancienne version, sans évaluations.

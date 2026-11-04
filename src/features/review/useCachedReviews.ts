@@ -8,7 +8,8 @@ import type { ReviewGame } from './games'
 
 /**
  * These games as the analysis would show them, by reference (gameRef), for those analysed before
- * with the current recipe: judged from the analysis cache with `criteria`, never with Stockfish.
+ * with the current recipe, or on Lichess (its evaluations come with the game): judged from the
+ * analysis cache with `criteria`, never with Stockfish.
  * Looked up again when the games or the criteria change, as the background analysis moves, and
  * when `refresh` changes (the game the analysis deepens: once it is over, read deep).
  */
@@ -26,7 +27,8 @@ export function useCachedReviews(
     analysedRefs(games.map(gameRef), RECIPE)
       .then((analysed) =>
         reviewFromCache(
-          games.filter((game) => analysed.has(gameRef(game))),
+          // A game analysed on Lichess counts only if Lichess evaluated every move (checked there).
+          games.filter((game) => analysed.has(gameRef(game)) || game.serverCps !== undefined),
           criteria,
         ),
       )

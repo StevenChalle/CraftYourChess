@@ -23,8 +23,9 @@ describe('enginePositions', () => {
     expect(enginePositions(game(80))).toBe(81)
   })
 
-  it('only counts what Lichess did not evaluate, plus the start position', () => {
-    expect(enginePositions(game(4, [10, 20, undefined, 30]))).toBe(2)
+  it('only counts what Lichess did not evaluate, and a set-up start position', () => {
+    expect(enginePositions(game(4, [10, 20, undefined, 30]))).toBe(1)
+    expect(enginePositions({ ...game(4, [10, 20, undefined, 30]), initialFen: 'x' })).toBe(2)
   })
 
   it('needs nothing for a game without moves', () => {

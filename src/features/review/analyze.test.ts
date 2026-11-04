@@ -169,6 +169,18 @@ describe('reviewFromCache', () => {
   })
 })
 
+describe('reviewFromCache with Lichess evaluations', () => {
+  it('judges a game Lichess analysed whole, with an empty cache, and not one it only partly did', async () => {
+    // After each move of SCHOLAR, the mate after 3... Nf6?? included; the final mate is known.
+    const lichess = { ...game('g1', SCHOLAR), serverCps: [30, 25, 20, 30, 10, 10_000, undefined] }
+    const partly = { ...game('g2', SCHOLAR), serverCps: [30, undefined, 20, 30, 10, 10_000] }
+    const reviewed = await reviewFromCache([lichess, partly], DEFAULT_CRITERIA, cache)
+    expect(reviewed.map((item) => item.id)).toEqual(['g1'])
+    expect(reviewed[0]!.positions[0]!.cp).toBe(20)
+    expect(reviewed[0]!.mistakes.map((mistake) => mistake.ply)).toEqual([5])
+  })
+})
+
 describe('deepenGame with the cache', () => {
   it('keeps its evaluations: the next analysis is precise everywhere', async () => {
     const [reviewed] = await analyze([game('g1', ['e4', 'e5', 'Nf3'])])

@@ -104,11 +104,23 @@ type Work = {
 /** Positions of one game to evaluate in a pass. */
 type Job = { work: Work; indexes: number[] }
 
+/**
+ * The usual starting position's evaluation (White's side, centipawns), as engines give it: Lichess
+ * does not evaluate it, so that a game it analysed needs no engine at all.
+ */
+export const START_CP = 20
+
 function prepare(game: ReviewGame): Work {
   const positions = replay(game.sanMoves, game.initialFen)
   const cps = positions.map(
     // Lichess evaluations are those of the position after each move: shifted by one.
-    (position, index) => position.finalCp ?? (index > 0 ? game.serverCps?.[index - 1] : undefined),
+    (position, index) =>
+      position.finalCp ??
+      (index > 0
+        ? game.serverCps?.[index - 1]
+        : game.serverCps && !game.initialFen
+          ? START_CP
+          : undefined),
   )
   return { game, positions, cps, byEngine: new Set(), deep: new Set() }
 }
@@ -334,8 +346,9 @@ export async function analyzeGames(
 }
 
 /**
- * The games whose every position the cache evaluates, judged with `criteria`, without Stockfish:
- * the others are left out. For a look at the errors of games analysed before (the profile).
+ * The games whose every position the cache evaluates (or Lichess's own analysis), judged with
+ * `criteria`, without Stockfish: the others are left out. For a look at the errors of games
+ * analysed before (the profile), here or on Lichess.
  */
 export async function reviewFromCache(
   games: ReviewGame[],
