@@ -27,6 +27,8 @@ export type ReviewGame = GameSummary & {
 /** Seconds. `remaining[i]`: the mover's clock right after move i + 1. */
 export type GameClock = {
   initial: number
+  /** Added after each move */
+  increment: number
   /** Initial time plus 40 increments: the expected length of the game (Lichess's estimate) */
   total: number
   remaining: number[]
@@ -43,7 +45,24 @@ export function gameClock(
   remaining: (number | undefined)[],
 ): GameClock | undefined {
   if (remaining.length === 0 || remaining.some((value) => value === undefined)) return undefined
-  return { initial, total: initial + 40 * increment, remaining: remaining as number[] }
+  return { initial, increment, total: initial + 40 * increment, remaining: remaining as number[] }
+}
+
+/**
+ * The time the mover spent on the move at `ply` (its clock before, minus after, plus the
+ * increment) and what they had left after it, in seconds. `firstMovesTimed`: false on Lichess,
+ * whose clocks only start after each side's first move: no time spent for those.
+ */
+export function moveTime(
+  clock: GameClock,
+  ply: number,
+  firstMovesTimed: boolean,
+): { spent?: number; left: number } | undefined {
+  const left = clock.remaining[ply]
+  const before = clockBefore(clock, ply)
+  if (left === undefined || before === undefined) return undefined
+  if (ply < 2 && !firstMovesTimed) return { left }
+  return { spent: Math.max(0, before - left + clock.increment), left }
 }
 
 /** undefined for games outside the review: variants, aborted, or without the player. */

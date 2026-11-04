@@ -840,3 +840,7 @@ Le profil devient une seule page : le graphique, puis la liste de ses parties.
 ## 2026-11-04 : les parties déjà analysées se déplient dans la liste du profil
 
 Comme dans les résultats de l'analyse, une partie de la liste déjà analysée (version actuelle de l'analyse, `analysedRefs`) affiche son **nombre d'erreurs** et **s'ouvre sur sa courbe d'évaluation** (`GamePanel`, sans « Approfondir » : la session ne peut approfondir que les parties de son analyse). Elle est jugée depuis le cache des analyses, sans Stockfish (`reviewFromCache`, revenu pour cela), avec les seuils actuels de l'onglet Analyse (`useCachedReviews`), seulement pour la page affichée ; elle se met à jour au fil de l'analyse de fond. Sans erreur, « Entraîner » est grisé. Les parties non analysées gardent « Analyser » et ne s'ouvrent pas (`canOpen` de `GamesTable`). Vaut aussi pour les parties importées.
+
+## 2026-11-04 : le temps de chaque coup dans l'infobulle de la courbe d'évaluation
+
+Rien de nouveau n'est stocké : les pendules arrivent avec chaque partie (`clocks` de l'export Lichess, `[%clk]` du PGN Chess.com ou importé) et la partie brute est déjà gardée. `GameClock` garde maintenant l'incrément, et `moveTime` (`games.ts`) en tire le **temps passé** (pendule avant − après + incrément) et le **temps restant**, affichés sous l'évaluation (« 4,3 s sur ce coup · reste 2:16 »). Lichess ne décompte pas le premier coup de chaque camp : pas de temps passé pour ces deux-là. Sans pendule (Daily, PGN sans `%clk`), la ligne n'apparaît pas.

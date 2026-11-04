@@ -5,6 +5,7 @@ import { MATE_CP } from './errors'
 import { parseChessComTimeControl, timeControlLabel } from '@/features/games/normalize'
 import {
   clockBefore,
+  moveTime,
   fromChessComGame,
   fromLichessGame,
   latestGames,
@@ -145,10 +146,34 @@ describe('latestGames', () => {
   })
 })
 
+describe('moveTime', () => {
+  const clock = { initial: 180, increment: 2, total: 260, remaining: [180, 179.5, 175.2, 181] }
+
+  it('is the clock before, minus after, plus the increment', () => {
+    // White's second move: 180 before, 175.2 after, +2
+    expect(moveTime(clock, 2, true)!.spent).toBeCloseTo(6.8)
+    expect(moveTime(clock, 2, true)!.left).toBe(175.2)
+    // A premove: about the increment back
+    expect(moveTime(clock, 3, true)!.spent).toBeCloseTo(0.5)
+  })
+
+  it('leaves out the first moves when the platform does not time them', () => {
+    expect(moveTime(clock, 0, false)).toEqual({ left: 180 })
+    expect(moveTime(clock, 1, false)).toEqual({ left: 179.5 })
+    expect(moveTime(clock, 0, true)).toEqual({ spent: 2, left: 180 })
+    expect(moveTime(clock, 9, true)).toBeUndefined()
+  })
+})
+
 describe('clocks', () => {
   it('reads Lichess clocks (centiseconds) with the expected length of the game', () => {
     const game = fromLichessGame(lichessGame({ clocks: [18000, 17950, 17520] }), 'alice')!
-    expect(game.clock).toEqual({ initial: 180, total: 260, remaining: [180, 179.5, 175.2] })
+    expect(game.clock).toEqual({
+      initial: 180,
+      increment: 2,
+      total: 260,
+      remaining: [180, 179.5, 175.2],
+    })
     // Before White's second move: White's clock after the first one
     expect(clockBefore(game.clock!, 0)).toBe(180)
     expect(clockBefore(game.clock!, 2)).toBe(180)
@@ -160,6 +185,7 @@ describe('clocks', () => {
       '[Event "Live Chess"]\n\n1. e4 {[%clk 0:02:59]} 1... e5 {[%clk 0:02:58.5]} 2. Nf3 {[%clk 0:02:50]} 1-0'
     expect(fromChessComGame(chessComGame({ pgn }), 'alice')!.clock).toEqual({
       initial: 180,
+      increment: 2,
       total: 260,
       remaining: [179, 178.5, 170],
     })

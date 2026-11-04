@@ -620,5 +620,7 @@
   "rating_current": "Current",
   "rating_change": "Change over the period",
   "rating_peak": "Peak",
-  "rating_games_unavailable": "Lichess's rating history comes without the games: pick a shorter period to see them."
+  "rating_games_unavailable": "Lichess's rating history comes without the games: pick a shorter period to see them.",
+  "eval_chart_move_time": "{time} on this move",
+  "eval_chart_clock_left": "{clock} left"
 }

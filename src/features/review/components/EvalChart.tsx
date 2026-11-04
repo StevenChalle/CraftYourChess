@@ -14,10 +14,12 @@ import { Board } from '@/components/board/Board'
 import { ExternalLink } from '@/features/player/components/ExternalLink'
 import { evalDelta, formatDelta, formatEval } from '@/features/training/evaluation'
 import { lichessGameUrl, moveSquares } from '@/features/training/moves'
+import { formatClock, formatMoveTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import type { ReviewedGame } from '../analyze'
 import { forColor, winChance } from '../errors'
+import { moveTime } from '../games'
 import { gamePhases } from '../phases'
 
 const HEIGHT = 180
@@ -37,12 +39,15 @@ function moveInfo(game: ReviewedGame, index: number) {
   const position = game.positions[index]!
   const number = Math.floor((index - 1) / 2) + 1
   const mover: Color = before.turn
+  // Lichess's clocks start after each side's first move.
+  const time = game.clock && moveTime(game.clock, index - 1, game.source !== 'lichess')
   const delta = evalDelta(forColor(before.cp, mover), forColor(position.cp, mover))
   return {
     label: `${number}${mover === 'white' ? '.' : '…'} ${position.move?.san ?? ''}`,
     position,
     mover,
     delta,
+    time,
     mine: game.mistakes.some((mistake) => mistake.ply === index - 1),
     theirs: game.opponentErrors.includes(index - 1),
   }
@@ -270,7 +275,7 @@ function MoveDetails({
   pinned: boolean
   inline?: boolean
 }) {
-  const { label, position, delta, mine, theirs } = moveInfo(game, index)
+  const { label, position, delta, time, mine, theirs } = moveInfo(game, index)
   const config = useMemo(
     (): Config => ({
       fen: position.fen,
@@ -300,6 +305,14 @@ function MoveDetails({
             </span>
           )}
         </p>
+        {time && (
+          <p className="num text-xs text-muted-foreground">
+            {time.spent !== undefined && (
+              <>{m.eval_chart_move_time({ time: formatMoveTime(time.spent) })} · </>
+            )}
+            {m.eval_chart_clock_left({ clock: formatClock(time.left) })}
+          </p>
+        )}
         {(mine || theirs) && (
           <p className={cn('text-xs', mine ? 'text-loss' : 'text-muted-foreground')}>
             {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}

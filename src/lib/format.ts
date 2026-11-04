@@ -104,6 +104,41 @@ export function formatDuration(seconds: number): string {
   return minutesFormat().format(Math.ceil(seconds / 60))
 }
 
+const tenthsSecondsFormat = cachedPerLocale(
+  (locale) =>
+    new Intl.NumberFormat(locale, {
+      style: 'unit',
+      unit: 'second',
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }),
+)
+const tenthsFormat = cachedPerLocale(
+  (locale) =>
+    new Intl.NumberFormat(locale, {
+      minimumIntegerDigits: 2,
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }),
+)
+
+/** Time spent on a move: "4.3 sec" under 10 s, "12 sec", then as a clock: "1:05". */
+export function formatMoveTime(seconds: number): string {
+  if (seconds < 10) return tenthsSecondsFormat().format(Math.round(seconds * 10) / 10)
+  if (seconds < 60) return secondsFormat().format(Math.round(seconds))
+  return formatClock(seconds)
+}
+
+/** A chess clock: "1:45", "1:02:05", with tenths under 10 s: "0:08.4" / "0:08,4". */
+export function formatClock(seconds: number): string {
+  if (seconds < 10) return `0:${tenthsFormat().format(Math.floor(seconds * 10) / 10)}`
+  const whole = Math.floor(seconds)
+  const hours = Math.floor(whole / 3600)
+  const minutes = Math.floor((whole % 3600) / 60)
+  const rest = String(whole % 60).padStart(2, '0')
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`
+}
+
 const hoursFormat = cachedPerLocale(
   (locale) => new Intl.NumberFormat(locale, { style: 'unit', unit: 'hour' }),
 )
