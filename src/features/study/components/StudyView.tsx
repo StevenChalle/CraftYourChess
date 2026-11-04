@@ -408,11 +408,14 @@ export function StudyView({
           // As tall as the board, and tall enough for the moves on a short window.
           style={{ width: PANEL, height: boardSize && Math.max(boardSize, MIN_PANEL_HEIGHT) }}
         >
-          <GameInfo game={game} player={player} />
-          {action}
-          <div className="border-t pt-3">{engine}</div>
+          {engine}
           {moves('-mx-1 min-h-0 flex-1 border-t pt-2')}
           <div className="border-t pt-2">{controls}</div>
+          {/* The game itself, at the bottom: its players and opening, the training of its errors */}
+          <div className="space-y-3 border-t pt-3">
+            <GameInfo game={game} player={player} />
+            {action}
+          </div>
         </aside>
       </div>
       <div
