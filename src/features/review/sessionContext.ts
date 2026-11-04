@@ -110,8 +110,8 @@ export type Session = {
   /** Stops the analysis under way and drops it: the filters stay, to change them */
   stopAnalysis: () => void
   /**
-   * Where the profile's list of games stands (its page, its game open): found again when coming
-   * back from a review or a training
+   * Where the profile's list of games stands (its page, its game open, the scroll): found again
+   * when coming back from a review or a training
    */
   gameList: GameListView
   setGameList: Dispatch<SetStateAction<GameListView>>
@@ -123,8 +123,11 @@ export type Session = {
   stopDeepening: () => void
 }
 
-/** The page a list of games shows, and its game open (reviewedGameKey). */
-export type GameListView = { page: number; open?: string }
+/**
+ * The page a list of games shows, its game open (reviewedGameKey), and where the window was
+ * scrolled when the list was left.
+ */
+export type GameListView = { page: number; open?: string; scrollY?: number }
 
 /** A game's key in the results: its platform and id. */
 export function reviewedGameKey(game: { source: string; id: string }): string {

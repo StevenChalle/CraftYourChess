@@ -52,18 +52,31 @@ export function PagedGamesTable({
     reviewed.get(gameRef(game)) ?? here.analysed.get(gameRef(game))
   const rootRef = useRef<HTMLDivElement>(null)
 
-  // Back on the list with a game open: that game in sight, once its row can open.
-  const [restoredOpen] = useState(gameList.open)
-  const scrolled = useRef(false)
+  // The window's scroll, kept as the list is left, and put back on return once the list (and the
+  // game open, which makes the page taller) is there again.
+  const scrollY = useRef(window.scrollY)
   useEffect(() => {
-    if (!restoredOpen || scrolled.current) return
-    const row = rootRef.current?.querySelector(`[data-game="${CSS.escape(restoredOpen)}"]`)
-    if (!row || ![...reviewed.keys(), ...here.analysed.keys()].length) return
-    scrolled.current = true
-    // Below the page's header, with a little room above.
-    row.scrollIntoView({ block: 'start' })
-    window.scrollBy(0, -96)
-  }, [restoredOpen, reviewed, here.analysed])
+    const onScroll = () => (scrollY.current = window.scrollY)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      setGameList((view) => ({ ...view, scrollY: scrollY.current }))
+    }
+  }, [setGameList])
+  const [restore] = useState(gameList.scrollY)
+  const restored = useRef(false)
+  const ready = gameList.open === undefined || reviewed.size > 0 || here.analysed.size > 0
+  useEffect(() => {
+    if (restore === undefined || restored.current || !ready) return
+    restored.current = true
+    // The open game's panel slides open: try again for a moment until the page is tall enough.
+    let frames = 0
+    const step = () => {
+      window.scrollTo(0, restore)
+      if (Math.abs(window.scrollY - restore) > 1 && ++frames < 60) requestAnimationFrame(step)
+    }
+    step()
+  }, [restore, ready])
 
   const ratingChange = (game: ReviewGame): number | undefined => {
     if (game.ratingDiff !== undefined || !oneRating || game.rating === undefined) {
