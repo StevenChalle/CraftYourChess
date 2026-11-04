@@ -47,7 +47,7 @@ import { LIVE_DEPTH, shownLines } from '../liveEngine'
 import { gamePly, moveNotes, startStudy, studyReducer, variationStart } from '../study'
 import { gameNodeAt, getNode } from '../tree'
 import { useLiveAnalysis } from '../useLiveAnalysis'
-import { BLACK_CHIP, EngineHeader, EnginePanel, WHITE_CHIP } from './EnginePanel'
+import { EngineHeader, EnginePanel } from './EnginePanel'
 import { GameInfo } from './GameInfo'
 import { MoveList } from './MoveList'
 import { EVAL_BAR, StudyBoard } from './StudyBoard'
@@ -282,12 +282,14 @@ export function StudyView({
       onWheelStep={step}
     />
   )
-  const clock = (color: Color) =>
-    clocks && <ClockChip color={color} seconds={clocks[color]} dim={variation !== undefined} />
+  const clock = (color: Color, edge: 'left' | 'right') =>
+    clocks && (
+      <ClockChip color={color} seconds={clocks[color]} dim={variation !== undefined} edge={edge} />
+    )
   // The top player's clock on the left, the bottom one's on the right, the buttons between.
   const controls = (
     <div className="flex items-center gap-2">
-      {clock(top)}
+      {clock(top, 'left')}
       <div
         className={cn(
           'flex min-w-0 flex-1 items-center gap-1',
@@ -328,7 +330,7 @@ export function StudyView({
           </Button>
         )}
       </div>
-      {clock(orientation)}
+      {clock(orientation, 'right')}
     </div>
   )
   const action = (
@@ -462,21 +464,41 @@ const PHONE_TABS: Record<PhoneTab, () => string> = {
 }
 
 /**
- * A player's clock at the move shown, in their color: what they had left, to see the time each
- * move took.
+ * A player's clock at the move shown: what they had left, to see the time each move took. Not a
+ * chip in the side's colors (those are evaluations): a neutral display, the side's color a band by
+ * its outer edge (`edge`).
  */
-function ClockChip({ color, seconds, dim }: { color: Color; seconds: number; dim: boolean }) {
+function ClockChip({
+  color,
+  seconds,
+  dim,
+  edge,
+}: {
+  color: Color
+  seconds: number
+  dim: boolean
+  edge: 'left' | 'right'
+}) {
   const label = color === 'white' ? m.study_clock_white() : m.study_clock_black()
   return (
     <span
       className={cn(
-        'num flex h-9 shrink-0 items-center rounded-md border px-2 text-sm font-semibold',
-        color === 'white' ? WHITE_CHIP : BLACK_CHIP,
+        'num relative flex h-9 shrink-0 items-center rounded-md border border-border-strong bg-field text-sm text-text-strong',
+        edge === 'left' ? 'pr-2 pl-3.5' : 'pr-3.5 pl-2',
         dim && 'opacity-50',
       )}
       title={label}
       aria-label={`${label} ${formatClock(seconds)}`}
     >
+      {/* The side's color, a band outlined so that black shows on the dark background */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute inset-y-1.5 w-1.5 rounded-full border border-border-strong',
+          edge === 'left' ? 'left-1' : 'right-1',
+          color === 'white' ? 'bg-piece-white' : 'bg-piece-black',
+        )}
+      />
       {formatClock(seconds)}
     </span>
   )
