@@ -635,7 +635,8 @@ export function AnalysisSessionProvider({
     stopAnalysis,
     gameList,
     setGameList,
-    analysisView: view?.analysisId === analysisId ? view : undefined,
+    // Only while that analysis is open: closed, the page starts afresh (its options open).
+    analysisView: view?.analysisId === analysisId && analysis.status !== 'none' ? view : undefined,
     updateAnalysisView: (change) =>
       setView((current) => ({
         ...(current?.analysisId === analysisId
