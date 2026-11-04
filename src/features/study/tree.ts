@@ -19,6 +19,8 @@ export type StudyNode = {
   move?: { uci: string; san: string }
   /** Mate, stalemate or insufficient material: nothing to play nor to search */
   over: boolean
+  /** Then, its exact evaluation (White's side, centipawns) */
+  finalCp?: number
   /** Its continuations: the game's (or the variation's) first, then the variations */
   children: string[]
   /** One of the game's own positions: its index in the game is `ply` */
@@ -48,6 +50,7 @@ function node(
     turn: position.turn,
     ...(position.move && { move: position.move }),
     over: position.finalCp !== undefined,
+    ...(position.finalCp !== undefined && { finalCp: position.finalCp }),
     children: [],
     inGame,
   }

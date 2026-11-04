@@ -2,7 +2,7 @@ import type { Config } from '@lichess-org/chessground/config'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Color } from 'chessops'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Board } from '@/components/board/Board'
 import { toCp, winChance, type WhiteScore } from '@/features/review/errors'
 import { boardMoveToUci, isCheck, legalDests, moveSquares } from '@/features/training/moves'
@@ -32,6 +32,9 @@ export function StudyBoard({
   onMove: (uci: string) => void
   onWheelStep: (direction: 'back' | 'forward') => void
 }) {
+  // Every move played sets the board again from the position: one the page did not take (refused,
+  // or played on a board out of step) never stays on screen.
+  const [moves, setMoves] = useState(0)
   const config = useMemo((): Config => {
     const shapes: DrawShape[] = []
     if (arrow) {
@@ -49,12 +52,19 @@ export function StudyBoard({
         color: node.over ? undefined : node.turn,
         dests: node.over ? new Map() : legalDests(node.fen),
         showDests: true,
-        events: { after: (orig, dest) => onMove(boardMoveToUci(node.fen, orig, dest)) },
+        events: {
+          after: (orig, dest) => {
+            setMoves((count) => count + 1)
+            onMove(boardMoveToUci(node.fen, orig, dest))
+          },
+        },
       },
       premovable: { enabled: false },
       drawable: { enabled: true, autoShapes: shapes },
     }
-  }, [node, orientation, arrow, onMove])
+    // `moves`: a new config, the same position, after each move.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node, orientation, arrow, onMove, moves])
 
   // The wheel goes through the moves, not the page (a listener that may prevent scrolling).
   const wheelRef = useRef<HTMLDivElement>(null)

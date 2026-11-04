@@ -194,7 +194,7 @@
   "legal_privacy_public_data": "Profiles and games shown come from the public APIs of Lichess and Chess.com. They are fetched on demand and not stored by us.",
   "legal_privacy_policies": "Their privacy policies:",
   "legal_clear_title": "Delete your local data",
-  "legal_clear_body": "Removes your language choice, recent searches, analysis settings, saved games and analyses, training options, board look and the filters of the rating chart from this browser.",
+  "legal_clear_body": "Removes your language choice, recent searches, analysis settings, saved games and analyses, training options, board look, the filters of the rating chart and the live engine setting from this browser.",
   "legal_clear_button": "Delete my local data",
   "legal_clear_done": "Local data deleted.",
   "legal_license_title": "License & credits",
@@ -666,5 +666,6 @@
   "study_lost_import": "Imported games are only kept until the page is reloaded: import them again.",
   "study_loading": "Loading the game…",
   "study_review": "Review",
-  "study_review_title": "Review this game: board, engine, variations"
+  "study_review_title": "Review this game: board, engine, variations",
+  "legal_privacy_local_study": "whether the live engine of the game review page is on;"
 }

@@ -49,14 +49,19 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
       const id = step(state.tree, state.current, action.direction, state.line)
       return { ...state, current: id, line: lineAt(state, id) }
     }
-    case 'play': {
-      if (getNode(state.tree, state.current).over) return state
-      const { tree, id } = addMove(state.tree, state.current, action.uci)
-      return { tree, current: id, line: lineAt({ ...state, tree }, id) }
-    }
+    case 'play':
     case 'playLine': {
-      const { tree, id } = addLine(state.tree, state.current, action.moves)
-      return { tree, current: id, line: lineAt({ ...state, tree }, id) }
+      if (getNode(state.tree, state.current).over) return state
+      try {
+        const { tree, id } =
+          action.type === 'play'
+            ? addMove(state.tree, state.current, action.uci)
+            : addLine(state.tree, state.current, action.moves)
+        return { tree, current: id, line: lineAt({ ...state, tree }, id) }
+      } catch {
+        // A move the position does not allow (a board out of step with it): nothing happens.
+        return state
+      }
     }
     case 'delete': {
       const { tree, parent } = deleteVariation(state.tree, action.id)

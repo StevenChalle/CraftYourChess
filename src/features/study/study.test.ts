@@ -60,3 +60,11 @@ describe('a study', () => {
     expect(moveNotes(game, undefined)[5]).toEqual({ spent: 10 })
   })
 })
+
+describe('a refused move', () => {
+  it('changes nothing, never throws', () => {
+    const state = startStudy(game, 2)
+    expect(studyReducer(state, { type: 'play', uci: 'f1e1' })).toBe(state)
+    expect(studyReducer(state, { type: 'playLine', moves: ['g1f3', 'a1a5'] })).toBe(state)
+  })
+})

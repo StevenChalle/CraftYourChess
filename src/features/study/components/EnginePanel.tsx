@@ -36,9 +36,13 @@ export function EnginePanel({
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-baseline gap-3">
-          <span className="num text-2xl font-semibold text-text-strong">
-            {node.over ? m.study_game_over() : score ? formatScore(score) : '…'}
-          </span>
+          {node.over ? (
+            <span className="text-base font-medium text-text-strong">{m.study_game_over()}</span>
+          ) : (
+            <span className="num text-2xl font-semibold text-text-strong">
+              {score ? formatScore(score) : '…'}
+            </span>
+          )}
           {on && !node.over && depth !== undefined && (
             <span className="num text-xs text-muted-foreground">
               {m.study_depth({ depth: formatNumber(depth), max: formatNumber(maxDepth) })}

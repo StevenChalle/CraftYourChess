@@ -42,7 +42,7 @@ import { detectDevice } from '@/lib/device'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
-import { LIVE_DEPTH, shownLines } from '../liveEngine'
+import { formatScore, LIVE_DEPTH, shownLines } from '../liveEngine'
 import { loadEngineOn, saveEngineOn } from '../settings'
 import { gamePly, moveNotes, startStudy, studyReducer, variationStart } from '../study'
 import { gameNodeAt, getNode } from '../tree'
@@ -55,6 +55,8 @@ import { StudyBoard } from './StudyBoard'
 /** The side panel's width (w-[22rem]), the gap before it (gap-6), and the evaluation bar with its gap */
 const PANEL = 352
 const BESIDE = PANEL + 24 + 10 + 8
+/** The side panel never gets shorter than this, the moves needing room */
+const MIN_PANEL_HEIGHT = 520
 /** The chart under the board, lower than in the results */
 const CHART_HEIGHT = 120
 /** Keys that move through the game */
@@ -197,7 +199,7 @@ export function StudyView({
     () => (live.analysis ? shownLines(node.fen, node.turn, live.analysis) : []),
     [live.analysis, node.fen, node.turn],
   )
-  const analysisCp = node.inGame ? notes[node.ply]?.cp : undefined
+  const analysisCp = node.finalCp ?? (node.inGame ? notes[node.ply]?.cp : undefined)
   const score: WhiteScore | undefined =
     lines[0]?.score ?? (analysisCp !== undefined ? { cp: analysisCp } : undefined)
 
@@ -241,6 +243,12 @@ export function StudyView({
     )
     return () => clearTimeout(timer)
   }, [navigate, usernames, ref, shownPly])
+
+  // On a phone, the board at the top of the screen on arrival, as in training.
+  const phoneBoardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!wide) phoneBoardRef.current?.scrollIntoView({ block: 'start' })
+  }, [wide])
 
   const layoutRef = useRef<HTMLDivElement>(null)
   const boardSize = useBoardSize(layoutRef, BESIDE)
@@ -340,10 +348,12 @@ export function StudyView({
     return (
       <div className="space-y-3">
         {back}
-        <GameInfo game={game} player={player} />
-        {board}
+        <div ref={phoneBoardRef} className="scroll-mt-2">
+          {board}
+        </div>
         {controls}
         {action}
+        <GameInfo game={game} player={player} />
         <div>
           <nav className="flex gap-6 border-b" aria-label={m.tabs_label()}>
             {(['moves', 'engine', 'chart'] as const).map((tab) => (
@@ -355,6 +365,10 @@ export function StudyView({
                 className="tab-etabli pb-2.5"
               >
                 {PHONE_TABS[tab]()}
+                {/* No evaluation bar on a phone: the evaluation by the engine's name */}
+                {tab === 'engine' && score && !node.over && (
+                  <span className="num ml-1.5 text-text-strong">{formatScore(score)}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -377,7 +391,8 @@ export function StudyView({
         </div>
         <aside
           className="panel-etabli flex shrink-0 flex-col gap-3 p-3"
-          style={{ width: PANEL, height: boardSize }}
+          // As tall as the board, and tall enough for the moves on a short window.
+          style={{ width: PANEL, height: boardSize && Math.max(boardSize, MIN_PANEL_HEIGHT) }}
         >
           <GameInfo game={game} player={player} />
           {action}
@@ -484,13 +499,11 @@ function StudyAction({
   if (!review) {
     return (
       <div className="space-y-1">
-        <Button onClick={onAnalyse} className="w-full">
+        <Button onClick={onAnalyse} className="w-full" title={m.study_analyse_hint()}>
           <Microscope data-icon="inline-start" />
           {m.study_analyse()}
         </Button>
-        <p className={cn('text-xs', failed ? 'text-loss' : 'text-muted-foreground')}>
-          {failed ? m.review_failed() : m.study_analyse_hint()}
-        </p>
+        {failed && <p className="text-xs text-loss">{m.review_failed()}</p>}
       </div>
     )
   }

@@ -10,30 +10,34 @@ type Row =
   | { kind: 'variations'; starts: string[] }
 
 /**
- * The main line, two moves a row as on a score sheet. Where variations leave it, the row ends
- * after the move they replace and the variations come in between, the next row starting with
- * "…" when it is Black's move.
+ * The game's moves, two a row as on a score sheet. Where variations leave it (any move played off
+ * the game, after its last move included), the row ends after the game's move and the variations
+ * come in between, the next row starting with "…" when it is Black's move.
  */
 function mainRows(tree: StudyTree): Row[] {
   const rows: Row[] = []
   let open: Extract<Row, { kind: 'moves' }> | undefined
-  let node = getNode(tree, ROOT)
-  for (let next = node.children[0]; next !== undefined; next = node.children[0]) {
-    const parent = node
-    node = getNode(tree, next)
-    const { number, white } = moveNumber(node)
-    if (white || !open || open.number !== number) {
-      open = { kind: 'moves', number }
-      rows.push(open)
+  let parent = getNode(tree, ROOT)
+  for (;;) {
+    const next = parent.children.find((id) => getNode(tree, id).inGame)
+    const variations = parent.children.filter((id) => id !== next)
+    if (next !== undefined) {
+      const node = getNode(tree, next)
+      const { number, white } = moveNumber(node)
+      if (white || !open || open.number !== number) {
+        open = { kind: 'moves', number }
+        rows.push(open)
+      }
+      if (white) open.white = node
+      else open.black = node
     }
-    if (white) open.white = node
-    else open.black = node
-    if (parent.children.length > 1) {
-      rows.push({ kind: 'variations', starts: parent.children.slice(1) })
+    if (variations.length > 0) {
+      rows.push({ kind: 'variations', starts: variations })
       open = undefined
     }
+    if (next === undefined) return rows
+    parent = getNode(tree, next)
   }
-  return rows
 }
 
 /**
@@ -57,18 +61,25 @@ export function MoveList({
   const listRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const list = listRef.current
-    const move = list?.querySelector<HTMLElement>(`[data-node="${CSS.escape(current)}"]`)
     if (!list) return
-    if (!move) {
-      if (current === ROOT) list.scrollTop = 0
-      return
+    const reveal = () => {
+      const move = list.querySelector<HTMLElement>(`[data-node="${CSS.escape(current)}"]`)
+      if (!move) {
+        if (current === ROOT) list.scrollTop = 0
+        return
+      }
+      // Within the list only (its moves are placed relative to it): the page itself does not move.
+      const top = move.offsetTop
+      if (top < list.scrollTop) list.scrollTop = top - 8
+      else if (top + move.offsetHeight > list.scrollTop + list.clientHeight) {
+        list.scrollTop = top + move.offsetHeight - list.clientHeight + 8
+      }
     }
-    // Within the list only (its moves are placed relative to it): the page itself does not move.
-    const top = move.offsetTop
-    if (top < list.scrollTop) list.scrollTop = top - 8
-    else if (top + move.offsetHeight > list.scrollTop + list.clientHeight) {
-      list.scrollTop = top + move.offsetHeight - list.clientHeight + 8
-    }
+    reveal()
+    // Its height is only known once the board is sized: in sight again then.
+    const observer = new ResizeObserver(reveal)
+    observer.observe(list)
+    return () => observer.disconnect()
   }, [current, tree])
 
   const rows = mainRows(tree)

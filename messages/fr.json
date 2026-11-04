@@ -194,7 +194,7 @@
   "legal_privacy_public_data": "Les profils et parties affichés proviennent des API publiques de Lichess et de Chess.com. Ils sont récupérés à la demande et ne sont pas conservés par nous.",
   "legal_privacy_policies": "Leurs politiques de confidentialité :",
   "legal_clear_title": "Supprimer vos données locales",
-  "legal_clear_body": "Supprime votre choix de langue, vos recherches récentes, vos réglages d'analyse, vos parties et analyses enregistrées, vos options d'entraînement, l'apparence de l'échiquier et les filtres du graphique de l'Elo de ce navigateur.",
+  "legal_clear_body": "Supprime votre choix de langue, vos recherches récentes, vos réglages d'analyse, vos parties et analyses enregistrées, vos options d'entraînement, l'apparence de l'échiquier, les filtres du graphique de l'Elo et le réglage du moteur en direct de ce navigateur.",
   "legal_clear_button": "Supprimer mes données locales",
   "legal_clear_done": "Données locales supprimées.",
   "legal_license_title": "Licence et crédits",
@@ -666,5 +666,6 @@
   "study_lost_import": "Les parties importées ne sont gardées que jusqu'au rechargement de la page : importe-les à nouveau.",
   "study_loading": "Chargement de la partie…",
   "study_review": "Revoir",
-  "study_review_title": "Revoir cette partie : échiquier, moteur, variantes"
+  "study_review_title": "Revoir cette partie : échiquier, moteur, variantes",
+  "legal_privacy_local_study": "si le moteur en direct de la page de revue d'une partie est allumé ;"
 }
