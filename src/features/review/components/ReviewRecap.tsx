@@ -17,12 +17,17 @@ import { LARGE_REVIEW } from '../selection'
 
 const SOURCES: GameSource[] = ['lichess', 'chesscom', 'import']
 
-/** What the search found (shown under the filters), how long the analysis should take, and the button to launch it (top right). */
+/**
+ * What the search found (shown under the filters), how long the analysis should take, and the
+ * button to launch it (top right). `launched`: the analysis below already has these filters and
+ * rules, launching it again would only confuse: the button waits for a change.
+ */
 export function ReviewRecap({
   found,
   progress,
   criteria,
   onLaunch,
+  launched = false,
 }: {
   /** undefined while the games are being looked for: the box shows a loader instead */
   found?: FoundGames
@@ -30,6 +35,7 @@ export function ReviewRecap({
   progress?: FetchProgress
   criteria: ReviewCriteria
   onLaunch: () => void
+  launched?: boolean
 }) {
   if (!found) {
     return (
@@ -44,7 +50,7 @@ export function ReviewRecap({
       </div>
     )
   }
-  return <FoundRecap found={found} criteria={criteria} onLaunch={onLaunch} />
+  return <FoundRecap found={found} criteria={criteria} onLaunch={onLaunch} launched={launched} />
 }
 
 /**
@@ -79,10 +85,13 @@ function SearchProgress({ progress }: { progress: FetchProgress }) {
 /** The box's top: its title and what it holds, the button launching the analysis on the right. */
 function RecapHeader({
   launchDisabled = false,
+  launchHint,
   onLaunch,
   children,
 }: {
   launchDisabled?: boolean
+  /** Under the button: why it waits */
+  launchHint?: string
   onLaunch: () => void
   children: ReactNode
 }) {
@@ -92,10 +101,15 @@ function RecapHeader({
         <p className="label-etabli">{m.recap_title()}</p>
         {children}
       </div>
-      <Button size="lg" disabled={launchDisabled} onClick={onLaunch}>
-        <Play data-icon="inline-start" />
-        {m.recap_launch()}
-      </Button>
+      <div className="flex flex-col items-end gap-1">
+        <Button size="lg" disabled={launchDisabled} onClick={onLaunch}>
+          <Play data-icon="inline-start" />
+          {m.recap_launch()}
+        </Button>
+        {launchHint && (
+          <p className="max-w-56 text-right text-xs text-muted-foreground">{launchHint}</p>
+        )}
+      </div>
     </div>
   )
 }
@@ -104,10 +118,12 @@ function FoundRecap({
   found: { games, failures },
   criteria,
   onLaunch,
+  launched,
 }: {
   found: FoundGames
   criteria: ReviewCriteria
   onLaunch: () => void
+  launched: boolean
 }) {
   // The estimate is for the device running the analysis: its kind and its engines.
   const device = detectDevice()
@@ -156,7 +172,11 @@ function FoundRecap({
         <p className="text-muted-foreground">{m.recap_none()}</p>
       ) : (
         <div className="space-y-3 rounded-md bg-muted/50 p-4">
-          <RecapHeader onLaunch={onLaunch}>
+          <RecapHeader
+            onLaunch={onLaunch}
+            launchDisabled={launched}
+            launchHint={launched ? m.recap_launched() : undefined}
+          >
             <p className="num text-2xl font-medium text-text-strong">
               {formatGameCount(games.length)}
             </p>

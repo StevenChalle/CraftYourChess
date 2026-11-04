@@ -244,6 +244,7 @@
   "setup_invalid": "Select at least one platform, time control, color and result.",
   "recap_title": "Games found",
   "recap_progress_saved": "Progress is saved in this browser: you can stop and pick up again anytime.",
+  "recap_launched": "Analysed with these filters: the results are below. Change a filter to launch another analysis.",
   "recap_none": "No game matches these filters.",
   "recap_launch": "Start the analysis",
   "replay_game_short": "Train",

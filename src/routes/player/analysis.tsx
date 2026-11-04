@@ -5,7 +5,7 @@ import { AnalysisResults } from '@/features/review/components/AnalysisResults'
 import { ReviewRecap } from '@/features/review/components/ReviewRecap'
 import { ReviewSetup } from '@/features/review/components/ReviewSetup'
 import { isSelectionValid } from '@/features/review/selection'
-import type { ReviewSettings } from '@/features/review/settings'
+import { sameSettings, type ReviewSettings } from '@/features/review/settings'
 import { useAnalysisSession } from '@/features/review/sessionContext'
 import { m } from '@/paraglide/messages'
 
@@ -70,6 +70,12 @@ function AnalysisForm() {
     return () => clearTimeout(timer)
   }, [canSearch, analysisFetching, find])
 
+  // These filters and rules are those of the analysis below (running or done): launching it again
+  // would only confuse.
+  const launched =
+    (analysis.status === 'running' || analysis.status === 'done') &&
+    sameSettings(draft, analysis.settings)
+
   // Enter in a field launches the analysis: right away if the games are known, else as soon as
   // they are (searching now rather than after the delay). Remembered with the filters it was
   // pressed on: changing them again cancels it.
@@ -78,14 +84,14 @@ function AnalysisForm() {
     if (launchFor.current !== draft || search.status === 'finding' || search.status === 'idle')
       return
     launchFor.current = undefined
-    if (search.status === 'found' && search.found.games.length > 0) void launch()
-  }, [draft, search, launch])
+    if (search.status === 'found' && search.found.games.length > 0 && !launched) void launch()
+  }, [draft, search, launch, launched])
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return
     event.preventDefault()
     if (!isSelectionValid(draft.selection)) return
     if (search.status === 'found') {
-      if (search.found.games.length > 0) void launch()
+      if (search.found.games.length > 0 && !launched) void launch()
       return
     }
     launchFor.current = draft
@@ -121,6 +127,7 @@ function AnalysisForm() {
           progress={search.status === 'finding' ? search.progress : undefined}
           criteria={draft.criteria}
           onLaunch={() => void launch()}
+          launched={launched}
         />
       )}
       <div ref={resultsRef} className="scroll-mt-4">
