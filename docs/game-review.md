@@ -6,16 +6,17 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 
 - `/player/review?lichess=…&chesscom=…&review=<gameRef>&ply=<demi-coup>` (ou `?import=true&review=…` pour une partie importée). La page vit dans le profil, pour réutiliser sa session (entraînements, critères d'analyse), sous son en-tête mais **sans ses onglets** (`ProfileTabs` dans `routes/player/route.tsx`).
 - Le paramètre s'appelle `review`, pas `game` : `game` lance déjà l'analyse rapide d'une partie (session).
-- Points d'entrée (`ReviewLink`) : le bouton **Review** du panneau de la courbe d'évaluation (à la place du lien « Analyze on Lichess »), au coup survolé ; l'icône de chaque ligne des listes de parties (profil, imports, résultats) ; « Étudier cette position » d'un entraînement (à la place de « Analyser sur Lichess » : plus besoin de quitter l'app ; un lien, ctrl + clic l'ouvre dans un autre onglet).
+- Points d'entrée (`ReviewLink`) : le bouton **Review** du panneau de la courbe d'évaluation (à la place du lien « Analyze on Lichess »), au coup survolé ; l'icône de chaque ligne des listes de parties (profil, imports, résultats), sur téléphone aussi, à côté de l'entraînement ; « Étudier cette position » d'un entraînement (à la place de « Analyser sur Lichess » : plus besoin de quitter l'app ; un lien, ctrl + clic l'ouvre dans un autre onglet).
 - La partie se charge par `library.findOne` (plateforme pour un compte, lot en mémoire pour un import). Une partie importée est perdue au rechargement de la page, comme le lot.
 
 ## Ce que montre la page
 
 - **L'échiquier** (`StudyBoard`), le même composant et les mêmes réglages que l'entraînement, à la taille de l'entraînement (`useBoardSize` avec la largeur du panneau), une **barre d'évaluation** à côté (chances de gain, comme Lichess) et la flèche du meilleur coup du moteur. Tous les coups légaux se jouent, des deux camps ; les flèches dessinées au clic droit s'effacent au coup suivant.
-- **Le panneau** (`StudyView`) : le moteur ; les coups ; les boutons de navigation ; en bas, la partie elle-même : les joueurs et le résultat, puis sous un trait l'ouverture (chacun sur une seule ligne, coupé par « … » plutôt que sur deux), et le bouton principal (rejouer les erreurs de la partie, ou l'analyser). Sur téléphone, l'ordre reste : échiquier, boutons, action, partie (avec l'interrupteur de Stockfish sous le résultat, faute de place pour le panneau du moteur à l'arrivée), onglets.
+- **Le panneau** (`StudyView`) : le moteur ; les coups ; les boutons de navigation ; en bas, la partie elle-même : les joueurs et le résultat, puis sous un trait l'ouverture (chacun sur une seule ligne, coupé par « … » plutôt que sur deux), et le bouton principal (rejouer les erreurs de la partie, ou l'analyser). Sur téléphone, l'ordre reste : échiquier, boutons, action, une ligne pour le moteur (l'évaluation à gauche quand il est allumé, son interrupteur à droite : `EngineHeader`), onglets ; la partie (joueurs, résultat, lien, ouverture) passe dans l'onglet Infos, pour laisser la place au reste.
 - **Les coups** (`MoveList`) : ceux de la partie deux par deux, avec les erreurs du joueur (rouge), celles de l'adversaire (anneau) et le temps passé ; les variantes entre les coups de la partie, chacune sur sa ligne ; là où une variante se divise, chaque branche a sa ligne, en retrait sous elle (lisible même imbriquée). L'évaluation principale et celle de chaque ligne du moteur sont sur une pastille aux couleurs du camp qui mène : blanche quand les Blancs ont l'avantage (ou à égalité), noire quand ce sont les Noirs. À côté du résultat, un lien vers la partie sur sa plateforme (quand elle en a une).
+- **Les pendules** (quand la partie les a) : de part et d'autre des boutons de navigation, le temps restant à chacun au coup affiché (`clocksAt`), sur une pastille blanche pour les Blancs, noire pour les Noirs ; celle du joueur du bas toujours à droite, et elles suivent le retournement de l'échiquier. Dans une variante, celles du coup de la partie d'où elle part, estompées.
 - **La courbe** (`EvalChart` avec `onSelect`) sous l'échiquier : le coup affiché marqué, un clic y va ; le coup survolé montre, au-dessus de la courbe, les mêmes informations que le panneau de la courbe du profil (coup, évaluation et écart, temps passé, pendule, erreur) à côté d'un échiquier de 240 px.
-- **Téléphone** : l'échiquier en haut de l'écran à l'arrivée, les boutons ◀ ▶ en grand, puis des onglets Courbe (ouvert à l'arrivée) / Moteur (avec l'évaluation dans son titre) / Coups.
+- **Téléphone** : l'échiquier en haut de l'écran à l'arrivée, les boutons ◀ ▶ en grand, puis des onglets Courbe (ouvert à l'arrivée) / Moteur (ses lignes seulement : l'évaluation et l'interrupteur sont sur la ligne au-dessus) / Coups / Infos.
 
 ## Navigation et variantes
 
@@ -47,4 +48,3 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 
 - Enregistrer les variantes (par partie, dans le navigateur).
 - Choix de la pièce à la promotion, menu sur un coup (supprimer, promouvoir une variante).
-- Remplacer aussi le lien Lichess de l'entraînement par la page de revue.

@@ -30,8 +30,9 @@ import {
 } from '@/features/review/analyze'
 import { EvalChart } from '@/features/review/components/EvalChart'
 import type { WhiteScore } from '@/features/review/errors'
+import type { Color } from 'chessops'
 import { gameRef } from '@/features/review/gameRef'
-import type { ReviewGame } from '@/features/review/games'
+import { clocksAt, type ReviewGame } from '@/features/review/games'
 import type { ReviewProgress } from '@/features/review/progress'
 import { useAnalysisSession } from '@/features/review/sessionContext'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
@@ -39,14 +40,14 @@ import { SIDE_BY_SIDE, useBoardSize } from '@/features/training/useBoardSize'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { withActivity } from '@/lib/activity'
 import { detectDevice } from '@/lib/device'
-import { formatNumber } from '@/lib/format'
+import { formatClock, formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
-import { formatScore, LIVE_DEPTH, shownLines } from '../liveEngine'
+import { LIVE_DEPTH, shownLines } from '../liveEngine'
 import { gamePly, moveNotes, startStudy, studyReducer, variationStart } from '../study'
 import { gameNodeAt, getNode } from '../tree'
 import { useLiveAnalysis } from '../useLiveAnalysis'
-import { EnginePanel, EngineSwitch } from './EnginePanel'
+import { BLACK_CHIP, EngineHeader, EnginePanel, WHITE_CHIP } from './EnginePanel'
 import { GameInfo } from './GameInfo'
 import { MoveList } from './MoveList'
 import { EVAL_BAR, StudyBoard } from './StudyBoard'
@@ -72,7 +73,7 @@ type Work =
   | { kind: 'analysing'; progress?: ReviewProgress }
   | { kind: 'deepening'; done: number; total: number }
 
-type PhoneTab = 'moves' | 'engine' | 'chart'
+type PhoneTab = 'moves' | 'engine' | 'chart' | 'info'
 
 /**
  * A game to study on its own page: the board as large as the training's, the evaluation bar, the
@@ -266,6 +267,9 @@ export function StudyView({
   const boardSize = useBoardSize(layoutRef, BESIDE)
   const variation = variationStart(state.tree, state.current)
   const mistakes = review?.mistakes.length ?? 0
+  // Both clocks at the game's move on screen (a variation's: where it leaves the game, dimmed).
+  const clocks = game.clock && clocksAt(game.clock, shownPly)
+  const top: Color = orientation === 'white' ? 'black' : 'white'
 
   const board = (
     <StudyBoard
@@ -278,38 +282,47 @@ export function StudyView({
       onWheelStep={step}
     />
   )
+  const clock = (color: Color) =>
+    clocks && <ClockChip color={color} seconds={clocks[color]} dim={variation !== undefined} />
+  // The top player's clock on the left, the bottom one's on the right, the buttons between.
   const controls = (
-    <div className="flex items-center gap-1">
-      <ControlButton label={m.study_start()} onClick={() => step('start')}>
-        <ChevronFirst />
-      </ControlButton>
-      <ControlButton label={m.study_back()} onClick={() => step('back')} large>
-        <ChevronLeft />
-      </ControlButton>
-      <ControlButton label={m.study_forward()} onClick={() => step('forward')} large>
-        <ChevronRight />
-      </ControlButton>
-      <ControlButton label={m.study_end()} onClick={() => step('end')}>
-        <ChevronLast />
-      </ControlButton>
-      <ControlButton
-        label={m.study_flip()}
-        onClick={() => setOrientation((color) => (color === 'white' ? 'black' : 'white'))}
-      >
-        <Repeat />
-      </ControlButton>
-      {variation !== undefined && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto text-muted-foreground"
-          onClick={() => dispatch({ type: 'delete', id: variation })}
-          title={m.study_delete_variation()}
+    <div className="flex items-center gap-2">
+      {clock(top)}
+      <div className="flex min-w-0 flex-1 items-center gap-1">
+        <ControlButton label={m.study_start()} onClick={() => step('start')}>
+          <ChevronFirst />
+        </ControlButton>
+        <ControlButton label={m.study_back()} onClick={() => step('back')} large>
+          <ChevronLeft />
+        </ControlButton>
+        <ControlButton label={m.study_forward()} onClick={() => step('forward')} large>
+          <ChevronRight />
+        </ControlButton>
+        <ControlButton label={m.study_end()} onClick={() => step('end')}>
+          <ChevronLast />
+        </ControlButton>
+        <ControlButton
+          label={m.study_flip()}
+          onClick={() => setOrientation((color) => (color === 'white' ? 'black' : 'white'))}
         >
-          <Trash2 data-icon="inline-start" />
-          <span className="max-sm:sr-only">{m.study_delete_variation_short()}</span>
-        </Button>
-      )}
+          <Repeat />
+        </ControlButton>
+        {variation !== undefined && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-muted-foreground"
+            onClick={() => dispatch({ type: 'delete', id: variation })}
+            title={m.study_delete_variation()}
+          >
+            <Trash2 data-icon="inline-start" />
+            <span className={clocks ? 'sr-only' : 'max-sm:sr-only'}>
+              {m.study_delete_variation_short()}
+            </span>
+          </Button>
+        )}
+      </div>
+      {clock(orientation)}
     </div>
   )
   const action = (
@@ -324,8 +337,9 @@ export function StudyView({
       onStop={stopWork}
     />
   )
-  const engine = (
+  const engine = (header: boolean) => (
     <EnginePanel
+      header={header}
       on={engineOn}
       onToggle={setEngineOn}
       node={node}
@@ -368,15 +382,18 @@ export function StudyView({
         </div>
         {controls}
         {action}
-        {/* No room for the engine's panel on arrival: its switch at least, by the result */}
-        <GameInfo
-          game={game}
-          player={player}
-          aside={<EngineSwitch on={engineOn} onToggle={setEngineOn} />}
+        {/* No room for the engine's panel on arrival: the evaluation and the switch at least */}
+        <EngineHeader
+          on={engineOn}
+          onToggle={setEngineOn}
+          node={node}
+          score={score}
+          depth={live.analysis?.depth}
+          maxDepth={LIVE_DEPTH[detectDevice()]}
         />
         <div>
           <nav className="flex gap-6 border-b" aria-label={m.tabs_label()}>
-            {(['chart', 'engine', 'moves'] as const).map((tab) => (
+            {(['chart', 'engine', 'moves', 'info'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -385,17 +402,14 @@ export function StudyView({
                 className="tab-etabli pb-2.5"
               >
                 {PHONE_TABS[tab]()}
-                {/* No evaluation bar on a phone: the evaluation by the engine's name */}
-                {tab === 'engine' && score && !node.over && (
-                  <span className="num ml-1.5 text-text-strong">{formatScore(score)}</span>
-                )}
               </button>
             ))}
           </nav>
           <div className="pt-3">
             {phoneTab === 'moves' && moves('max-h-80')}
-            {phoneTab === 'engine' && engine}
+            {phoneTab === 'engine' && engine(false)}
             {phoneTab === 'chart' && chart}
+            {phoneTab === 'info' && <GameInfo game={game} player={player} />}
           </div>
         </div>
       </div>
@@ -414,7 +428,7 @@ export function StudyView({
           // As tall as the board, and tall enough for the moves on a short window.
           style={{ width: PANEL, height: boardSize && Math.max(boardSize, MIN_PANEL_HEIGHT) }}
         >
-          {engine}
+          {engine(true)}
           {moves('-mx-1 min-h-0 flex-1 border-t pt-2')}
           <div className="border-t pt-2">{controls}</div>
           {/* The game itself, at the bottom: its players and opening, the training of its errors */}
@@ -438,6 +452,28 @@ const PHONE_TABS: Record<PhoneTab, () => string> = {
   moves: m.study_tab_moves,
   engine: m.study_tab_engine,
   chart: m.study_tab_chart,
+  info: m.study_tab_info,
+}
+
+/**
+ * A player's clock at the move shown, in their color: what they had left, to see the time each
+ * move took.
+ */
+function ClockChip({ color, seconds, dim }: { color: Color; seconds: number; dim: boolean }) {
+  const label = color === 'white' ? m.study_clock_white() : m.study_clock_black()
+  return (
+    <span
+      className={cn(
+        'num flex h-9 shrink-0 items-center rounded-md border px-2 text-sm font-semibold',
+        color === 'white' ? WHITE_CHIP : BLACK_CHIP,
+        dim && 'opacity-50',
+      )}
+      title={label}
+      aria-label={`${label} ${formatClock(seconds)}`}
+    >
+      {formatClock(seconds)}
+    </span>
+  )
 }
 
 function ControlButton({

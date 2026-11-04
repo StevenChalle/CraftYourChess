@@ -121,7 +121,7 @@ export function PagedGamesTable({
             const busy = here.current?.ref === gameRef(game) && !here.current.failed
             return (
               <>
-                <ReviewLink game={game} compact className="max-sm:hidden" />
+                <ReviewLink game={game} compact />
                 <AnalyzeLink
                   analysed={review !== undefined}
                   disabled={

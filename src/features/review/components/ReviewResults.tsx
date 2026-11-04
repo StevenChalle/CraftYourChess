@@ -57,7 +57,7 @@ export function ReviewResults({
               games={pageSlice(games, page, pageSize)}
               action={(game) => (
                 <>
-                  <ReviewLink game={game} compact className="max-sm:hidden" />
+                  <ReviewLink game={game} compact />
                   <AnalyzeLink
                     analysed
                     compact

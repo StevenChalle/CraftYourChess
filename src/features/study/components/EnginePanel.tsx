@@ -28,6 +28,7 @@ export function EnginePanel({
   failed,
   orientation,
   onPlay,
+  header = true,
 }: {
   on: boolean
   onToggle: (on: boolean) => void
@@ -41,6 +42,8 @@ export function EnginePanel({
   /** The main board's, for the preview */
   orientation: Color
   onPlay: (moves: string[]) => void
+  /** Its evaluation and switch on top; on a phone they are elsewhere (EngineHeader) */
+  header?: boolean
 }) {
   const [held, setHeld] = useState<{ fen: string; lines: ShownLine[] }>()
   const shown = held?.fen === node.fen ? held.lines : lines
@@ -56,30 +59,18 @@ export function EnginePanel({
   }
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-baseline gap-3">
-          {node.over ? (
-            <span className="text-base font-medium text-text-strong">{m.study_game_over()}</span>
-          ) : (
-            on && (
-              <span
-                className={cn(
-                  'num rounded-md border px-2 text-2xl font-semibold',
-                  score ? scoreChip(score) : WHITE_CHIP,
-                )}
-              >
-                {score ? formatScore(score) : '…'}
-              </span>
-            )
-          )}
-          {on && !node.over && depth !== undefined && (
-            <span className="num text-xs text-muted-foreground">
-              {m.study_depth({ depth: formatNumber(depth), max: formatNumber(maxDepth) })}
-            </span>
-          )}
-        </div>
-        <EngineSwitch on={on} onToggle={onToggle} />
-      </div>
+      {header ? (
+        <EngineHeader
+          on={on}
+          onToggle={onToggle}
+          node={node}
+          score={score}
+          depth={depth}
+          maxDepth={maxDepth}
+        />
+      ) : (
+        !on && <p className="text-sm text-muted-foreground">{m.study_engine_off()}</p>
+      )}
       {failed ? (
         <p className="text-sm text-loss">{m.training_engine_failed()}</p>
       ) : (
@@ -154,8 +145,8 @@ export function EnginePanel({
   )
 }
 
-const WHITE_CHIP = 'border-piece-white bg-piece-white text-piece-black'
-const BLACK_CHIP = 'border-border-strong bg-piece-black text-piece-white'
+export const WHITE_CHIP = 'border-piece-white bg-piece-white text-piece-black'
+export const BLACK_CHIP = 'border-border-strong bg-piece-black text-piece-white'
 
 /**
  * An evaluation's chip, in the colors of the side ahead: white when White is better (or equal),
@@ -164,6 +155,54 @@ const BLACK_CHIP = 'border-border-strong bg-piece-black text-piece-white'
 function scoreChip(score: WhiteScore): string {
   const black = 'mate' in score ? score.mate < 0 : score.cp < 0
   return black ? BLACK_CHIP : WHITE_CHIP
+}
+
+/**
+ * The position's evaluation (with the engine on) and its depth, on the left; the engine's switch on
+ * the right.
+ */
+export function EngineHeader({
+  on,
+  onToggle,
+  node,
+  score,
+  depth,
+  maxDepth,
+}: {
+  on: boolean
+  onToggle: (on: boolean) => void
+  node: StudyNode
+  score: WhiteScore | undefined
+  depth: number | undefined
+  maxDepth: number
+}) {
+  return (
+    // As tall with the engine off as on: what is below does not move when it is switched.
+    <div className="flex min-h-9 items-center justify-between gap-3">
+      <div className="flex min-w-0 items-baseline gap-3">
+        {node.over ? (
+          <span className="text-base font-medium text-text-strong">{m.study_game_over()}</span>
+        ) : (
+          on && (
+            <span
+              className={cn(
+                'num rounded-md border px-2 text-2xl font-semibold',
+                score ? scoreChip(score) : WHITE_CHIP,
+              )}
+            >
+              {score ? formatScore(score) : '…'}
+            </span>
+          )
+        )}
+        {on && !node.over && depth !== undefined && (
+          <span className="num text-xs text-muted-foreground">
+            {m.study_depth({ depth: formatNumber(depth), max: formatNumber(maxDepth) })}
+          </span>
+        )}
+      </div>
+      <EngineSwitch on={on} onToggle={onToggle} />
+    </div>
+  )
 }
 
 /** "Stockfish" and its on / off switch. */

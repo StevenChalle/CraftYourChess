@@ -5,6 +5,7 @@ import { MATE_CP } from './errors'
 import { parseChessComTimeControl, timeControlLabel } from '@/features/games/normalize'
 import {
   clockBefore,
+  clocksAt,
   moveTime,
   pgnOpening,
   fromChessComGame,
@@ -216,5 +217,23 @@ describe('clocks', () => {
         'alice',
       )!.clock,
     ).toBeUndefined()
+  })
+})
+
+describe('clocksAt', () => {
+  const clock = { initial: 180, increment: 2, total: 260, remaining: [181, 175, 170, 160, 150] }
+
+  it('gives both initial times at the start', () => {
+    expect(clocksAt(clock, 0)).toEqual({ white: 180, black: 180 })
+  })
+
+  it("gives each side's clock after its last move", () => {
+    expect(clocksAt(clock, 1)).toEqual({ white: 181, black: 180 })
+    expect(clocksAt(clock, 2)).toEqual({ white: 181, black: 175 })
+    expect(clocksAt(clock, 5)).toEqual({ white: 150, black: 160 })
+  })
+
+  it('knows nothing past the clocks', () => {
+    expect(clocksAt(clock, 6)).toBeUndefined()
   })
 })

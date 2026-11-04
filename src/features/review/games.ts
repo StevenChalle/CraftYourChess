@@ -54,6 +54,23 @@ export function clockBefore(clock: GameClock, ply: number): number | undefined {
   return ply < 2 ? clock.initial : clock.remaining[ply - 2]
 }
 
+/**
+ * Both players' clocks once `ply` half-moves are played: each one's after their last move (the
+ * initial time before their first). undefined past the known clocks.
+ */
+export function clocksAt(
+  clock: GameClock,
+  ply: number,
+): { white: number; black: number } | undefined {
+  if (ply < 0 || ply > clock.remaining.length) return undefined
+  const after = (index: number) => (index < 0 ? clock.initial : clock.remaining[index])
+  // The last move of each side: white's moves are the even indexes, black's the odd ones.
+  const last = ply - 1
+  const white = after(last % 2 === 0 ? last : last - 1)
+  const black = after(last % 2 === 1 ? last : last - 1)
+  return white === undefined || black === undefined ? undefined : { white, black }
+}
+
 export function gameClock(
   initial: number,
   increment: number,
