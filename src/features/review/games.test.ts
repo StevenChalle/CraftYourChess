@@ -6,6 +6,7 @@ import { parseChessComTimeControl, timeControlLabel } from '@/features/games/nor
 import {
   clockBefore,
   moveTime,
+  pgnOpening,
   fromChessComGame,
   fromLichessGame,
   latestGames,
@@ -143,6 +144,24 @@ describe('latestGames', () => {
   it('keeps the most recent games, all platforms together', () => {
     const at = (day: number) => ({ playedAt: new Date(2026, 0, day) }) as ReviewGame
     expect(latestGames([at(1), at(5), at(3)], 2)).toEqual([at(5), at(3)])
+  })
+})
+
+describe('pgnOpening', () => {
+  const tags = (values: Record<string, string>) => (name: string) => values[name]
+
+  it("reads Lichess's Opening tag, or the name in Chess.com's ECOUrl", () => {
+    expect(
+      pgnOpening(tags({ Opening: 'Sicilian Defense: Najdorf Variation', ECO: 'B90' })),
+    ).toEqual({ name: 'Sicilian Defense: Najdorf Variation', eco: 'B90' })
+    expect(
+      pgnOpening(
+        tags({
+          ECOUrl: 'https://www.chess.com/openings/Scandinavian-Defense-Mieses-Kotroc-Variation',
+        }),
+      ),
+    ).toEqual({ name: 'Scandinavian Defense Mieses Kotroc Variation' })
+    expect(pgnOpening(tags({ ECO: 'A00' }))).toBeUndefined()
   })
 })
 

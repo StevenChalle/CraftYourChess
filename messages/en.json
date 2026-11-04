@@ -625,5 +625,7 @@
   "eval_chart_time_spent": "Time spent",
   "eval_chart_clock": "Clock",
   "deepen_background": "Deepening in the background…",
-  "deepen_quick": "Quick analysis: only the decisive moves got a deep look."
+  "deepen_quick": "Quick analysis: only the decisive moves got a deep look.",
+  "eval_chart_rating": "Rating",
+  "eval_chart_moves": "Moves"
 }

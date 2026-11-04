@@ -89,6 +89,8 @@ export type LichessGame = {
   analysis?: LichessMoveAnalysis[]
   /** With `clocks=true`: the mover's clock after each move (centiseconds), for timed games */
   clocks?: number[]
+  /** With `opening=true` (games exported before it was asked have none) */
+  opening?: { eco: string; name: string; ply: number }
 }
 
 export type LichessUser = {

@@ -1,13 +1,22 @@
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Color } from 'chessops'
-import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from 'react'
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from 'react'
 import { Board } from '@/components/board/Board'
 import { SideSquare } from '@/features/games/components/GamesTable'
+import { RESULTS } from '@/features/games/results'
 import { ExternalLink } from '@/features/player/components/ExternalLink'
 import { evalDelta, formatDelta, formatEval } from '@/features/training/evaluation'
 import { lichessGameUrl, moveSquares } from '@/features/training/moves'
-import { formatClock, formatMoveTime } from '@/lib/format'
+import { formatClock, formatMoveTime, formatNumber, formatSigned } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import type { ReviewedGame } from '../analyze'
@@ -51,7 +60,17 @@ function moveInfo(game: ReviewedGame, index: number) {
  * clicking freezes it, with a link to Lichess. On a phone, a tap freezes the nearest move and the
  * details show under the chart; a finger can slide along it.
  */
-export function EvalChart({ game }: { game: ReviewedGame }) {
+export function EvalChart({
+  game,
+  ratingChange,
+  legendAside,
+}: {
+  game: ReviewedGame
+  /** For the summary of the game, when known */
+  ratingChange?: number
+  /** On the legend's line, on its right */
+  legendAside?: ReactNode
+}) {
   const ids = useId().replaceAll(':', '')
   const wrapRef = useRef<HTMLDivElement>(null)
   /** The chart with its details: a tap there keeps the frozen move */
@@ -222,81 +241,197 @@ export function EvalChart({ game }: { game: ReviewedGame }) {
             )}
           </svg>
         </div>
-        {/* Beside the chart, always in the same place: the move under the pointer (the last
-            one until then). On a phone, above the chart once a move is tapped: the finger hides
+        {/* Beside the chart, always in the same place: the move under the pointer, the game as
+            a whole otherwise. On a phone, above the chart once a move is tapped: the finger hides
             what is below it. */}
         <div className={cn('order-first md:order-last', pinned === undefined && 'max-md:hidden')}>
-          <MoveDetails game={game} index={active ?? count - 1} />
+          {active === undefined ? (
+            <GameDetails game={game} ratingChange={ratingChange} />
+          ) : (
+            <MoveDetails game={game} index={active} />
+          )}
         </div>
       </div>
-      <Legend />
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <Legend />
+        {legendAside}
+      </div>
     </div>
   )
 }
 
 /**
- * The move, who played it, then each figure on its line (evaluation and its change, time spent,
- * clock left), the board after it as tall as the chart, and a link to Lichess.
+ * The details beside the chart, the same frame for a move and for the whole game, so that nothing
+ * moves from one to the other: a title, a line under it, figures one per line, a note (kept even
+ * when empty), the link to Lichess at the bottom, and the board as tall as the chart.
  */
-function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
-  const { label, position, mover, delta, time, mine, theirs } = moveInfo(game, index)
-  const config = useMemo(
-    (): Config => ({
-      fen: position.fen,
-      orientation: game.color,
-      viewOnly: true,
-      coordinates: false,
-      lastMove: position.move ? (moveSquares(position.move.uci) as [Key, Key]) : undefined,
-    }),
-    [position, game.color],
-  )
+function DetailsFrame({
+  title,
+  subtitle,
+  rows,
+  note,
+  link,
+  board,
+}: {
+  title: ReactNode
+  subtitle?: ReactNode
+  rows: { label: string; value: ReactNode }[]
+  note?: ReactNode
+  link: string
+  board: Config
+}) {
   return (
     <div className="flex items-start gap-4">
-      <div className="w-44 shrink-0 space-y-3">
-        <div className="space-y-1">
-          <p className="flex items-center gap-2 text-base font-medium text-text-strong">
-            <SideSquare color={mover} />
-            {label}
-          </p>
-          {(mine || theirs) && (
-            <p className={cn('text-xs font-medium', mine ? 'text-loss' : 'text-muted-foreground')}>
-              {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}
-            </p>
-          )}
+      <div className="flex w-52 shrink-0 flex-col gap-2 md:h-[180px]">
+        <div className="space-y-0.5">
+          <p className="flex items-center gap-2 text-base font-medium text-text-strong">{title}</p>
+          {subtitle}
         </div>
         <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-sm">
-          <dt className="text-xs text-muted-foreground">{m.eval_chart_eval()}</dt>
-          <dd className="num">
-            <span className="text-text-strong">{formatEval(position.cp)}</span>
-            {delta !== undefined && (
-              <span className={cn('ml-1.5', delta < 0 ? 'text-loss' : 'text-muted-foreground')}>
-                ({formatDelta(delta)})
-              </span>
-            )}
-          </dd>
-          {time?.spent !== undefined && (
-            <>
-              <dt className="text-xs text-muted-foreground">{m.eval_chart_time_spent()}</dt>
-              <dd className="num text-text-strong">{formatMoveTime(time.spent)}</dd>
-            </>
-          )}
-          {time && (
-            <>
-              <dt className="text-xs text-muted-foreground">{m.eval_chart_clock()}</dt>
-              <dd className="num text-text-strong">{formatClock(time.left)}</dd>
-            </>
-          )}
+          {rows.map((row) => (
+            <div key={row.label} className="contents">
+              <dt className="text-xs text-muted-foreground">{row.label}</dt>
+              <dd className="num">{row.value}</dd>
+            </div>
+          ))}
         </dl>
-        <p className="text-xs">
-          <ExternalLink href={lichessGameUrl(game, index, game.color, position.fen)}>
-            {m.training_analyse_lichess()}
-          </ExternalLink>
+        {/* Kept even when empty (null), so that the figures stay put from a move to the next */}
+        {note !== undefined && <p className="min-h-4 text-xs font-medium">{note}</p>}
+        <p className="mt-auto text-xs">
+          <ExternalLink href={link}>{m.training_analyse_lichess()}</ExternalLink>
         </p>
       </div>
       <div className="w-32 shrink-0 md:w-[180px]">
-        <Board config={config} className="rounded-sm" />
+        <Board config={board} className="rounded-sm" />
       </div>
     </div>
+  )
+}
+
+function boardAt(game: ReviewedGame, index: number): Config {
+  const position = game.positions[index]!
+  return {
+    fen: position.fen,
+    orientation: game.color,
+    viewOnly: true,
+    coordinates: false,
+    lastMove: position.move ? (moveSquares(position.move.uci) as [Key, Key]) : undefined,
+  }
+}
+
+/** The move, who played it, its evaluation and change, time spent and clock left; an error. */
+function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
+  const { label, position, mover, delta, time, mine, theirs } = moveInfo(game, index)
+  const board = useMemo(() => boardAt(game, index), [game, index])
+  const rows = [
+    {
+      label: m.eval_chart_eval(),
+      value: (
+        <>
+          <span className="text-text-strong">{formatEval(position.cp)}</span>
+          {delta !== undefined && (
+            <span className={cn('ml-1.5', delta < 0 ? 'text-loss' : 'text-muted-foreground')}>
+              ({formatDelta(delta)})
+            </span>
+          )}
+        </>
+      ),
+    },
+    // Every move of a timed game has both lines, so that they do not come and go.
+    ...(game.clock
+      ? [
+          {
+            label: m.eval_chart_time_spent(),
+            value: (
+              <span className="text-text-strong">
+                {time?.spent !== undefined ? formatMoveTime(time.spent) : '—'}
+              </span>
+            ),
+          },
+          {
+            label: m.eval_chart_clock(),
+            value: <span className="text-text-strong">{time ? formatClock(time.left) : '—'}</span>,
+          },
+        ]
+      : []),
+  ]
+  return (
+    <DetailsFrame
+      title={
+        <>
+          <SideSquare color={mover} />
+          {label}
+        </>
+      }
+      rows={rows}
+      note={
+        mine || theirs ? (
+          <span className={mine ? 'text-loss' : 'text-muted-foreground'}>
+            {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}
+          </span>
+        ) : null
+      }
+      link={lichessGameUrl(game, index, game.color, position.fen)}
+      board={board}
+    />
+  )
+}
+
+/** The game as a whole: its result and opening, the rating, its length, the errors. */
+function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?: number }) {
+  const last = game.positions.length - 1
+  const board = useMemo(() => boardAt(game, last), [game, last])
+  const result = RESULTS[game.result]
+  const rows = [
+    ...(game.rating !== undefined
+      ? [
+          {
+            label: m.eval_chart_rating(),
+            value: (
+              <>
+                <span className="text-text-strong">{formatNumber(game.rating)}</span>
+                {ratingChange !== undefined && ratingChange !== 0 && (
+                  <span className={cn('ml-1.5', ratingChange > 0 ? 'text-win' : 'text-loss')}>
+                    {formatSigned(ratingChange)}
+                  </span>
+                )}
+              </>
+            ),
+          },
+        ]
+      : []),
+    {
+      label: m.eval_chart_moves(),
+      value: <span className="text-text-strong">{formatNumber(Math.ceil(last / 2))}</span>,
+    },
+    {
+      label: m.eval_chart_legend_mine(),
+      value: (
+        <span className={game.mistakes.length > 0 ? 'text-loss' : 'text-win'}>
+          {formatNumber(game.mistakes.length)}
+        </span>
+      ),
+    },
+    {
+      label: m.eval_chart_legend_theirs(),
+      value: <span className="text-text-strong">{formatNumber(game.opponentErrors.length)}</span>,
+    },
+  ]
+  return (
+    <DetailsFrame
+      title={<span className={result.className}>{result.label()}</span>}
+      subtitle={
+        game.opening && (
+          <p className="truncate text-xs text-muted-foreground" title={game.opening.name}>
+            {game.opening.eco && <span className="num mr-1.5">{game.opening.eco}</span>}
+            {game.opening.name}
+          </p>
+        )
+      }
+      rows={rows}
+      link={lichessGameUrl(game, last, game.color, game.positions[last]!.fen)}
+      board={board}
+    />
   )
 }
 

@@ -625,5 +625,7 @@
   "eval_chart_time_spent": "Temps passé",
   "eval_chart_clock": "Pendule",
   "deepen_background": "Approfondissement par l'analyse de fond…",
-  "deepen_quick": "Analyse rapide : seuls les coups décisifs ont eu un examen approfondi."
+  "deepen_quick": "Analyse rapide : seuls les coups décisifs ont eu un examen approfondi.",
+  "eval_chart_rating": "Elo",
+  "eval_chart_moves": "Coups"
 }

@@ -22,6 +22,21 @@ export type ReviewGame = GameSummary & {
   serverCps?: (number | undefined)[]
   /** Timed games whose clocks are known (not correspondence) */
   clock?: GameClock
+  /** As the platform (or the PGN) names it */
+  opening?: GameOpening
+}
+
+export type GameOpening = { name: string; eco?: string }
+
+/**
+ * The opening from PGN tags: Lichess's Opening, or the name in Chess.com's ECOUrl
+ * (…/openings/Sicilian-Defense-Najdorf-Variation), with the ECO code when given.
+ */
+export function pgnOpening(tag: (name: string) => string | undefined): GameOpening | undefined {
+  const eco = tag('ECO')
+  const slug = tag('ECOUrl')?.split('/openings/')[1]
+  const name = tag('Opening') ?? (slug && decodeURIComponent(slug).replaceAll('-', ' '))
+  return name ? { name, ...(eco && { eco }) } : undefined
 }
 
 /** Seconds. `remaining[i]`: the mover's clock right after move i + 1. */
@@ -88,6 +103,7 @@ export function fromLichessGame(game: LichessGame, username: string): ReviewGame
             game.clocks.map((centiseconds) => centiseconds / 100),
           )
         : undefined,
+    ...(game.opening && { opening: { name: game.opening.name, eco: game.opening.eco } }),
   }
 }
 
@@ -120,6 +136,7 @@ export function fromChessComGame(game: ChessComGame, username: string): ReviewGa
             ),
           )
         : undefined,
+    opening: pgn && pgnOpening((name) => pgn.headers.get(name) || undefined),
   }
 }
 

@@ -260,7 +260,7 @@ export function RatingHistory({
       {/* Under the panel, the whole width for its columns, as an import's list */}
       {points.length > 0 &&
         (games ? (
-          <PagedGamesTable games={games} usernames={usernames} />
+          <PagedGamesTable games={games} usernames={usernames} oneRating />
         ) : (
           <p className="text-sm text-muted-foreground">{m.rating_games_unavailable()}</p>
         ))}

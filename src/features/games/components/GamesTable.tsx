@@ -13,19 +13,9 @@ import { SourceLabel } from '@/features/player/components/SourceBadge'
 import { categoryLabel, sourceLabel } from '@/features/player/sources'
 import { formatDate, formatTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { RESULTS } from '../results'
 import { m } from '@/paraglide/messages'
-import {
-  timeControlLabel,
-  variantLabel,
-  type GameResult,
-  type GameSummary,
-} from '@/features/games/normalize'
-
-const RESULTS: Record<GameResult, { label: () => string; className: string }> = {
-  win: { label: m.result_win, className: 'text-win' },
-  draw: { label: m.result_draw, className: 'text-muted-foreground' },
-  loss: { label: m.result_loss, className: 'text-loss' },
-}
+import { timeControlLabel, variantLabel, type GameSummary } from '@/features/games/normalize'
 
 /** Small square showing which side the player had. */
 export function SideSquare({ color, className }: { color: Color; className?: string }) {

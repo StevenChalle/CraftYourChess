@@ -77,12 +77,13 @@ export type GameExportOptions = {
   rated?: boolean
 }
 
-/** Query parameters of a standard games export, with moves, Lichess evaluations and clocks. */
+/** Query parameters of a standard games export, with moves, Lichess evaluations, clocks and opening. */
 export function exportParams(options: GameExportOptions): Record<string, string> {
   const params: Record<string, string> = {
     perfType: options.perfTypes.join(','),
     evals: 'true',
     clocks: 'true',
+    opening: 'true',
   }
   if (options.rated !== undefined) params.rated = String(options.rated)
   if (options.max !== undefined) params.max = String(options.max)
@@ -116,7 +117,7 @@ export function exportGame(id: string, signal?: AbortSignal): Promise<LichessGam
 }
 
 async function exportOneGame(id: string, signal?: AbortSignal): Promise<LichessGame | undefined> {
-  const query = new URLSearchParams({ evals: 'true', clocks: 'true' })
+  const query = new URLSearchParams({ evals: 'true', clocks: 'true', opening: 'true' })
   const response = await fetchOk('lichess', `${BASE_URL}/api/games/export/_ids?${query}`, {
     method: 'POST',
     body: id,

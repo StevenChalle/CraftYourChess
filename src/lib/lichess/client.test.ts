@@ -40,6 +40,7 @@ describe('exportParams', () => {
       perfType: 'ultraBullet,bullet',
       evals: 'true',
       clocks: 'true',
+      opening: 'true',
     })
   })
 
@@ -58,6 +59,7 @@ describe('exportParams', () => {
       perfType: 'blitz',
       evals: 'true',
       clocks: 'true',
+      opening: 'true',
       max: '50',
       since: '1',
       until: '2',

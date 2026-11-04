@@ -14,10 +14,31 @@ import { EvalChart } from './EvalChart'
 
 /**
  * An analysed game, opened in the results: the columns hidden on a phone, the evaluation chart,
- * and deepening the positions that only had a quick look. `deepen`: false outside the analysis's
- * results (a game of the profile, judged from the cache), where the session cannot deepen it.
+ * whether every move had a deep look (on the legend's line), and deepening the positions that only
+ * had a quick look, or its progress. `deepen`: false outside the analysis's results (a game of the
+ * profile, judged from the cache), where the session cannot deepen it: only the progress of a
+ * deepening under way (the Results tab's, or the background analysis's). `ratingChange`: for the
+ * chart's summary of the game, when known (Lichess says it itself).
  */
-export function GamePanel({ game, deepen = true }: { game: ReviewedGame; deepen?: boolean }) {
+export function GamePanel({
+  game,
+  deepen = true,
+  ratingChange,
+}: {
+  game: ReviewedGame
+  deepen?: boolean
+  ratingChange?: number
+}) {
+  const { deepening, stopDeepening } = useAnalysisSession()
+  const background = useBackground()?.state
+  const running = deepening?.gameKey === reviewedGameKey(game) ? deepening : undefined
+  const inBackground =
+    !running &&
+    background?.phase === 'deepening' &&
+    background.deepening?.includes(movesHash(game.sanMoves, game.initialFen))
+  const shallow = shallowPositions(game).length
+  const busy = running !== undefined || inBackground
+
   return (
     <div className="space-y-3">
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:hidden">
@@ -35,18 +56,63 @@ export function GamePanel({ game, deepen = true }: { game: ReviewedGame; deepen?
           )}
         </span>
       </p>
-      <EvalChart game={game} />
-      {deepen ? <DeepenGame game={game} /> : <DeepStatus game={game} />}
+      <EvalChart
+        game={game}
+        ratingChange={ratingChange ?? game.ratingDiff}
+        legendAside={
+          busy ? undefined : shallow === 0 ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="size-3.5 text-win" />
+              {m.deepen_done()}
+            </span>
+          ) : (
+            !deepen && (
+              <span className="inline-flex items-center gap-1.5">
+                <Gauge className="size-3.5" />
+                {m.deepen_quick()}
+              </span>
+            )
+          )
+        }
+      />
+      {running ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-40 flex-1 space-y-1.5">
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {m.deepen_running({
+                done: formatNumber(running.done),
+                total: formatNumber(running.total),
+              })}
+              {running.paused && <> · {m.deepen_paused()}</>}
+            </p>
+            <Progress value={(running.done / running.total) * 100} />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={stopDeepening}
+            className="text-muted-foreground"
+          >
+            <Square data-icon="inline-start" />
+            {m.deepen_stop()}
+          </Button>
+        </div>
+      ) : inBackground ? (
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">{m.deepen_background()}</p>
+          <Progress value={((background.current ?? 0) / background.deepening!.length) * 100} />
+        </div>
+      ) : (
+        deepen && shallow > 0 && <DeepenButton game={game} shallow={shallow} />
+      )}
     </div>
   )
 }
 
-/** "Deepen the analysis (≈ 1 min)", its progress while it runs, or "Deep analysis". */
-function DeepenGame({ game }: { game: ReviewedGame }) {
-  const { deepening, deepenGames, stopDeepening, analysis } = useAnalysisSession()
+/** "Deepen the analysis (≈ 1 min)", with what it does. */
+function DeepenButton({ game, shallow }: { game: ReviewedGame; shallow: number }) {
+  const { deepening, deepenGames, analysis } = useAnalysisSession()
   const key = reviewedGameKey(game)
-  const shallow = shallowPositions(game).length
-  const running = deepening?.gameKey === key ? deepening : undefined
 
   // While every game is being deepened: this one first, then the others still to do.
   const deepenThis = () => {
@@ -57,34 +123,6 @@ function DeepenGame({ game }: { game: ReviewedGame }) {
     deepenGames([key, ...others], 'all')
   }
 
-  if (running) {
-    return (
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-40 flex-1 space-y-1.5">
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {m.deepen_running({
-              done: formatNumber(running.done),
-              total: formatNumber(running.total),
-            })}
-            {running.paused && <> · {m.deepen_paused()}</>}
-          </p>
-          <Progress value={(running.done / running.total) * 100} />
-        </div>
-        <Button variant="ghost" size="sm" onClick={stopDeepening} className="text-muted-foreground">
-          <Square data-icon="inline-start" />
-          {m.deepen_stop()}
-        </Button>
-      </div>
-    )
-  }
-  if (shallow === 0) {
-    return (
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Check className="size-3.5 text-win" />
-        {m.deepen_done()}
-      </p>
-    )
-  }
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <Button variant="outline" size="sm" onClick={deepenThis}>
@@ -93,62 +131,5 @@ function DeepenGame({ game }: { game: ReviewedGame }) {
       </Button>
       <span className="text-xs text-muted-foreground">{m.deepen_hint()}</span>
     </div>
-  )
-}
-
-/**
- * Outside the analysis's results: whether every move had a deep look, with the progress while the
- * analysis's deepening (Results tab) or the background analysis is at it.
- */
-function DeepStatus({ game }: { game: ReviewedGame }) {
-  const { deepening, stopDeepening } = useAnalysisSession()
-  const background = useBackground()?.state
-  const running = deepening?.gameKey === reviewedGameKey(game) ? deepening : undefined
-  const inBackground =
-    background?.phase === 'deepening' &&
-    background.deepening?.includes(movesHash(game.sanMoves, game.initialFen))
-
-  if (running) {
-    return (
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-40 flex-1 space-y-1.5">
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {m.deepen_running({
-              done: formatNumber(running.done),
-              total: formatNumber(running.total),
-            })}
-            {running.paused && <> · {m.deepen_paused()}</>}
-          </p>
-          <Progress value={(running.done / running.total) * 100} />
-        </div>
-        <Button variant="ghost" size="sm" onClick={stopDeepening} className="text-muted-foreground">
-          <Square data-icon="inline-start" />
-          {m.deepen_stop()}
-        </Button>
-      </div>
-    )
-  }
-  if (inBackground) {
-    const share = (background.current ?? 0) / background.deepening!.length
-    return (
-      <div className="space-y-1.5">
-        <p className="text-xs text-muted-foreground">{m.deepen_background()}</p>
-        <Progress value={share * 100} />
-      </div>
-    )
-  }
-  if (shallowPositions(game).length === 0) {
-    return (
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Check className="size-3.5 text-win" />
-        {m.deepen_done()}
-      </p>
-    )
-  }
-  return (
-    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Gauge className="size-3.5" />
-      {m.deepen_quick()}
-    </p>
   )
 }

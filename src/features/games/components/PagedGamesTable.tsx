@@ -25,9 +25,15 @@ const PAGE_SIZE = 20
 export function PagedGamesTable({
   games,
   usernames,
+  oneRating = false,
 }: {
   games: ReviewGame[]
   usernames: ProfileSearch
+  /**
+   * The games all count for the same rating (one platform, one time control, rated): each one's
+   * change is from the game before it, when the platform does not say it (Chess.com)
+   */
+  oneRating?: boolean
 }) {
   const [wanted, setWanted] = useState(0)
   const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / PAGE_SIZE) - 1))
@@ -35,6 +41,13 @@ export function PagedGamesTable({
   const { draft, deepening } = useAnalysisSession()
   const reviewed = useCachedReviews(shown, draft.criteria, deepening?.gameKey)
   const rootRef = useRef<HTMLDivElement>(null)
+  const ratingChange = (game: ReviewGame): number | undefined => {
+    if (game.ratingDiff !== undefined || !oneRating || game.rating === undefined) {
+      return game.ratingDiff
+    }
+    const before = games[games.indexOf(game) + 1]?.rating
+    return before === undefined ? undefined : game.rating - before
+  }
   return (
     <div ref={rootRef} className="scroll-mt-4 space-y-3">
       <TablePagination
@@ -50,7 +63,11 @@ export function PagedGamesTable({
             canOpen: (game) => reviewed.has(gameRef(game)),
             render: (game) => {
               const review = reviewed.get(gameRef(game))
-              return review && <GamePanel game={review} deepen={false} />
+              return (
+                review && (
+                  <GamePanel game={review} deepen={false} ratingChange={ratingChange(game)} />
+                )
+              )
             },
           }}
           extra={{

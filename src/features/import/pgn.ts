@@ -7,7 +7,7 @@ import {
   type TimeControl,
 } from '@/features/games/normalize'
 import { toCp } from '@/features/review/errors'
-import { gameClock, type ReviewGame } from '@/features/review/games'
+import { gameClock, pgnOpening, type GameOpening, type ReviewGame } from '@/features/review/games'
 import { replay } from '@/features/review/positions'
 
 /**
@@ -39,6 +39,7 @@ export type PgnGame = {
   clocks: (number | undefined)[]
   /** Evaluation after each move (White's side, centipawns), when the PGN has them (Lichess) */
   evals: (number | undefined)[]
+  opening?: GameOpening
 }
 
 export type IgnoredGames = {
@@ -141,6 +142,7 @@ function readGame(game: Game<PgnNodeData>, index: number): PgnGame | keyof Ignor
     white,
     black,
     whiteElo: rating(tag('WhiteElo')),
+    opening: pgnOpening(tag),
     blackElo: rating(tag('BlackElo')),
     result: result as PgnGame['result'],
     playedAt: parseDate(date, time),
@@ -242,5 +244,6 @@ export function toReviewGame(game: PgnGame, color: Color): ReviewGame {
       control.kind === 'clock'
         ? gameClock(control.initial, control.increment, game.clocks)
         : undefined,
+    opening: game.opening,
   }
 }
