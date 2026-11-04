@@ -10,7 +10,7 @@ import { m } from '@/paraglide/messages'
  */
 export function ReviewButtons({ usernames }: { usernames: ProfileSearch }) {
   return (
-    <Button size="lg" variant="secondary" asChild className="max-sm:w-full">
+    <Button size="lg" asChild className="max-sm:w-full">
       <Link to="/player/analysis" search={usernames} resetScroll={false}>
         <SlidersHorizontal data-icon="inline-start" />
         {m.review_button()}
