@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Microscope, Swords } from 'lucide-react'
+import { LoaderCircle, Microscope, Swords } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { GameSummary } from '@/features/games/normalize'
 import type { ProfileSearch } from '@/features/player/search'
@@ -7,9 +7,9 @@ import { gameRef } from '@/features/review/gameRef'
 import { m } from '@/paraglide/messages'
 
 /**
- * Straight to the analysis of this game alone, then its training. Already analysed: straight to
- * the training (the analysis comes back from the cache at once); `disabled` when it has no error
- * to replay. `size` 'sm': larger, its label always shown. `compact`: the training as an icon alone.
+ * Analyses this game where it is (`onAnalyze`, a loader in the button while `busy`). Already
+ * analysed: straight to its training (the analysis comes back from the cache at once); `disabled`
+ * when it has no error to replay, or while another game is analysed. `size` 'sm': larger, its label always shown. `compact`: the training as an icon alone.
  */
 export function AnalyzeLink({
   game,
@@ -18,6 +18,8 @@ export function AnalyzeLink({
   disabled = false,
   size = 'xs',
   compact = false,
+  onAnalyze,
+  busy = false,
 }: {
   game: GameSummary
   usernames: ProfileSearch
@@ -25,6 +27,8 @@ export function AnalyzeLink({
   disabled?: boolean
   size?: 'xs' | 'sm'
   compact?: boolean
+  onAnalyze?: () => void
+  busy?: boolean
 }) {
   const label = size === 'xs' ? 'max-sm:sr-only' : undefined
   if (analysed && compact) {
@@ -69,15 +73,20 @@ export function AnalyzeLink({
     )
   }
   return (
-    <Button size={size} asChild>
-      <Link
-        to="/player/results"
-        search={{ ...usernames, game: gameRef(game) }}
-        title={m.history_analyze_title()}
-      >
+    <Button
+      size={size}
+      // While busy, not greyed out: its loader says the analysis runs.
+      onClick={busy ? undefined : onAnalyze}
+      disabled={disabled}
+      aria-busy={busy}
+      title={m.history_analyze_title()}
+    >
+      {busy ? (
+        <LoaderCircle data-icon="inline-start" className="animate-spin" />
+      ) : (
         <Microscope data-icon="inline-start" />
-        <span className={label}>{m.history_analyze()}</span>
-      </Link>
+      )}
+      <span className={label}>{m.history_analyze()}</span>
     </Button>
   )
 }

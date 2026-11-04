@@ -876,3 +876,7 @@ Une partie qu'on a fait analyser sur Lichess arrive avec ses évaluations (`eval
 - **Les listes et la page de revue** la traitent comme analysée d'emblée (`useCachedReviews` → `reviewFromCache`) : erreurs, courbe, entraînement, sans Stockfish ni attente. Seulement si Lichess a évalué **chaque coup** ; sinon elle reste « à analyser ».
 - **La position de départ** n'est jamais évaluée par Lichess : on lui donne +0,2 (`START_CP`, ce qu'en disent les moteurs). Une partie analysée par Lichess ne demande donc plus aucun calcul, même quand on lance l'analyse (estimation à jour : `enginePositions`). Une position de départ arrangée (`initialFen`) passe encore par Stockfish.
 - Limite : une partie analysée sur Lichess **après** avoir été téléchargée dans le magasin des parties garde l'ancienne version, sans évaluations.
+
+## 2026-11-05 : « Analyser » dans la liste des parties analyse sur place
+
+Le bouton « Analyser » d'une partie de la liste (profil, import) ne part plus vers l'onglet Analyse : il analyse la partie là où elle est (`useAnalysisHere`, `analyzeGames` sur cette seule partie, avec les critères de l'onglet Analyse, en activité du joueur). Un loader dans le bouton, la ligne s'ouvre aussitôt sur la progression (avec « Arrêter »), puis sur la courbe et le résumé habituels, et la ligne prend son nombre d'erreurs et « Entraîner ». Une partie à la fois : les autres boutons attendent. Arrêter ou quitter la liste interrompt l'analyse ; ce qui est calculé reste dans le cache.

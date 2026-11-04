@@ -91,9 +91,16 @@ export function GamesTable<G extends GameSummary>({
     onToggle?: (key: string, open: boolean) => void
     /** The row open at first */
     defaultOpen?: string
+    /** A row to open now: a new object each time it is asked */
+    openNow?: { key: string }
   }
 }) {
   const [openKey, setOpenKey] = useState<string | undefined>(expandable?.defaultOpen)
+  const [openedNow, setOpenedNow] = useState(expandable?.openNow)
+  if (expandable?.openNow !== openedNow) {
+    setOpenedNow(expandable?.openNow)
+    if (expandable?.openNow) setOpenKey(expandable.openNow.key)
+  }
   const toggleOpen = (key: string) => {
     if (openKey !== undefined) expandable?.onToggle?.(openKey, false)
     if (openKey !== key) expandable?.onToggle?.(key, true)

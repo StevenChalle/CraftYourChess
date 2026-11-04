@@ -4,7 +4,7 @@ import type { ProfileSearch } from '@/features/player/search'
 import { GamePanel } from '@/features/review/components/GamePanel'
 import { gameRef } from '@/features/review/gameRef'
 import type { ReviewGame } from '@/features/review/games'
-import { useAnalysisSession } from '@/features/review/sessionContext'
+import { reviewedGameKey, useAnalysisSession } from '@/features/review/sessionContext'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
 import { formatNumber } from '@/lib/format'
 import { pageSlice } from '@/lib/pagination'
@@ -12,15 +12,16 @@ import { loadPageSize, PAGE_SIZES, savePageSize } from '../pageSize'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { ReviewLink } from '@/features/study/components/ReviewLink'
+import { AnalysisProgress, useAnalysisHere } from './AnalysisInPlace'
 import { AnalyzeLink } from './AnalyzeLink'
 import { GamesTable } from './GamesTable'
 
 /**
  * Games already in memory, in their order (newest first), 20 per page or as many as chosen (kept
- * in this browser), the arrows under the list;
- * each with its link to the analysis. A game analysed before shows its errors and opens onto its
- * evaluation chart, as in the analysis's results (judged from the cache with the
- * analysis's criteria). New games arriving keep the page shown. `usernames`: the accounts
+ * in this browser), the arrows under the list. A game is analysed right where it is: its row opens
+ * on the progress, then on the game. A game analysed before shows its errors and opens onto its
+ * evaluation chart, as in the analysis's results (judged from the cache with the analysis's
+ * criteria). New games arriving keep the page shown. `usernames`: the accounts
  * searched, or the import, for the links.
  */
 export function PagedGamesTable({
@@ -44,6 +45,11 @@ export function PagedGamesTable({
   // Read again once a game is deepened, by the session or in its panel.
   const [deepened, setDeepened] = useState(0)
   const reviewed = useCachedReviews(shown, draft.criteria, `${deepening?.gameKey}:${deepened}`)
+  // A game analysed right here: its row opens on the progress, then on the game once analysed.
+  const here = useAnalysisHere(() => setDeepened((count) => count + 1))
+  const [openNow, setOpenNow] = useState<{ key: string }>()
+  const reviewOf = (game: ReviewGame) =>
+    reviewed.get(gameRef(game)) ?? here.analysed.get(gameRef(game))
   const rootRef = useRef<HTMLDivElement>(null)
   const ratingChange = (game: ReviewGame): number | undefined => {
     if (game.ratingDiff !== undefined || !oneRating || game.rating === undefined) {
@@ -58,9 +64,13 @@ export function PagedGamesTable({
         <GamesTable
           games={shown}
           expandable={{
-            canOpen: (game) => reviewed.has(gameRef(game)),
+            canOpen: (game) => reviewOf(game) !== undefined || here.current?.ref === gameRef(game),
+            openNow,
             render: (game) => {
-              const review = reviewed.get(gameRef(game))
+              const review = reviewOf(game)
+              if (!review && here.current?.ref === gameRef(game)) {
+                return <AnalysisProgress state={here.current} onStop={here.stop} />
+              }
               return (
                 review && (
                   <GamePanel
@@ -85,7 +95,7 @@ export function PagedGamesTable({
           extra={{
             header: m.review_col_errors(),
             cell: (game) => {
-              const review = reviewed.get(gameRef(game))
+              const review = reviewOf(game)
               return (
                 review && (
                   <span
@@ -101,7 +111,8 @@ export function PagedGamesTable({
             },
           }}
           action={(game) => {
-            const review = reviewed.get(gameRef(game))
+            const review = reviewOf(game)
+            const busy = here.current?.ref === gameRef(game) && !here.current.failed
             return (
               <>
                 <ReviewLink game={game} compact className="max-sm:hidden" />
@@ -109,8 +120,17 @@ export function PagedGamesTable({
                   game={game}
                   usernames={usernames}
                   analysed={review !== undefined}
-                  disabled={review?.mistakes.length === 0}
+                  disabled={
+                    review
+                      ? review.mistakes.length === 0
+                      : !busy && here.current !== undefined && !here.current.failed
+                  }
                   compact
+                  busy={busy}
+                  onAnalyze={() => {
+                    here.start(game)
+                    setOpenNow({ key: reviewedGameKey(game) })
+                  }}
                 />
               </>
             )
