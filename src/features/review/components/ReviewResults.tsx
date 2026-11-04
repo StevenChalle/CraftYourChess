@@ -30,10 +30,12 @@ export function ReviewResults({
   outcome: ReviewOutcome
   onTrain: (mistakes: Mistake[]) => void
 }) {
-  const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(loadPageSize)
   const { games, failures } = outcome
-  const { deepening, stopDeepening } = useAnalysisSession()
+  // The page and the game open are kept with the analysis: back from a training, as they were.
+  const { deepening, stopDeepening, analysisView, updateAnalysisView } = useAnalysisSession()
+  const page = analysisView?.page ?? 0
+  const setPage = (next: number) => updateAnalysisView({ page: next })
 
   return (
     <div className="min-w-0 space-y-3">
@@ -79,9 +81,13 @@ export function ReviewResults({
                   />
                 ),
                 // A single game: nothing else to look at, it opens right away.
-                defaultOpen: games.length === 1 ? reviewedGameKey(games[0]!) : undefined,
+                defaultOpen:
+                  analysisView?.open ??
+                  (games.length === 1 ? reviewedGameKey(games[0]!) : undefined),
                 // Closing a game stops deepening it (not when every game is being deepened).
                 onToggle: (key, open) => {
+                  if (open) updateAnalysisView({ open: key })
+                  else if (analysisView?.open === key) updateAnalysisView({ open: undefined })
                   if (!open && deepening?.scope === 'game' && deepening.gameKey === key) {
                     stopDeepening()
                   }

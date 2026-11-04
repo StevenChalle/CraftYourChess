@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { TablePagination } from '@/components/TablePagination'
 import { GamePanel } from '@/features/review/components/GamePanel'
 import { gameRef } from '@/features/review/gameRef'
 import type { ReviewGame } from '@/features/review/games'
 import { reviewedGameKey, useAnalysisSession } from '@/features/review/sessionContext'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
+import { useKeptScroll } from '@/hooks/useKeptScroll'
 import { pageSlice } from '@/lib/pagination'
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../pageSize'
 import { m } from '@/paraglide/messages'
@@ -53,29 +54,11 @@ export function PagedGamesTable({
 
   // The window's scroll, kept as the list is left, and put back on return once the list (and the
   // game open, which makes the page taller) is there again.
-  const scrollY = useRef(window.scrollY)
-  useEffect(() => {
-    const onScroll = () => (scrollY.current = window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      setGameList((view) => ({ ...view, scrollY: scrollY.current }))
-    }
-  }, [setGameList])
-  const [restore] = useState(gameList.scrollY)
-  const restored = useRef(false)
-  const ready = gameList.open === undefined || reviewed.size > 0 || here.analysed.size > 0
-  useEffect(() => {
-    if (restore === undefined || restored.current || !ready) return
-    restored.current = true
-    // The open game's panel slides open: try again for a moment until the page is tall enough.
-    let frames = 0
-    const step = () => {
-      window.scrollTo(0, restore)
-      if (Math.abs(window.scrollY - restore) > 1 && ++frames < 60) requestAnimationFrame(step)
-    }
-    step()
-  }, [restore, ready])
+  useKeptScroll(
+    gameList.scrollY,
+    gameList.open === undefined || reviewed.size > 0 || here.analysed.size > 0,
+    (scrollY) => setGameList((view) => ({ ...view, scrollY })),
+  )
 
   const ratingChange = (game: ReviewGame): number | undefined => {
     if (game.ratingDiff !== undefined || !oneRating || game.rating === undefined) {

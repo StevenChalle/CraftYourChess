@@ -45,6 +45,7 @@ import {
   type SearchState,
   reviewedGameKey,
   type Deepening,
+  type AnalysisView,
   type GameListView,
   type OpenTraining,
   type Session,
@@ -136,6 +137,7 @@ export function AnalysisSessionProvider({
   }))
   const [training, setTraining] = useState<OpenTraining | undefined>(restored.training)
   const [gameList, setGameList] = useState<GameListView>({ page: 0 })
+  const [view, setView] = useState<(AnalysisView & { analysisId: number }) | undefined>()
   const [analysisId, setAnalysisId] = useState(0)
   const [deepening, setDeepening] = useState<Deepening | undefined>(undefined)
   const deepenJob = useRef<AbortController | undefined>(undefined)
@@ -633,6 +635,14 @@ export function AnalysisSessionProvider({
     stopAnalysis,
     gameList,
     setGameList,
+    analysisView: view?.analysisId === analysisId ? view : undefined,
+    updateAnalysisView: (change) =>
+      setView((current) => ({
+        ...(current?.analysisId === analysisId
+          ? current
+          : { analysisId, page: 0, optionsOpen: false }),
+        ...change,
+      })),
     deepening,
     deepenGames: (keys, scope) => void deepenGames(keys, scope),
     stopDeepening,

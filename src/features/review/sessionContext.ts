@@ -115,6 +115,10 @@ export type Session = {
    */
   gameList: GameListView
   setGameList: Dispatch<SetStateAction<GameListView>>
+  /** The analysis page's view of the analysis shown (undefined for a new one) */
+  analysisView: AnalysisView | undefined
+  /** Changes it, for the analysis shown */
+  updateAnalysisView: (change: Partial<AnalysisView>) => void
   /** The deepening under way, if any */
   deepening: Deepening | undefined
   /** Deepens these games of the analysis, one after the other (replaces any deepening) */
@@ -128,6 +132,12 @@ export type Session = {
  * scrolled when the list was left.
  */
 export type GameListView = { page: number; open?: string; scrollY?: number }
+
+/**
+ * Where the analysis page stands for the analysis shown: its options box open or not, its results'
+ * page and game open, the scroll. Found again when coming back from a training or a review.
+ */
+export type AnalysisView = GameListView & { optionsOpen: boolean }
 
 /** A game's key in the results: its platform and id. */
 export function reviewedGameKey(game: { source: string; id: string }): string {

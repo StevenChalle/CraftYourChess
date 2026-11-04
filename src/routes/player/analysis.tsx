@@ -8,6 +8,7 @@ import { ReviewSetup } from '@/features/review/components/ReviewSetup'
 import { isSelectionValid } from '@/features/review/selection'
 import { sameSettings, type ReviewSettings } from '@/features/review/settings'
 import { useAnalysisSession } from '@/features/review/sessionContext'
+import { useKeptScroll } from '@/hooks/useKeptScroll'
 import { formatGameCount } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -61,6 +62,8 @@ function AnalysisForm() {
     analysis,
     analysisSettings,
     analysisId,
+    analysisView,
+    updateAnalysisView,
     find,
     launch,
   } = useAnalysisSession()
@@ -103,20 +106,30 @@ function AnalysisForm() {
   }
 
   // Each analysis launched (or brought back by a reload): the options fold away, its results in
-  // sight. Open on arrival without an analysis.
+  // sight. Open on arrival without an analysis. Back from a training or a review: as it was left,
+  // its scroll included.
   const analysed = analysis.status !== 'none'
-  const [optionsOpen, setOptionsOpen] = useState(!analysed)
+  const [optionsOpen, setOptionsOpenState] = useState(analysisView?.optionsOpen ?? !analysed)
+  const setOptionsOpen = (open: boolean) => {
+    setOptionsOpenState(open)
+    updateAnalysisView({ optionsOpen: open })
+  }
   const [foldedFor, setFoldedFor] = useState(analysisId)
   if (foldedFor !== analysisId) {
     setFoldedFor(analysisId)
-    setOptionsOpen(false)
+    setOptionsOpenState(false)
   }
   const resultsRef = useRef<HTMLDivElement>(null)
+  const arrivedWith = useRef(analysisId)
   useEffect(() => {
-    if (analysed) resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (analysisId === arrivedWith.current) return
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     // Once per analysis, not as it goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisId])
+  useKeptScroll(analysisView?.scrollY, analysis.status === 'done', (scrollY) =>
+    updateAnalysisView({ scrollY }),
+  )
 
   const found = search.status === 'found' ? search.found : undefined
   return (
@@ -125,7 +138,7 @@ function AnalysisForm() {
         <button
           type="button"
           aria-expanded={optionsOpen}
-          onClick={() => setOptionsOpen((open) => !open)}
+          onClick={() => setOptionsOpen(!optionsOpen)}
           className="flex w-full items-center gap-3 p-4 text-left"
         >
           <ChevronRight
