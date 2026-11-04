@@ -187,9 +187,10 @@ export function StudyView({
     setWork(undefined)
   }
 
-  // The live engine, off each time the page opens (switched on only when wanted), paused while the
-  // analysis computes here (they would share the processor).
-  const [engineOn, setEngineOn] = useState(false)
+  // The live engine: on when the page opens on the game's start, off when it opens on a given
+  // position (switched on only when wanted); nothing remembered. Paused while the analysis
+  // computes here (they would share the processor).
+  const [engineOn, setEngineOn] = useState(ply === 0)
   const live = useLiveAnalysis(node.over ? undefined : node.fen, engineOn && !work)
   const lines = useMemo(
     () => (live.analysis ? shownLines(node.fen, node.turn, live.analysis) : []),
