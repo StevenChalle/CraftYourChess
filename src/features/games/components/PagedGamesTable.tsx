@@ -5,15 +5,14 @@ import { gameRef } from '@/features/review/gameRef'
 import type { ReviewGame } from '@/features/review/games'
 import { reviewedGameKey, useAnalysisSession } from '@/features/review/sessionContext'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
-import { formatNumber } from '@/lib/format'
 import { pageSlice } from '@/lib/pagination'
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../pageSize'
-import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { useAnalysisHere } from '../useAnalysisHere'
 import { AnalysisProgress } from './AnalysisInPlace'
 import { AnalyzeLink } from './AnalyzeLink'
+import { MistakesCount } from './MistakesCount'
 import { GamesTable } from './GamesTable'
 
 /**
@@ -131,18 +130,7 @@ export function PagedGamesTable({
             header: m.review_col_errors(),
             cell: (game) => {
               const review = reviewOf(game)
-              return (
-                review && (
-                  <span
-                    className={cn(
-                      'num text-base font-medium',
-                      review.mistakes.length === 0 ? 'text-win' : 'text-loss',
-                    )}
-                  >
-                    {formatNumber(review.mistakes.length)}
-                  </span>
-                )
-              )
+              return review && <MistakesCount count={review.mistakes.length} />
             },
           }}
           action={(game) => {

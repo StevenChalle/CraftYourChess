@@ -1,14 +1,15 @@
-import { Microscope, Square, Swords } from 'lucide-react'
+import { Microscope, Square } from 'lucide-react'
 import { useState } from 'react'
 import { FeedbackNudge } from '@/components/FeedbackLink'
 import { TablePagination } from '@/components/TablePagination'
 import { Button } from '@/components/ui/button'
+import { AnalyzeLink } from '@/features/games/components/AnalyzeLink'
 import { GamesTable } from '@/features/games/components/GamesTable'
+import { MistakesCount } from '@/features/games/components/MistakesCount'
 import { sourceErrorMessage } from '@/features/player/sources'
 import { formatEstimate, formatGameCount, formatNumber } from '@/lib/format'
 import { pageSlice } from '@/lib/pagination'
 import { loadPageSize, PAGE_SIZES, savePageSize } from '@/features/games/pageSize'
-import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { shallowPositions, type Mistake, type ReviewedGame, type ReviewOutcome } from '../analyze'
 import { reviewedGameKey, useAnalysisSession } from '../sessionContext'
@@ -19,8 +20,8 @@ import { ThemeBars } from './ThemeBars'
 import { TrainingPrompt } from './TrainingPrompt'
 
 /**
- * The analysed games, paginated, with each game's errors and a button replaying them.
- * Below them, training on all the errors (TrainingPrompt), and last the feedback link.
+ * The analysed games, paginated, with each game's errors and a button replaying them. Above them,
+ * training on all the errors (TrainingPrompt); last, the feedback link.
  */
 export function ReviewResults({
   outcome,
@@ -46,61 +47,52 @@ export function ReviewResults({
       ) : (
         <>
           <ThemeBars mistakes={games.flatMap((game) => game.mistakes)} />
+          <TrainingPrompt outcome={outcome} />
           <DeepenAll games={games} />
-          <GamesTable
-            games={pageSlice(games, page, pageSize)}
-            action={(game) => <ReviewLink game={game} compact className="max-sm:hidden" />}
-            expandable={{
-              render: (game) => (
-                <GamePanel
-                  game={game}
-                  train={
-                    <Button
-                      size="sm"
-                      disabled={game.mistakes.length === 0}
-                      onClick={() => onTrain(game.mistakes)}
-                      title={m.replay_game()}
-                    >
-                      <Swords data-icon="inline-start" />
-                      {m.replay_game_short()}
-                    </Button>
-                  }
-                />
-              ),
-              // A single game: nothing else to look at, it opens right away.
-              defaultOpen: games.length === 1 ? reviewedGameKey(games[0]!) : undefined,
-              // Closing a game stops deepening it (not when every game is being deepened).
-              onToggle: (key, open) => {
-                if (!open && deepening?.scope === 'game' && deepening.gameKey === key) {
-                  stopDeepening()
-                }
-              },
-            }}
-            extra={{
-              header: m.review_col_errors(),
-              cell: (game: ReviewedGame) => (
-                <span className="inline-flex items-center justify-end gap-2">
-                  <span
-                    className={cn(
-                      'num text-base font-medium',
-                      game.mistakes.length === 0 ? 'text-win' : 'text-loss',
-                    )}
-                  >
-                    {formatNumber(game.mistakes.length)}
-                  </span>
-                  <Button
-                    size="icon-xs"
+          {/* The same list as the profile's: its box, its columns, its actions. */}
+          <div className="panel-etabli px-2">
+            <GamesTable
+              games={pageSlice(games, page, pageSize)}
+              action={(game) => (
+                <>
+                  <ReviewLink game={game} compact className="max-sm:hidden" />
+                  <AnalyzeLink
+                    analysed
+                    compact
                     disabled={game.mistakes.length === 0}
-                    onClick={() => onTrain(game.mistakes)}
-                    title={m.replay_game()}
-                    aria-label={m.replay_game()}
-                  >
-                    <Swords className="size-3.5" />
-                  </Button>
-                </span>
-              ),
-            }}
-          />
+                    onTrain={() => onTrain(game.mistakes)}
+                  />
+                </>
+              )}
+              expandable={{
+                render: (game) => (
+                  <GamePanel
+                    game={game}
+                    train={
+                      <AnalyzeLink
+                        analysed
+                        size="sm"
+                        disabled={game.mistakes.length === 0}
+                        onTrain={() => onTrain(game.mistakes)}
+                      />
+                    }
+                  />
+                ),
+                // A single game: nothing else to look at, it opens right away.
+                defaultOpen: games.length === 1 ? reviewedGameKey(games[0]!) : undefined,
+                // Closing a game stops deepening it (not when every game is being deepened).
+                onToggle: (key, open) => {
+                  if (!open && deepening?.scope === 'game' && deepening.gameKey === key) {
+                    stopDeepening()
+                  }
+                },
+              }}
+              extra={{
+                header: m.review_col_errors(),
+                cell: (game: ReviewedGame) => <MistakesCount count={game.mistakes.length} />,
+              }}
+            />
+          </div>
           <TablePagination
             page={page}
             pageSize={pageSize}
@@ -113,7 +105,6 @@ export function ReviewResults({
               savePageSize(size)
             }}
           />
-          <TrainingPrompt outcome={outcome} />
         </>
       )}
       {games.length > 0 && <FeedbackNudge text={m.feedback_nudge_results()} />}

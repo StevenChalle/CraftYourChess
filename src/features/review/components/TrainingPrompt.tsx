@@ -8,8 +8,9 @@ import type { ReviewOutcome } from '../analyze'
 import { useAnalysisSession } from '../sessionContext'
 
 /**
- * Below the results: the next step, training on every error of the analysis. Either right away
- * with the default options, or in a training tab showing them first. Hidden without errors.
+ * Above the analysed games: the next step, training on every error of the analysis. Either right
+ * away with the default options, or on the training page showing them first. Hidden without
+ * errors.
  */
 export function TrainingPrompt({ outcome }: { outcome: ReviewOutcome }) {
   const { trainGame, newTraining } = useAnalysisSession()
