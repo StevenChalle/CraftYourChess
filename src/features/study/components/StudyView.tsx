@@ -45,11 +45,12 @@ import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { LIVE_DEPTH, shownLines } from '../liveEngine'
 import { gamePly, moveNotes, startStudy, studyReducer, variationStart } from '../study'
-import { gameNodeAt, getNode } from '../tree'
+import { gameEnd, gameNodeAt, getNode, pathTo } from '../tree'
 import { useLiveAnalysis } from '../useLiveAnalysis'
 import { EngineHeader, EnginePanel } from './EnginePanel'
 import { GameInfo } from './GameInfo'
 import { MoveList } from './MoveList'
+import { TimeChart } from './TimeChart'
 import { EVAL_BAR, StudyBoard } from './StudyBoard'
 
 /** The side panel's width (w-[22rem]); with the gap before it (gap-6) and the evaluation bar */
@@ -73,7 +74,9 @@ type Work =
   | { kind: 'analysing'; progress?: ReviewProgress }
   | { kind: 'deepening'; done: number; total: number }
 
-type PhoneTab = 'moves' | 'engine' | 'chart' | 'info'
+type PhoneTab = 'moves' | 'engine' | 'chart' | 'time' | 'info'
+/** The charts under the board: the evaluation's, the time's */
+type ChartTab = 'eval' | 'time'
 
 /**
  * A game to study on its own page: the board as large as the training's, the evaluation bar, the
@@ -106,6 +109,7 @@ export function StudyView({
   const node = getNode(state.tree, state.current)
   const [orientation, setOrientation] = useState(game.color)
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('chart')
+  const [chartTab, setChartTab] = useState<ChartTab>('eval')
 
   // The analysis: from the cache, or made here (then deepened here).
   const cached = useCachedReviews(
@@ -286,10 +290,10 @@ export function StudyView({
     clocks && (
       <ClockChip color={color} seconds={clocks[color]} dim={variation !== undefined} edge={edge} />
     )
-  // The top player's clock on the left, the bottom one's on the right, the buttons between.
+  // The bottom player's clock on the left, the top one's on the right, the buttons between.
   const controls = (
     <div className="flex items-center gap-2">
-      {clock(top, 'left')}
+      {clock(orientation, 'left')}
       <div
         className={cn(
           'flex min-w-0 flex-1 items-center gap-1',
@@ -330,7 +334,7 @@ export function StudyView({
           </Button>
         )}
       </div>
-      {clock(orientation, 'right')}
+      {clock(top, 'right')}
     </div>
   )
   const action = (
@@ -369,6 +373,22 @@ export function StudyView({
       className={className}
     />
   )
+  // The game's own line (its variations aside), for the time chart.
+  const gameLine = useMemo(() => pathTo(state.tree, gameEnd(state.tree)), [state.tree])
+  const timeChart = game.clock && (
+    <TimeChart
+      game={game}
+      positions={gameLine}
+      notes={notes}
+      selected={shownPly}
+      onSelect={(index) => goto(gameNodeAt(state.tree, index))}
+      orientation={orientation}
+      height={CHART_HEIGHT}
+    />
+  )
+  const phoneTabs: PhoneTab[] = game.clock
+    ? ['chart', 'time', 'engine', 'moves', 'info']
+    : ['chart', 'engine', 'moves', 'info']
   const chart = review ? (
     <EvalChart
       game={review}
@@ -401,7 +421,7 @@ export function StudyView({
         />
         <div>
           <nav className="flex gap-6 border-b" aria-label={m.tabs_label()}>
-            {(['chart', 'engine', 'moves', 'info'] as const).map((tab) => (
+            {phoneTabs.map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -417,6 +437,7 @@ export function StudyView({
             {phoneTab === 'moves' && moves('max-h-80')}
             {phoneTab === 'engine' && engine(false)}
             {phoneTab === 'chart' && chart}
+            {phoneTab === 'time' && timeChart}
             {phoneTab === 'info' && <GameInfo game={game} player={player} />}
           </div>
         </div>
@@ -450,7 +471,26 @@ export function StudyView({
         className="mx-auto"
         style={{ width: boardSize ? boardSize + EVAL_BAR + 24 + PANEL : undefined }}
       >
-        {chart}
+        {timeChart ? (
+          <>
+            <nav className="mb-3 flex gap-6 border-b" aria-label={m.study_charts_label()}>
+              {(['eval', 'time'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  data-status={chartTab === tab ? 'active' : undefined}
+                  onClick={() => setChartTab(tab)}
+                  className="tab-etabli pb-2"
+                >
+                  {tab === 'eval' ? m.study_chart_eval() : m.study_chart_time()}
+                </button>
+              ))}
+            </nav>
+            {chartTab === 'eval' ? chart : timeChart}
+          </>
+        ) : (
+          chart
+        )}
       </div>
     </div>
   )
@@ -460,6 +500,7 @@ const PHONE_TABS: Record<PhoneTab, () => string> = {
   moves: m.study_tab_moves,
   engine: m.study_tab_engine,
   chart: m.study_tab_chart,
+  time: m.study_tab_time,
   info: m.study_tab_info,
 }
 
