@@ -43,7 +43,6 @@ import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { formatScore, LIVE_DEPTH, shownLines } from '../liveEngine'
-import { loadEngineOn, saveEngineOn } from '../settings'
 import { gamePly, moveNotes, startStudy, studyReducer, variationStart } from '../study'
 import { gameNodeAt, getNode } from '../tree'
 import { useLiveAnalysis } from '../useLiveAnalysis'
@@ -188,12 +187,9 @@ export function StudyView({
     setWork(undefined)
   }
 
-  // The live engine, paused while the analysis computes here (they would share the processor).
-  const [engineOn, setEngineOn] = useState(loadEngineOn)
-  const toggleEngine = (on: boolean) => {
-    saveEngineOn(on)
-    setEngineOn(on)
-  }
+  // The live engine, off each time the page opens (switched on only when wanted), paused while the
+  // analysis computes here (they would share the processor).
+  const [engineOn, setEngineOn] = useState(false)
   const live = useLiveAnalysis(node.over ? undefined : node.fen, engineOn && !work)
   const lines = useMemo(
     () => (live.analysis ? shownLines(node.fen, node.turn, live.analysis) : []),
@@ -330,7 +326,7 @@ export function StudyView({
   const engine = (
     <EnginePanel
       on={engineOn}
-      onToggle={toggleEngine}
+      onToggle={setEngineOn}
       node={node}
       score={score}
       depth={live.analysis?.depth}
