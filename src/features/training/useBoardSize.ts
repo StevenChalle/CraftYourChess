@@ -16,8 +16,13 @@ export const SIDE_BY_SIDE = '(min-width: 768px)'
  * The largest board that fits next to the panel: the whole height left under the board's top (as
  * the page is when scrolled to the top), within the page's column (aligned with the header), up to
  * MAX_SIZE. undefined on narrow screens, where the board takes the full width above the panel.
+ * `beside`: what sits next to the board on its row (the panel and the gaps), when not the
+ * training's.
  */
-export function useBoardSize(ref: RefObject<HTMLElement | null>): number | undefined {
+export function useBoardSize(
+  ref: RefObject<HTMLElement | null>,
+  beside = GAP + PANEL_WIDTH,
+): number | undefined {
   const [size, setSize] = useState<number>()
   useLayoutEffect(() => {
     const element = ref.current
@@ -30,7 +35,7 @@ export function useBoardSize(ref: RefObject<HTMLElement | null>): number | undef
       if (element.offsetParent === null) return
       const top = element.getBoundingClientRect().top + window.scrollY
       const byHeight = window.innerHeight - top - BOTTOM_MARGIN
-      const byWidth = column.clientWidth - GAP - PANEL_WIDTH
+      const byWidth = column.clientWidth - beside
       setSize(Math.floor(Math.max(MIN_SIZE, Math.min(byHeight, byWidth, MAX_SIZE))))
     }
     update()
@@ -44,6 +49,6 @@ export function useBoardSize(ref: RefObject<HTMLElement | null>): number | undef
       observer.disconnect()
       window.removeEventListener('resize', update)
     }
-  }, [ref])
+  }, [ref, beside])
   return size
 }

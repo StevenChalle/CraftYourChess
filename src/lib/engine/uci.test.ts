@@ -14,7 +14,14 @@ describe('parseInfo', () => {
       nodes: 100234,
       pv: 'e2e4',
       reply: 'e7e5',
+      line: ['e2e4', 'e7e5'],
     })
+  })
+
+  it('keeps the whole principal variation, promotions included', () => {
+    expect(
+      parseInfo('info depth 30 multipv 2 score cp -12 pv g1f3 d7d5 c2c4 e7e6 b7b8q')?.line,
+    ).toEqual(['g1f3', 'd7d5', 'c2c4', 'e7e6', 'b7b8q'])
   })
 
   it('reads a mate score, negative when the side to move gets mated', () => {
@@ -27,7 +34,11 @@ describe('parseInfo', () => {
 
   it('keeps the first move of the pv, ignores info strings', () => {
     expect(parseInfo('info string NNUE evaluation using nn-1.nnue')).toEqual({})
-    expect(parseInfo('info depth 3 pv e2e4 score cp 1')).toEqual({ depth: 3, pv: 'e2e4' })
+    expect(parseInfo('info depth 3 pv e2e4 score cp 1')).toEqual({
+      depth: 3,
+      pv: 'e2e4',
+      line: ['e2e4'],
+    })
   })
 
   it('returns undefined for other lines', () => {

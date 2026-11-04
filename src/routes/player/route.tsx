@@ -35,6 +35,9 @@ type PlayerSearch = ProfileSearch & {
   game?: string
   /** With `game`: then straight to the training of its mistakes (an analysed game) */
   train?: true
+  /** The review page's game (see gameRef.ts), and the half-move shown */
+  review?: string
+  ply?: number
 }
 
 /**
@@ -51,6 +54,12 @@ export const Route = createFileRoute('/player')({
     ...(parseGameRef(search.game) ? { game: search.game as string } : {}),
     ...(parseGameRef(search.game) && (search.train === true || search.train === 'true')
       ? { train: true as const }
+      : {}),
+    ...(parseGameRef(search.review) ? { review: search.review as string } : {}),
+    ...(parseGameRef(search.review) &&
+    Number.isInteger(Number(search.ply)) &&
+    Number(search.ply) >= 0
+      ? { ply: Number(search.ply) }
       : {}),
   }),
   loaderDeps: ({ search }) => ({ lichess: search.lichess, chesscom: search.chesscom }),
@@ -94,7 +103,7 @@ function ImportLayout({ start, game, train }: { start?: 'last'; game?: string; t
     >
       <div className="space-y-6">
         <ImportHeader imported={imported} actions={<ReviewButtons usernames={search} />} />
-        <PlayerTabs usernames={search} canAnalyse />
+        <ProfileTabs usernames={search} canAnalyse />
         <Trainings />
         <Outlet />
       </div>
@@ -141,13 +150,20 @@ function AccountsLayout() {
           nameAction={<FavoriteButton accounts={reviewable.accounts} />}
           actions={reviewable.accounts.length > 0 && <ReviewButtons usernames={usernames} />}
         />
-        <PlayerTabs usernames={usernames} canAnalyse={reviewable.accounts.length > 0} />
+        <ProfileTabs usernames={usernames} canAnalyse={reviewable.accounts.length > 0} />
         <Trainings />
         <Outlet />
       </div>
       <LeaveGuard usernames={usernames} />
     </AnalysisSessionProvider>
   )
+}
+
+/** The profile's tabs, except on a game's review page: a page of its own, under the header. */
+function ProfileTabs(props: { usernames: ProfileSearch; canAnalyse: boolean }) {
+  const pathname = useLocation({ select: (location) => location.pathname })
+  if (pathname === '/player/review') return null
+  return <PlayerTabs {...props} />
 }
 
 /**

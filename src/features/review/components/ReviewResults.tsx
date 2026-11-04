@@ -12,6 +12,7 @@ import { m } from '@/paraglide/messages'
 import { shallowPositions, type Mistake, type ReviewedGame, type ReviewOutcome } from '../analyze'
 import { reviewedGameKey, useAnalysisSession } from '../sessionContext'
 import { deepenSeconds } from '../estimate'
+import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { GamePanel } from './GamePanel'
 import { ThemeBars } from './ThemeBars'
 import { TrainingPrompt } from './TrainingPrompt'
@@ -48,6 +49,7 @@ export function ReviewResults({
           <DeepenAll games={games} />
           <GamesTable
             games={pageSlice(games, page, RESULTS_PAGE_SIZE)}
+            action={(game) => <ReviewLink game={game} compact className="max-sm:hidden" />}
             expandable={{
               render: (game) => <GamePanel game={game} />,
               // A single game: nothing else to look at, it opens right away.

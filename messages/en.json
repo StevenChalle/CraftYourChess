@@ -627,5 +627,44 @@
   "deepen_background": "Deepening in the background…",
   "deepen_quick": "Quick analysis: only the decisive moves got a deep look.",
   "eval_chart_rating": "Rating",
-  "eval_chart_moves": "Moves"
+  "eval_chart_moves": "Moves",
+  "study_no_moves": "No moves in this game.",
+  "study_game_over": "Game over",
+  "study_depth": "depth {depth}/{max}",
+  "study_engine": "Stockfish",
+  "study_engine_toggle": "Live analysis by Stockfish",
+  "study_start": "First move (↑)",
+  "study_back": "Previous move (←)",
+  "study_forward": "Next move (→)",
+  "study_end": "Last move (↓)",
+  "study_flip": "Flip the board (F)",
+  "study_delete_variation": "Delete this variation",
+  "study_delete_variation_short": "Delete",
+  "study_chart_unavailable": "The evaluation chart shows once the game is analysed.",
+  "study_tab_moves": "Moves",
+  "study_tab_engine": "Engine",
+  "study_tab_chart": "Chart",
+  "study_analysing": "Analysing the game… {done} / {total} positions",
+  "study_analysis_starting": "Starting the analysis…",
+  "study_analyse": "Analyze the game",
+  "study_analyse_hint": "Finds your mistakes and draws the evaluation chart. Live analysis pauses meanwhile.",
+  "study_train": [
+    {
+      "declarations": ["input count", "input formatted", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Replay my mistake",
+        "countPlural=other": "Replay my {formatted} mistakes"
+      }
+    }
+  ],
+  "study_no_mistakes": "No mistakes in this game.",
+  "study_deepen": "Deepen",
+  "study_back_profile": "Back to the profile",
+  "study_back_import": "Back to the imported games",
+  "study_not_found": "This game could not be found.",
+  "study_lost_import": "Imported games are only kept until the page is reloaded: import them again.",
+  "study_loading": "Loading the game…",
+  "study_review": "Review",
+  "study_review_title": "Review this game: board, engine, variations"
 }

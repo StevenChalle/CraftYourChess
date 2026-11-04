@@ -10,6 +10,7 @@ import { formatNumber } from '@/lib/format'
 import { pageSlice } from '@/lib/pagination'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
+import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { AnalyzeLink } from './AnalyzeLink'
 import { GamesTable } from './GamesTable'
 
@@ -91,12 +92,15 @@ export function PagedGamesTable({
           action={(game) => {
             const review = reviewed.get(gameRef(game))
             return (
-              <AnalyzeLink
-                game={game}
-                usernames={usernames}
-                analysed={review !== undefined}
-                disabled={review?.mistakes.length === 0}
-              />
+              <>
+                <ReviewLink game={game} compact className="max-sm:hidden" />
+                <AnalyzeLink
+                  game={game}
+                  usernames={usernames}
+                  analysed={review !== undefined}
+                  disabled={review?.mistakes.length === 0}
+                />
+              </>
             )
           }}
         />

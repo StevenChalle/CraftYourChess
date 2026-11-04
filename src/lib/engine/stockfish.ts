@@ -22,6 +22,12 @@ export type Evaluation = {
   lines: { move: string; reply?: string; score: EngineScore }[]
 }
 
+/** A line of the live analysis: its moves (UCI, from the position) and score. */
+export type EngineLine = { moves: string[]; score: EngineScore }
+
+/** Where a live analysis stands: the best lines of its deepest complete iteration. */
+export type LiveAnalysis = { depth: number; nodes: number; lines: EngineLine[] }
+
 export class EngineTerminatedError extends Error {
   constructor() {
     super('Engine terminated')
@@ -40,6 +46,8 @@ export class Stockfish {
   private terminated = false
   /** Current MultiPV option: only sent to the engine when it changes */
   private multiPv = 1
+  /** A live analysis is under way (stop() ends it) */
+  private searching = false
 
   private constructor(url: string) {
     this.worker = new Worker(url)
@@ -83,10 +91,7 @@ export class Stockfish {
   ): Promise<Evaluation> {
     // Sending a position during a search crashes the WASM engine ("unreachable").
     if (this.onLine) throw new Error('Engine busy: one search at a time')
-    if (multiPv !== this.multiPv) {
-      this.worker.postMessage(`setoption name MultiPV value ${multiPv}`)
-      this.multiPv = multiPv
-    }
+    this.setMultiPv(multiPv)
     // Lines by depth, then by rank: a search stopped mid-iteration mixes two depths, where the
     // same move can show up at two ranks. Only a complete iteration is consistent.
     type Line = { move: string; reply?: string; score: EngineScore; nodes: number }
@@ -120,6 +125,63 @@ export class Stockfish {
       bestMove: best.move,
       lines: lines.map(({ move, reply, score }) => ({ move, reply, score })),
     }
+  }
+
+  /**
+   * Searches a position up to `depth`, or until stop(): each time an iteration is complete, reports
+   * its best `multiPv` lines (whole lines, best first). Resolves once the search has ended. Only
+   * one search at a time: stop() the previous one and await it before the next.
+   */
+  async analyse(
+    fen: string,
+    { multiPv, depth }: { multiPv: number; depth: number },
+    onUpdate: (analysis: LiveAnalysis) => void,
+  ): Promise<void> {
+    if (this.onLine) throw new Error('Engine busy: one search at a time')
+    this.setMultiPv(multiPv)
+    type Line = EngineLine & { nodes: number }
+    const byDepth = new Map<number, Map<number, Line>>()
+    let reported = -1
+    this.worker.postMessage(`position fen ${fen}`)
+    this.searching = true
+    try {
+      await this.request(`go depth ${depth}`, (line) => {
+        const info = parseInfo(line)
+        if (info?.score && info.line && !info.bound) {
+          const at = info.depth ?? 0
+          const lines = byDepth.get(at) ?? new Map<number, Line>()
+          lines.set(info.multipv ?? 1, {
+            moves: info.line,
+            score: info.score,
+            nodes: info.nodes ?? 0,
+          })
+          byDepth.set(at, lines)
+          const complete = deepestComplete(byDepth)
+          if (complete && complete.depth > reported) {
+            reported = complete.depth
+            onUpdate({
+              depth: complete.depth,
+              nodes: complete.lines[0]?.nodes ?? 0,
+              lines: complete.lines.map(({ moves, score }) => ({ moves, score })),
+            })
+          }
+        }
+        return parseBestMove(line) !== undefined
+      })
+    } finally {
+      this.searching = false
+    }
+  }
+
+  /** Ends the live analysis under way, if any: analyse() then resolves. */
+  stop(): void {
+    if (this.searching && !this.terminated) this.worker.postMessage('stop')
+  }
+
+  private setMultiPv(multiPv: number) {
+    if (multiPv === this.multiPv) return
+    this.worker.postMessage(`setoption name MultiPV value ${multiPv}`)
+    this.multiPv = multiPv
   }
 
   /** Stops the worker at once, rejecting the pending request. */
@@ -163,9 +225,19 @@ export class Stockfish {
  * than MultiPV means fewer lines at every depth), best first.
  */
 export function completeLines<Line>(byDepth: Map<number, Map<number, Line>>): Line[] {
+  return deepestComplete(byDepth)?.lines ?? []
+}
+
+/** completeLines with the depth of that iteration. */
+export function deepestComplete<Line>(
+  byDepth: Map<number, Map<number, Line>>,
+): { depth: number; lines: Line[] } | undefined {
   const width = Math.max(0, ...[...byDepth.values()].map((lines) => lines.size))
   const depths = [...byDepth.keys()].toSorted((a, b) => b - a)
   const depth = depths.find((d) => byDepth.get(d)!.size === width)
-  if (depth === undefined) return []
-  return [...byDepth.get(depth)!.entries()].toSorted(([a], [b]) => a - b).map(([, line]) => line)
+  if (depth === undefined) return undefined
+  return {
+    depth,
+    lines: [...byDepth.get(depth)!.entries()].toSorted(([a], [b]) => a - b).map(([, line]) => line),
+  }
 }

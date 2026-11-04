@@ -6,6 +6,7 @@ import type { ReviewProgress } from './progress'
 import type { GameSelection } from './selection'
 import type { ReviewSettings } from './settings'
 import type { Exercise, TrainingSettings } from '@/features/training/settings'
+import type { ProfileSearch } from '@/features/player/search'
 
 /**
  * The analysis page's state, shared by its tabs (filters, analysis, training): see
@@ -57,6 +58,8 @@ export type TrainingTab = {
 
 export type Session = {
   accounts: ReviewAccount[]
+  /** The profile searched (or the import), for links to its pages */
+  usernames: ProfileSearch
   /** Where the games come from: the accounts, or imported games */
   library: GameLibrary
   /** Games played on all the accounts, an indication */

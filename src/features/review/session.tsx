@@ -571,6 +571,7 @@ export function AnalysisSessionProvider({
 
   const value: Session = {
     accounts,
+    usernames,
     library,
     gameTotal,
     draft,

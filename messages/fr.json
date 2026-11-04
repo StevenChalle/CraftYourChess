@@ -627,5 +627,44 @@
   "deepen_background": "Approfondissement par l'analyse de fond…",
   "deepen_quick": "Analyse rapide : seuls les coups décisifs ont eu un examen approfondi.",
   "eval_chart_rating": "Elo",
-  "eval_chart_moves": "Coups"
+  "eval_chart_moves": "Coups",
+  "study_no_moves": "Aucun coup dans cette partie.",
+  "study_game_over": "Partie finie",
+  "study_depth": "profondeur {depth}/{max}",
+  "study_engine": "Stockfish",
+  "study_engine_toggle": "Analyse en direct par Stockfish",
+  "study_start": "Premier coup (↑)",
+  "study_back": "Coup précédent (←)",
+  "study_forward": "Coup suivant (→)",
+  "study_end": "Dernier coup (↓)",
+  "study_flip": "Retourner l'échiquier (F)",
+  "study_delete_variation": "Supprimer cette variante",
+  "study_delete_variation_short": "Supprimer",
+  "study_chart_unavailable": "La courbe d'évaluation s'affiche une fois la partie analysée.",
+  "study_tab_moves": "Coups",
+  "study_tab_engine": "Moteur",
+  "study_tab_chart": "Courbe",
+  "study_analysing": "Analyse de la partie… {done} / {total} positions",
+  "study_analysis_starting": "Démarrage de l'analyse…",
+  "study_analyse": "Analyser la partie",
+  "study_analyse_hint": "Trouve tes erreurs et trace la courbe d'évaluation. L'analyse en direct se met en pause pendant ce temps.",
+  "study_train": [
+    {
+      "declarations": ["input count", "input formatted", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Rejouer mon erreur",
+        "countPlural=other": "Rejouer mes {formatted} erreurs"
+      }
+    }
+  ],
+  "study_no_mistakes": "Aucune erreur dans cette partie.",
+  "study_deepen": "Approfondir",
+  "study_back_profile": "Retour au profil",
+  "study_back_import": "Retour aux parties importées",
+  "study_not_found": "Cette partie est introuvable.",
+  "study_lost_import": "Les parties importées ne sont gardées que jusqu'au rechargement de la page : importe-les à nouveau.",
+  "study_loading": "Chargement de la partie…",
+  "study_review": "Revoir",
+  "study_review_title": "Revoir cette partie : échiquier, moteur, variantes"
 }

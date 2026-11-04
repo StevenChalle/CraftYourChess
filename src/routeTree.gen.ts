@@ -19,6 +19,7 @@ import { Route as PlayerIndexRouteImport } from './routes/player/index'
 import { Route as PlayerAnalysisRouteImport } from './routes/player/analysis'
 import { Route as PlayerHistoryRouteImport } from './routes/player/history'
 import { Route as PlayerResultsRouteImport } from './routes/player/results'
+import { Route as PlayerReviewRouteImport } from './routes/player/review'
 import { Route as PlayerTrainingNumberRouteImport } from './routes/player/training.$number'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +72,11 @@ const PlayerResultsRoute = PlayerResultsRouteImport.update({
   path: '/results',
   getParentRoute: () => PlayerRouteRoute,
 } as any)
+const PlayerReviewRoute = PlayerReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => PlayerRouteRoute,
+} as any)
 const PlayerTrainingNumberRoute = PlayerTrainingNumberRouteImport.update({
   id: '/training/$number',
   path: '/training/$number',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/player/analysis': typeof PlayerAnalysisRoute
   '/player/history': typeof PlayerHistoryRoute
   '/player/results': typeof PlayerResultsRoute
+  '/player/review': typeof PlayerReviewRoute
   '/player/': typeof PlayerIndexRoute
   '/player/training/$number': typeof PlayerTrainingNumberRoute
 }
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/player/analysis': typeof PlayerAnalysisRoute
   '/player/history': typeof PlayerHistoryRoute
   '/player/results': typeof PlayerResultsRoute
+  '/player/review': typeof PlayerReviewRoute
   '/player': typeof PlayerIndexRoute
   '/player/training/$number': typeof PlayerTrainingNumberRoute
 }
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/player/analysis': typeof PlayerAnalysisRoute
   '/player/history': typeof PlayerHistoryRoute
   '/player/results': typeof PlayerResultsRoute
+  '/player/review': typeof PlayerReviewRoute
   '/player/': typeof PlayerIndexRoute
   '/player/training/$number': typeof PlayerTrainingNumberRoute
 }
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/player/analysis'
     | '/player/history'
     | '/player/results'
+    | '/player/review'
     | '/player/'
     | '/player/training/$number'
   fileRoutesByTo: FileRoutesByTo
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/player/analysis'
     | '/player/history'
     | '/player/results'
+    | '/player/review'
     | '/player'
     | '/player/training/$number'
   id:
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/player/analysis'
     | '/player/history'
     | '/player/results'
+    | '/player/review'
     | '/player/'
     | '/player/training/$number'
   fileRoutesById: FileRoutesById
@@ -237,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayerResultsRouteImport
       parentRoute: typeof PlayerRouteRoute
     }
+    '/player/review': {
+      id: '/player/review'
+      path: '/review'
+      fullPath: '/player/review'
+      preLoaderRoute: typeof PlayerReviewRouteImport
+      parentRoute: typeof PlayerRouteRoute
+    }
     '/player/training/$number': {
       id: '/player/training/$number'
       path: '/training/$number'
@@ -263,6 +282,7 @@ interface PlayerRouteRouteChildren {
   PlayerAnalysisRoute: typeof PlayerAnalysisRoute
   PlayerHistoryRoute: typeof PlayerHistoryRoute
   PlayerResultsRoute: typeof PlayerResultsRoute
+  PlayerReviewRoute: typeof PlayerReviewRoute
   PlayerIndexRoute: typeof PlayerIndexRoute
   PlayerTrainingNumberRoute: typeof PlayerTrainingNumberRoute
 }
@@ -271,6 +291,7 @@ const PlayerRouteRouteChildren: PlayerRouteRouteChildren = {
   PlayerAnalysisRoute: PlayerAnalysisRoute,
   PlayerHistoryRoute: PlayerHistoryRoute,
   PlayerResultsRoute: PlayerResultsRoute,
+  PlayerReviewRoute: PlayerReviewRoute,
   PlayerIndexRoute: PlayerIndexRoute,
   PlayerTrainingNumberRoute: PlayerTrainingNumberRoute,
 }

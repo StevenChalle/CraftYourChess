@@ -13,9 +13,9 @@ import {
 import { Board } from '@/components/board/Board'
 import { SideSquare } from '@/features/games/components/GamesTable'
 import { RESULTS } from '@/features/games/results'
-import { ExternalLink } from '@/features/player/components/ExternalLink'
+import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { evalDelta, formatDelta, formatEval } from '@/features/training/evaluation'
-import { lichessGameUrl, moveSquares } from '@/features/training/moves'
+import { moveSquares } from '@/features/training/moves'
 import { formatClock, formatMoveTime, formatNumber, formatSigned } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -57,19 +57,29 @@ function moveInfo(game: ReviewedGame, index: number) {
  * sinks in dark, on a winning-chances scale (a +8 does not crush the rest). The player's errors are
  * red points, the opponent's hollow rings; phases are thin vertical lines. Hovering anywhere shows
  * the nearest move (its evaluation, the change for whoever played it, the board after it);
- * clicking freezes it, with a link to Lichess. On a phone, a tap freezes the nearest move and the
+ * clicking freezes it, with a button to the game's review page. On a phone, a tap freezes the nearest move and the
  * details show under the chart; a finger can slide along it.
  */
 export function EvalChart({
   game,
   ratingChange,
   legendAside,
+  selected,
+  onSelect,
+  height = HEIGHT,
 }: {
   game: ReviewedGame
   /** For the summary of the game, when known */
   ratingChange?: number
   /** On the legend's line, on its right */
   legendAside?: ReactNode
+  /**
+   * The review page's chart: no details beside it, the position on screen (`selected`) marked,
+   * and a click (a tap, a sliding finger) goes to the move under the pointer.
+   */
+  selected?: number
+  onSelect?: (index: number) => void
+  height?: number
 }) {
   const ids = useId().replaceAll(':', '')
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -79,7 +89,7 @@ export function EvalChart({
   const [hovered, setHovered] = useState<number | undefined>(undefined)
   const [pinned, setPinned] = useState<number | undefined>(undefined)
   const touching = useRef(false)
-  const active = pinned ?? hovered
+  const active = onSelect ? (hovered ?? selected) : (pinned ?? hovered)
 
   useEffect(() => {
     const element = wrapRef.current
@@ -102,7 +112,7 @@ export function EvalChart({
   const count = game.positions.length
   const phases = useMemo(() => gamePhases(game.positions), [game.positions])
   const x = (index: number) => PAD_X + (index * (width - 2 * PAD_X)) / Math.max(count - 1, 1)
-  const mid = HEIGHT / 2
+  const mid = height / 2
   const y = (cp: number) => mid - ((winChance(cp) - 50) / 50) * (mid - PAD_Y)
   const curve = game.positions
     .map((position, index) => `${index === 0 ? 'M' : 'L'}${x(index)} ${y(position.cp)}`)
@@ -124,18 +134,18 @@ export function EvalChart({
         <div ref={wrapRef} className="relative min-w-0 md:flex-1">
           <svg
             width="100%"
-            height={HEIGHT}
+            height={height}
             role="img"
             aria-label={m.eval_chart_label()}
             className="block cursor-crosshair touch-pan-y rounded-md border border-border bg-field select-none"
             onPointerMove={(event) => {
               if (event.pointerType === 'mouse') setHovered(nearest(event))
-              else if (touching.current) setPinned(nearest(event))
+              else if (touching.current) (onSelect ?? setPinned)(nearest(event))
             }}
             onPointerDown={(event) => {
               if (event.pointerType === 'mouse') return
               touching.current = true
-              setPinned(nearest(event))
+              ;(onSelect ?? setPinned)(nearest(event))
             }}
             onPointerUp={() => (touching.current = false)}
             onPointerCancel={() => (touching.current = false)}
@@ -143,7 +153,8 @@ export function EvalChart({
             onClick={(event) => {
               if ((event.nativeEvent as globalThis.PointerEvent).pointerType !== 'mouse') return
               const index = nearest(event as unknown as PointerEvent<SVGSVGElement>)
-              setPinned((current) => (current === index ? undefined : index))
+              if (onSelect) onSelect(index)
+              else setPinned((current) => (current === index ? undefined : index))
             }}
           >
             {width > 0 && (
@@ -172,7 +183,7 @@ export function EvalChart({
                           x1={x(index)}
                           x2={x(index)}
                           y1={0}
-                          y2={HEIGHT}
+                          y2={height}
                           className="stroke-border-strong/60"
                         />
                         <text
@@ -182,7 +193,7 @@ export function EvalChart({
                             phase === 'endgame' &&
                             phases.middlegame !== undefined &&
                             x(index) - x(phases.middlegame) < LABEL_ROOM
-                              ? HEIGHT - 6
+                              ? height - 6
                               : 12
                           }
                           className="fill-muted-foreground text-[10px]"
@@ -204,7 +215,7 @@ export function EvalChart({
                     x1={x(active)}
                     x2={x(active)}
                     y1={0}
-                    y2={HEIGHT}
+                    y2={height}
                     className="stroke-text-strong/40"
                   />
                 )}
@@ -244,13 +255,15 @@ export function EvalChart({
         {/* Beside the chart, always in the same place: the move under the pointer, the game as
             a whole otherwise. On a phone, above the chart once a move is tapped: the finger hides
             what is below it. */}
-        <div className={cn('order-first md:order-last', pinned === undefined && 'max-md:hidden')}>
-          {active === undefined ? (
-            <GameDetails game={game} ratingChange={ratingChange} />
-          ) : (
-            <MoveDetails game={game} index={active} />
-          )}
-        </div>
+        {!onSelect && (
+          <div className={cn('order-first md:order-last', pinned === undefined && 'max-md:hidden')}>
+            {active === undefined ? (
+              <GameDetails game={game} ratingChange={ratingChange} />
+            ) : (
+              <MoveDetails game={game} index={active} />
+            )}
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <Legend />
@@ -263,21 +276,22 @@ export function EvalChart({
 /**
  * The details beside the chart, the same frame for a move and for the whole game, so that nothing
  * moves from one to the other: a title, a line under it, figures one per line, a note (kept even
- * when empty), the link to Lichess at the bottom, and the board as tall as the chart.
+ * when empty), the review page's button at the bottom, and the board as tall as the chart.
  */
 function DetailsFrame({
   title,
   subtitle,
   rows,
   note,
-  link,
+  action,
   board,
 }: {
   title: ReactNode
   subtitle?: ReactNode
   rows: { label: string; value: ReactNode }[]
   note?: ReactNode
-  link: string
+  /** At the bottom of the figures */
+  action: ReactNode
   board: Config
 }) {
   return (
@@ -297,9 +311,7 @@ function DetailsFrame({
         </dl>
         {/* Kept even when empty (null), so that the figures stay put from a move to the next */}
         {note !== undefined && <p className="min-h-4 text-xs font-medium">{note}</p>}
-        <p className="mt-auto text-xs">
-          <ExternalLink href={link}>{m.training_analyse_lichess()}</ExternalLink>
-        </p>
+        <div className="mt-auto">{action}</div>
       </div>
       <div className="w-32 shrink-0 md:w-[180px]">
         <Board config={board} className="rounded-sm" />
@@ -371,7 +383,7 @@ function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
           </span>
         ) : null
       }
-      link={lichessGameUrl(game, index, game.color, position.fen)}
+      action={<ReviewLink game={game} ply={index} />}
       board={board}
     />
   )
@@ -379,8 +391,8 @@ function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
 
 /**
  * The game as a whole, without a board: its result and opening, then four figures two by two
- * (rating and its change, the player's errors; moves, the opponent's errors), and the link to
- * Lichess at the bottom. As wide and tall as a move's details with their board, so that the chart
+ * (rating and its change, the player's errors; moves, the opponent's errors), and the review
+ * page's button at the bottom. As wide and tall as a move's details with their board, so that the chart
  * keeps its size.
  */
 function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?: number }) {
@@ -445,11 +457,9 @@ function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?
           </div>
         ))}
       </dl>
-      <p className="mt-auto text-xs">
-        <ExternalLink href={lichessGameUrl(game, last, game.color, game.positions[last]!.fen)}>
-          {m.training_analyse_lichess()}
-        </ExternalLink>
-      </p>
+      <div className="mt-auto">
+        <ReviewLink game={game} />
+      </div>
     </div>
   )
 }
