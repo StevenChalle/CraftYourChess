@@ -50,11 +50,11 @@ import { useLiveAnalysis } from '../useLiveAnalysis'
 import { EnginePanel } from './EnginePanel'
 import { GameInfo } from './GameInfo'
 import { MoveList } from './MoveList'
-import { StudyBoard } from './StudyBoard'
+import { EVAL_BAR, StudyBoard } from './StudyBoard'
 
-/** The side panel's width (w-[22rem]), the gap before it (gap-6), and the evaluation bar with its gap */
+/** The side panel's width (w-[22rem]); with the gap before it (gap-6) and the evaluation bar */
 const PANEL = 352
-const BESIDE = PANEL + 24 + 10 + 8
+const BESIDE = PANEL + 24 + EVAL_BAR
 /** The side panel never gets shorter than this, the moves needing room */
 const MIN_PANEL_HEIGHT = 520
 /** The chart under the board, lower than in the results */
@@ -200,8 +200,10 @@ export function StudyView({
     [live.analysis, node.fen, node.turn],
   )
   const analysisCp = node.finalCp ?? (node.inGame ? notes[node.ply]?.cp : undefined)
-  const score: WhiteScore | undefined =
-    lines[0]?.score ?? (analysisCp !== undefined ? { cp: analysisCp } : undefined)
+  // Stockfish off: no evaluation anywhere, the analysis's included (the bar and figure go too).
+  const score: WhiteScore | undefined = engineOn
+    ? (lines[0]?.score ?? (analysisCp !== undefined ? { cp: analysisCp } : undefined))
+    : undefined
 
   const step = useCallback(
     (direction: 'back' | 'forward' | 'start' | 'end') => dispatch({ type: 'step', direction }),
@@ -272,7 +274,8 @@ export function StudyView({
     <StudyBoard
       node={node}
       orientation={orientation}
-      score={engineOn || analysisCp !== undefined ? score : undefined}
+      score={score}
+      evaluation={engineOn}
       arrow={engineOn ? lines[0]?.moves[0]?.uci : undefined}
       onMove={play}
       onWheelStep={step}
@@ -352,6 +355,7 @@ export function StudyView({
       game={review}
       selected={shownPly}
       onSelect={(index) => goto(gameNodeAt(state.tree, index))}
+      orientation={orientation}
       height={CHART_HEIGHT}
     />
   ) : (
@@ -400,7 +404,7 @@ export function StudyView({
     <div className="space-y-4">
       {back}
       <div ref={layoutRef} className="flex items-start justify-center gap-6">
-        <div className="min-w-0" style={{ width: boardSize ? boardSize + 18 : undefined }}>
+        <div className="min-w-0" style={{ width: boardSize ? boardSize + EVAL_BAR : undefined }}>
           {board}
         </div>
         <aside
@@ -417,7 +421,7 @@ export function StudyView({
       </div>
       <div
         className="mx-auto"
-        style={{ width: boardSize ? boardSize + 18 + 24 + PANEL : undefined }}
+        style={{ width: boardSize ? boardSize + EVAL_BAR + 24 + PANEL : undefined }}
       >
         {chart}
       </div>

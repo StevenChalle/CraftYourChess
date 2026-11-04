@@ -12,7 +12,7 @@ import type { StudyNode } from '../tree'
 import type { WhiteScore } from '@/features/review/errors'
 
 /**
- * The live engine: on or off, the position's evaluation and depth, then its best lines. A click
+ * The live engine: on or off (off, no evaluation at all), the position's evaluation and depth, then its best lines. A click
  * on a move of a line plays the line up to it; the lines hold still while the mouse is over them,
  * so that a deeper search does not move the move about to be clicked. A move under the mouse shows
  * the position it leads to on a small board, below its line.
@@ -32,7 +32,7 @@ export function EnginePanel({
   on: boolean
   onToggle: (on: boolean) => void
   node: StudyNode
-  /** The best line's score, or the analysis's evaluation when the engine is off */
+  /** The best line's score, the analysis's evaluation until it comes; none with the engine off */
   score: WhiteScore | undefined
   depth: number | undefined
   maxDepth: number
@@ -61,9 +61,11 @@ export function EnginePanel({
           {node.over ? (
             <span className="text-base font-medium text-text-strong">{m.study_game_over()}</span>
           ) : (
-            <span className="num text-2xl font-semibold text-text-strong">
-              {score ? formatScore(score) : '…'}
-            </span>
+            on && (
+              <span className="num text-2xl font-semibold text-text-strong">
+                {score ? formatScore(score) : '…'}
+              </span>
+            )
           )}
           {on && !node.over && depth !== undefined && (
             <span className="num text-xs text-muted-foreground">

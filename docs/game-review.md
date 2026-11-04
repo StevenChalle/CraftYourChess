@@ -14,7 +14,7 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 - **L'échiquier** (`StudyBoard`), le même composant et les mêmes réglages que l'entraînement, à la taille de l'entraînement (`useBoardSize` avec la largeur du panneau), une **barre d'évaluation** à côté (chances de gain, comme Lichess) et la flèche du meilleur coup du moteur. Tous les coups légaux se jouent, des deux camps ; les flèches dessinées au clic droit s'effacent au coup suivant.
 - **Le panneau** (`StudyView`) : les joueurs, le résultat, l'ouverture ; le bouton principal (rejouer les erreurs de la partie, ou l'analyser) ; le moteur ; les coups ; les boutons de navigation.
 - **Les coups** (`MoveList`) : ceux de la partie deux par deux, avec les erreurs du joueur (rouge), celles de l'adversaire (anneau) et le temps passé ; les variantes en ligne entre les coups de la partie, les sous-variantes entre parenthèses, comme Lichess.
-- **La courbe** (`EvalChart` avec `onSelect`) sous l'échiquier : le coup affiché marqué, un clic y va.
+- **La courbe** (`EvalChart` avec `onSelect`) sous l'échiquier : le coup affiché marqué, un clic y va ; le coup survolé montre sa position sur un petit échiquier au-dessus de la courbe.
 - **Téléphone** : l'échiquier en haut de l'écran à l'arrivée, les boutons ◀ ▶ en grand, puis des onglets Coups / Moteur (avec l'évaluation dans son titre) / Courbe.
 
 ## Navigation et variantes
@@ -33,7 +33,7 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 - Le dernier résultat de chaque position est gardé en mémoire : y revenir l'affiche tout de suite, sans relancer une recherche déjà complète.
 - Les coups enchaînés vite (touche maintenue) ne cherchent que là où l'on s'arrête (120 ms).
 - C'est une **activité du joueur** (`lib/activity.ts`) pendant qu'il cherche : l'analyse de fond attend. Arrêté quand l'onglet du navigateur est caché.
-- Interrupteur on / off gardé dans `localStorage` (`craftyourchess:study-engine`, déclaré sur `/legal`).
+- Interrupteur on / off gardé dans `localStorage` (`craftyourchess:study-engine`, déclaré sur `/legal`). Éteint, plus aucune évaluation : ni le chiffre, ni la barre (qui garde sa place, l'échiquier ne bouge pas), pas même celle de l'analyse.
 - Les lignes restent immobiles sous la souris, pour cliquer un coup sans qu'une recherche plus profonde le déplace. Un coup survolé montre la position où il mène sur un petit échiquier sous sa ligne (à la souris seulement : au doigt, le toucher joue le coup).
 
 ## Analyse sur la page

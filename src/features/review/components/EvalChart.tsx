@@ -31,6 +31,8 @@ const PAD_X = 6
 const PAD_Y = 8
 /** Width a phase label needs before the next one */
 const LABEL_ROOM = 80
+/** The review page's preview over the chart, in pixels */
+const PREVIEW_SIZE = 240
 
 /** What the chart says about the move leading to position `index` (index ≥ 1). */
 function moveInfo(game: ReviewedGame, index: number) {
@@ -66,6 +68,7 @@ export function EvalChart({
   legendAside,
   selected,
   onSelect,
+  orientation,
   height = HEIGHT,
 }: {
   game: ReviewedGame
@@ -75,10 +78,13 @@ export function EvalChart({
   legendAside?: ReactNode
   /**
    * The review page's chart: no details beside it, the position on screen (`selected`) marked,
-   * and a click (a tap, a sliding finger) goes to the move under the pointer.
+   * and a click (a tap, a sliding finger) goes to the move under the pointer. The move under the
+   * mouse shows its position on a small board above the chart.
    */
   selected?: number
   onSelect?: (index: number) => void
+  /** The preview's, the player's side by default */
+  orientation?: Color
   height?: number
 }) {
   const ids = useId().replaceAll(':', '')
@@ -90,6 +96,11 @@ export function EvalChart({
   const [pinned, setPinned] = useState<number | undefined>(undefined)
   const touching = useRef(false)
   const active = onSelect ? (hovered ?? selected) : (pinned ?? hovered)
+  const previewing = onSelect !== undefined && hovered !== undefined
+  const preview = useMemo(
+    () => (previewing ? boardAt(game, hovered, orientation) : undefined),
+    [previewing, game, hovered, orientation],
+  )
 
   useEffect(() => {
     const element = wrapRef.current
@@ -251,6 +262,19 @@ export function EvalChart({
               </>
             )}
           </svg>
+          {preview && hovered !== undefined && width > 0 && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute z-20 overflow-hidden rounded-sm border border-border-strong shadow-lg"
+              style={{
+                width: PREVIEW_SIZE,
+                bottom: height + 6,
+                left: Math.max(0, Math.min(x(hovered) - PREVIEW_SIZE / 2, width - PREVIEW_SIZE)),
+              }}
+            >
+              <Board config={preview} />
+            </div>
+          )}
         </div>
         {/* Beside the chart, always in the same place: the move under the pointer, the game as
             a whole otherwise. On a phone, above the chart once a move is tapped: the finger hides
@@ -320,11 +344,11 @@ function DetailsFrame({
   )
 }
 
-function boardAt(game: ReviewedGame, index: number): Config {
+function boardAt(game: ReviewedGame, index: number, orientation: Color = game.color): Config {
   const position = game.positions[index]!
   return {
     fen: position.fen,
-    orientation: game.color,
+    orientation,
     viewOnly: true,
     coordinates: false,
     lastMove: position.move ? (moveSquares(position.move.uci) as [Key, Key]) : undefined,

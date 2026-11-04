@@ -9,6 +9,9 @@ import { boardMoveToUci, isCheck, legalDests, moveSquares } from '@/features/tra
 import { cn } from '@/lib/utils'
 import type { StudyNode } from '../tree'
 
+/** The evaluation bar's width with its gap to the board (w-4, gap-1), in pixels */
+export const EVAL_BAR = 20
+
 /** Wheel distance for one move: a mouse notch (100 in Chrome), or many small trackpad steps */
 const WHEEL_STEP = 100
 
@@ -21,6 +24,7 @@ export function StudyBoard({
   node,
   orientation,
   score,
+  evaluation,
   arrow,
   onMove,
   onWheelStep,
@@ -28,6 +32,8 @@ export function StudyBoard({
   node: StudyNode
   orientation: Color
   score: WhiteScore | undefined
+  /** The bar shown (the engine on): hidden, it keeps its room, the board does not move */
+  evaluation: boolean
   arrow?: string
   onMove: (uci: string) => void
   onWheelStep: (direction: 'back' | 'forward') => void
@@ -89,8 +95,8 @@ export function StudyBoard({
   }, [])
 
   return (
-    <div ref={wheelRef} className="flex gap-2">
-      <EvalBar score={score} orientation={orientation} />
+    <div ref={wheelRef} className="flex gap-1">
+      <EvalBar score={score} orientation={orientation} hidden={!evaluation} />
       <div className="min-w-0 flex-1">
         <Board config={config} className="rounded-sm" />
       </div>
@@ -98,15 +104,24 @@ export function StudyBoard({
   )
 }
 
-/** White's share of the bar: their winning chances, as on Lichess. Thin, the board's height. */
-function EvalBar({ score, orientation }: { score: WhiteScore | undefined; orientation: Color }) {
+/** White's share of the bar: their winning chances, as on Lichess. Narrow, the board's height. */
+function EvalBar({
+  score,
+  orientation,
+  hidden,
+}: {
+  score: WhiteScore | undefined
+  orientation: Color
+  hidden: boolean
+}) {
   const white = score === undefined ? 50 : winChance(toCp(score))
   return (
     <div
       aria-hidden
       className={cn(
-        'relative w-2.5 shrink-0 overflow-hidden rounded-sm border border-border bg-piece-black',
+        'relative w-4 shrink-0 overflow-hidden rounded-sm border border-border bg-piece-black',
         'max-md:hidden',
+        hidden && 'invisible',
       )}
     >
       <div
