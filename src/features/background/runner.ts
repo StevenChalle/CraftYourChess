@@ -36,6 +36,8 @@ export type BackgroundState = {
   total?: number
   /** How far the batch under way is, in games (a fraction of its size): moves the bar between batches */
   current?: number
+  /** The games (movesHash) being deepened now, all at the same pace: `current / deepening.length` */
+  deepening?: string[]
   /** How far each favorite is, once a pass has started */
   players?: PlayerProgress[]
 }
@@ -269,12 +271,15 @@ export async function runCycle(
     for (let index = 0; index < toDeepen.length; index += DEEP_BATCH) {
       signal.throwIfAborted()
       const batch = toDeepen.slice(index, index + DEEP_BATCH)
+      const deepening = batch.map(gameKey)
+      send({ phase: 'deepening', done: deepDone, total: deepTotal, current: 0, deepening })
       await deps.deepen(batch, signal, (share) =>
         send({
           phase: 'deepening',
           done: deepDone,
           total: deepTotal,
           current: share * batch.length,
+          deepening,
         }),
       )
       deepDone += batch.length

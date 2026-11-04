@@ -1,16 +1,9 @@
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Color } from 'chessops'
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent,
-} from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { Board } from '@/components/board/Board'
+import { SideSquare } from '@/features/games/components/GamesTable'
 import { ExternalLink } from '@/features/player/components/ExternalLink'
 import { evalDelta, formatDelta, formatEval } from '@/features/training/evaluation'
 import { lichessGameUrl, moveSquares } from '@/features/training/moves'
@@ -27,9 +20,6 @@ const HEIGHT = 180
 const PAD_X = 6
 /** Room above and below, for the points at the extremes */
 const PAD_Y = 8
-/** Distance between the move and its tooltip, and the tooltip's width until measured */
-const TIP_GAP = 12
-const TIP_WIDTH = 300
 /** Width a phase label needs before the next one */
 const LABEL_ROOM = 80
 
@@ -70,13 +60,7 @@ export function EvalChart({ game }: { game: ReviewedGame }) {
   const [hovered, setHovered] = useState<number | undefined>(undefined)
   const [pinned, setPinned] = useState<number | undefined>(undefined)
   const touching = useRef(false)
-  // The tooltip's width, to know whether it fits left of the move.
-  const tipRef = useRef<HTMLDivElement>(null)
-  const [tipWidth, setTipWidth] = useState(TIP_WIDTH)
   const active = pinned ?? hovered
-  useLayoutEffect(() => {
-    if (tipRef.current?.offsetWidth) setTipWidth(tipRef.current.offsetWidth)
-  }, [active])
 
   useEffect(() => {
     const element = wrapRef.current
@@ -117,165 +101,145 @@ export function EvalChart({ game }: { game: ReviewedGame }) {
   const points = (plies: number[]) => plies.map((ply) => ply + 1).filter((index) => index < count)
   return (
     <div ref={rootRef} className="space-y-2">
-      {/* Phone: above the chart, once a move is tapped (the finger hides what is below it). */}
-      {pinned !== undefined && (
-        <div className="md:hidden">
-          <MoveDetails game={game} index={pinned} pinned inline />
-        </div>
-      )}
-      <div ref={wrapRef} className="relative">
-        <svg
-          width="100%"
-          height={HEIGHT}
-          role="img"
-          aria-label={m.eval_chart_label()}
-          className="block cursor-crosshair touch-pan-y rounded-md border border-border bg-field select-none"
-          onPointerMove={(event) => {
-            if (event.pointerType === 'mouse') setHovered(nearest(event))
-            else if (touching.current) setPinned(nearest(event))
-          }}
-          onPointerDown={(event) => {
-            if (event.pointerType === 'mouse') return
-            touching.current = true
-            setPinned(nearest(event))
-          }}
-          onPointerUp={() => (touching.current = false)}
-          onPointerCancel={() => (touching.current = false)}
-          onPointerLeave={(event) => event.pointerType === 'mouse' && setHovered(undefined)}
-          onClick={(event) => {
-            if ((event.nativeEvent as globalThis.PointerEvent).pointerType !== 'mouse') return
-            const index = nearest(event as unknown as PointerEvent<SVGSVGElement>)
-            setPinned((current) => (current === index ? undefined : index))
-          }}
-        >
-          {width > 0 && (
-            <>
-              <defs>
-                <clipPath id={`${ids}-top`}>
-                  <rect x={0} y={0} width={width} height={mid} />
-                </clipPath>
-                <clipPath id={`${ids}-bottom`}>
-                  <rect x={0} y={mid} width={width} height={mid} />
-                </clipPath>
-              </defs>
-              <path d={area} className="fill-text-strong/80" clipPath={`url(#${ids}-top)`} />
-              <path d={area} className="fill-background" clipPath={`url(#${ids}-bottom)`} />
-              <line x1={0} x2={width} y1={mid} y2={mid} className="stroke-border-strong" />
-              {(
-                [
-                  ['middlegame', phases.middlegame, m.phase_middlegame()],
-                  ['endgame', phases.endgame, m.phase_endgame()],
-                ] as const
-              ).map(
-                ([phase, index, label]) =>
-                  index !== undefined && (
-                    <g key={phase}>
-                      <line
-                        x1={x(index)}
-                        x2={x(index)}
-                        y1={0}
-                        y2={HEIGHT}
-                        className="stroke-border-strong/60"
-                      />
-                      <text
-                        x={x(index) + 4}
-                        // Phases close together: the endgame's label goes to the bottom.
-                        y={
-                          phase === 'endgame' &&
-                          phases.middlegame !== undefined &&
-                          x(index) - x(phases.middlegame) < LABEL_ROOM
-                            ? HEIGHT - 6
-                            : 12
-                        }
-                        className="fill-muted-foreground text-[10px]"
-                      >
-                        {label}
-                      </text>
-                    </g>
-                  ),
-              )}
-              <path
-                d={curve}
-                fill="none"
-                strokeWidth={1.5}
-                strokeLinejoin="round"
-                className="stroke-primary"
-              />
-              {active !== undefined && (
-                <line
-                  x1={x(active)}
-                  x2={x(active)}
-                  y1={0}
-                  y2={HEIGHT}
-                  className="stroke-text-strong/40"
-                />
-              )}
-              {points(game.opponentErrors).map((index) => (
-                <circle
-                  key={`o${index}`}
-                  cx={x(index)}
-                  cy={y(game.positions[index]!.cp)}
-                  r={3.5}
-                  strokeWidth={1.5}
-                  className="fill-field stroke-muted-foreground"
-                />
-              ))}
-              {points(game.mistakes.map((mistake) => mistake.ply)).map((index) => (
-                <circle
-                  key={`m${index}`}
-                  cx={x(index)}
-                  cy={y(game.positions[index]!.cp)}
-                  r={4.5}
-                  strokeWidth={2}
-                  className="fill-loss stroke-field"
-                />
-              ))}
-              {active !== undefined && (
-                <circle
-                  cx={x(active)}
-                  cy={y(game.positions[active]!.cp)}
-                  r={4}
-                  strokeWidth={2}
-                  className="fill-primary stroke-field"
-                />
-              )}
-            </>
-          )}
-        </svg>
-        {/* Computer: floating left of the move, over the moves already played, so the rest of
-            the game stays in sight; on its right only when there is no room. */}
-        {active !== undefined && width > 0 && (
-          <div
-            ref={tipRef}
-            className="pointer-events-none absolute top-2 z-10 hidden md:block"
-            style={
-              x(active) - TIP_GAP - tipWidth >= 0
-                ? { right: width - x(active) + TIP_GAP }
-                : { left: x(active) + TIP_GAP }
-            }
+      <div className="flex flex-col gap-3 md:flex-row md:items-start">
+        <div ref={wrapRef} className="relative min-w-0 md:flex-1">
+          <svg
+            width="100%"
+            height={HEIGHT}
+            role="img"
+            aria-label={m.eval_chart_label()}
+            className="block cursor-crosshair touch-pan-y rounded-md border border-border bg-field select-none"
+            onPointerMove={(event) => {
+              if (event.pointerType === 'mouse') setHovered(nearest(event))
+              else if (touching.current) setPinned(nearest(event))
+            }}
+            onPointerDown={(event) => {
+              if (event.pointerType === 'mouse') return
+              touching.current = true
+              setPinned(nearest(event))
+            }}
+            onPointerUp={() => (touching.current = false)}
+            onPointerCancel={() => (touching.current = false)}
+            onPointerLeave={(event) => event.pointerType === 'mouse' && setHovered(undefined)}
+            onClick={(event) => {
+              if ((event.nativeEvent as globalThis.PointerEvent).pointerType !== 'mouse') return
+              const index = nearest(event as unknown as PointerEvent<SVGSVGElement>)
+              setPinned((current) => (current === index ? undefined : index))
+            }}
           >
-            <MoveDetails game={game} index={active} pinned={pinned !== undefined} />
-          </div>
-        )}
+            {width > 0 && (
+              <>
+                <defs>
+                  <clipPath id={`${ids}-top`}>
+                    <rect x={0} y={0} width={width} height={mid} />
+                  </clipPath>
+                  <clipPath id={`${ids}-bottom`}>
+                    <rect x={0} y={mid} width={width} height={mid} />
+                  </clipPath>
+                </defs>
+                <path d={area} className="fill-text-strong/80" clipPath={`url(#${ids}-top)`} />
+                <path d={area} className="fill-background" clipPath={`url(#${ids}-bottom)`} />
+                <line x1={0} x2={width} y1={mid} y2={mid} className="stroke-border-strong" />
+                {(
+                  [
+                    ['middlegame', phases.middlegame, m.phase_middlegame()],
+                    ['endgame', phases.endgame, m.phase_endgame()],
+                  ] as const
+                ).map(
+                  ([phase, index, label]) =>
+                    index !== undefined && (
+                      <g key={phase}>
+                        <line
+                          x1={x(index)}
+                          x2={x(index)}
+                          y1={0}
+                          y2={HEIGHT}
+                          className="stroke-border-strong/60"
+                        />
+                        <text
+                          x={x(index) + 4}
+                          // Phases close together: the endgame's label goes to the bottom.
+                          y={
+                            phase === 'endgame' &&
+                            phases.middlegame !== undefined &&
+                            x(index) - x(phases.middlegame) < LABEL_ROOM
+                              ? HEIGHT - 6
+                              : 12
+                          }
+                          className="fill-muted-foreground text-[10px]"
+                        >
+                          {label}
+                        </text>
+                      </g>
+                    ),
+                )}
+                <path
+                  d={curve}
+                  fill="none"
+                  strokeWidth={1.5}
+                  strokeLinejoin="round"
+                  className="stroke-primary"
+                />
+                {active !== undefined && (
+                  <line
+                    x1={x(active)}
+                    x2={x(active)}
+                    y1={0}
+                    y2={HEIGHT}
+                    className="stroke-text-strong/40"
+                  />
+                )}
+                {points(game.opponentErrors).map((index) => (
+                  <circle
+                    key={`o${index}`}
+                    cx={x(index)}
+                    cy={y(game.positions[index]!.cp)}
+                    r={3.5}
+                    strokeWidth={1.5}
+                    className="fill-field stroke-muted-foreground"
+                  />
+                ))}
+                {points(game.mistakes.map((mistake) => mistake.ply)).map((index) => (
+                  <circle
+                    key={`m${index}`}
+                    cx={x(index)}
+                    cy={y(game.positions[index]!.cp)}
+                    r={4.5}
+                    strokeWidth={2}
+                    className="fill-loss stroke-field"
+                  />
+                ))}
+                {active !== undefined && (
+                  <circle
+                    cx={x(active)}
+                    cy={y(game.positions[active]!.cp)}
+                    r={4}
+                    strokeWidth={2}
+                    className="fill-primary stroke-field"
+                  />
+                )}
+              </>
+            )}
+          </svg>
+        </div>
+        {/* Beside the chart, always in the same place: the move under the pointer (the last
+            one until then). On a phone, above the chart once a move is tapped: the finger hides
+            what is below it. */}
+        <div className={cn('order-first md:order-last', pinned === undefined && 'max-md:hidden')}>
+          <MoveDetails game={game} index={active ?? count - 1} />
+        </div>
       </div>
       <Legend />
     </div>
   )
 }
 
-/** The move, its evaluation and change, the board after it; once frozen, a link to Lichess. */
-function MoveDetails({
-  game,
-  index,
-  pinned,
-  inline = false,
-}: {
-  game: ReviewedGame
-  index: number
-  pinned: boolean
-  inline?: boolean
-}) {
-  const { label, position, delta, time, mine, theirs } = moveInfo(game, index)
+/**
+ * The move, who played it, then each figure on its line (evaluation and its change, time spent,
+ * clock left), the board after it as tall as the chart, and a link to Lichess.
+ */
+function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
+  const { label, position, mover, delta, time, mine, theirs } = moveInfo(game, index)
   const config = useMemo(
     (): Config => ({
       fen: position.fen,
@@ -287,46 +251,49 @@ function MoveDetails({
     [position, game.color],
   )
   return (
-    // Side by side, so it fits within the chart's height.
-    <div
-      className={cn(
-        'flex items-start gap-3 rounded-md border border-border bg-popover p-2',
-        inline ? 'w-full' : 'w-max shadow-pop',
-        pinned && 'pointer-events-auto',
-      )}
-    >
-      <div className="min-w-0 flex-1 space-y-1 whitespace-nowrap">
-        <p className="text-sm font-medium text-text-strong">{label}</p>
-        <p className="num flex items-baseline gap-2 text-sm">
-          <span className="text-text-strong">{formatEval(position.cp)}</span>
-          {delta !== undefined && (
-            <span className={delta < 0 ? 'text-loss' : 'text-muted-foreground'}>
-              ({formatDelta(delta)})
-            </span>
+    <div className="flex items-start gap-4">
+      <div className="w-44 shrink-0 space-y-3">
+        <div className="space-y-1">
+          <p className="flex items-center gap-2 text-base font-medium text-text-strong">
+            <SideSquare color={mover} />
+            {label}
+          </p>
+          {(mine || theirs) && (
+            <p className={cn('text-xs font-medium', mine ? 'text-loss' : 'text-muted-foreground')}>
+              {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}
+            </p>
           )}
-        </p>
-        {time && (
-          <p className="num text-xs text-muted-foreground">
-            {time.spent !== undefined && (
-              <>{m.eval_chart_move_time({ time: formatMoveTime(time.spent) })} · </>
+        </div>
+        <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-sm">
+          <dt className="text-xs text-muted-foreground">{m.eval_chart_eval()}</dt>
+          <dd className="num">
+            <span className="text-text-strong">{formatEval(position.cp)}</span>
+            {delta !== undefined && (
+              <span className={cn('ml-1.5', delta < 0 ? 'text-loss' : 'text-muted-foreground')}>
+                ({formatDelta(delta)})
+              </span>
             )}
-            {m.eval_chart_clock_left({ clock: formatClock(time.left) })}
-          </p>
-        )}
-        {(mine || theirs) && (
-          <p className={cn('text-xs', mine ? 'text-loss' : 'text-muted-foreground')}>
-            {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}
-          </p>
-        )}
-        {pinned && (
-          <p className="pt-1 text-xs">
-            <ExternalLink href={lichessGameUrl(game, index, game.color, position.fen)}>
-              {m.training_analyse_lichess()}
-            </ExternalLink>
-          </p>
-        )}
+          </dd>
+          {time?.spent !== undefined && (
+            <>
+              <dt className="text-xs text-muted-foreground">{m.eval_chart_time_spent()}</dt>
+              <dd className="num text-text-strong">{formatMoveTime(time.spent)}</dd>
+            </>
+          )}
+          {time && (
+            <>
+              <dt className="text-xs text-muted-foreground">{m.eval_chart_clock()}</dt>
+              <dd className="num text-text-strong">{formatClock(time.left)}</dd>
+            </>
+          )}
+        </dl>
+        <p className="text-xs">
+          <ExternalLink href={lichessGameUrl(game, index, game.color, position.fen)}>
+            {m.training_analyse_lichess()}
+          </ExternalLink>
+        </p>
       </div>
-      <div className={cn('shrink-0', inline ? 'w-32' : 'w-36')}>
+      <div className="w-32 shrink-0 md:w-[180px]">
         <Board config={config} className="rounded-sm" />
       </div>
     </div>

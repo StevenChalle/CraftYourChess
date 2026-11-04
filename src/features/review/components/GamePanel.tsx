@@ -1,11 +1,13 @@
-import { Check, Microscope, Square } from 'lucide-react'
+import { Check, Gauge, Microscope, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { useBackground } from '@/features/background/backgroundContext'
 import { SideSquare } from '@/features/games/components/GamesTable'
 import { SourceLabel } from '@/features/player/components/SourceBadge'
 import { formatDate, formatDuration, formatNumber, formatTime } from '@/lib/format'
 import { m } from '@/paraglide/messages'
 import { shallowPositions, type ReviewedGame } from '../analyze'
+import { movesHash } from '../cache'
 import { deepenSeconds } from '../estimate'
 import { reviewedGameKey, useAnalysisSession } from '../sessionContext'
 import { EvalChart } from './EvalChart'
@@ -34,7 +36,7 @@ export function GamePanel({ game, deepen = true }: { game: ReviewedGame; deepen?
         </span>
       </p>
       <EvalChart game={game} />
-      {deepen && <DeepenGame game={game} />}
+      {deepen ? <DeepenGame game={game} /> : <DeepStatus game={game} />}
     </div>
   )
 }
@@ -91,5 +93,62 @@ function DeepenGame({ game }: { game: ReviewedGame }) {
       </Button>
       <span className="text-xs text-muted-foreground">{m.deepen_hint()}</span>
     </div>
+  )
+}
+
+/**
+ * Outside the analysis's results: whether every move had a deep look, with the progress while the
+ * analysis's deepening (Results tab) or the background analysis is at it.
+ */
+function DeepStatus({ game }: { game: ReviewedGame }) {
+  const { deepening, stopDeepening } = useAnalysisSession()
+  const background = useBackground()?.state
+  const running = deepening?.gameKey === reviewedGameKey(game) ? deepening : undefined
+  const inBackground =
+    background?.phase === 'deepening' &&
+    background.deepening?.includes(movesHash(game.sanMoves, game.initialFen))
+
+  if (running) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-40 flex-1 space-y-1.5">
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {m.deepen_running({
+              done: formatNumber(running.done),
+              total: formatNumber(running.total),
+            })}
+            {running.paused && <> · {m.deepen_paused()}</>}
+          </p>
+          <Progress value={(running.done / running.total) * 100} />
+        </div>
+        <Button variant="ghost" size="sm" onClick={stopDeepening} className="text-muted-foreground">
+          <Square data-icon="inline-start" />
+          {m.deepen_stop()}
+        </Button>
+      </div>
+    )
+  }
+  if (inBackground) {
+    const share = (background.current ?? 0) / background.deepening!.length
+    return (
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">{m.deepen_background()}</p>
+        <Progress value={share * 100} />
+      </div>
+    )
+  }
+  if (shallowPositions(game).length === 0) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Check className="size-3.5 text-win" />
+        {m.deepen_done()}
+      </p>
+    )
+  }
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Gauge className="size-3.5" />
+      {m.deepen_quick()}
+    </p>
   )
 }

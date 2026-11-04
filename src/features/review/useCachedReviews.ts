@@ -8,12 +8,14 @@ import type { ReviewGame } from './games'
 
 /**
  * These games as the analysis would show them, by reference (gameRef), for those analysed before
- * with the current recipe: judged from the analysis cache with `criteria`, never with Stockfish. Looked up again when the
- * games or the criteria change, and as the background analysis moves.
+ * with the current recipe: judged from the analysis cache with `criteria`, never with Stockfish.
+ * Looked up again when the games or the criteria change, as the background analysis moves, and
+ * when `refresh` changes (the game the analysis deepens: once it is over, read deep).
  */
 export function useCachedReviews(
   games: ReviewGame[],
   criteria: ReviewCriteria,
+  refresh?: string,
 ): Map<string, ReviewedGame> {
   const [reviewed, setReviewed] = useState<Map<string, ReviewedGame>>(() => new Map())
   const done = useBackground()?.state.done
@@ -38,7 +40,7 @@ export function useCachedReviews(
     }
     // The games change with their references; looked up again as the background analysis moves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, criteria, done])
+  }, [key, criteria, done, refresh])
 
   return reviewed
 }

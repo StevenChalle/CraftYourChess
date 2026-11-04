@@ -844,3 +844,9 @@ Comme dans les résultats de l'analyse, une partie de la liste déjà analysée 
 ## 2026-11-04 : le temps de chaque coup dans l'infobulle de la courbe d'évaluation
 
 Rien de nouveau n'est stocké : les pendules arrivent avec chaque partie (`clocks` de l'export Lichess, `[%clk]` du PGN Chess.com ou importé) et la partie brute est déjà gardée. `GameClock` garde maintenant l'incrément, et `moveTime` (`games.ts`) en tire le **temps passé** (pendule avant − après + incrément) et le **temps restant**, affichés sous l'évaluation (« 4,3 s sur ce coup · reste 2:16 »). Lichess ne décompte pas le premier coup de chaque camp : pas de temps passé pour ces deux-là. Sans pendule (Daily, PGN sans `%clk`), la ligne n'apparaît pas.
+
+## 2026-11-04 : la courbe d'évaluation et son panneau de coup, l'état d'approfondissement dans la liste
+
+- **Le coup survolé** n'est plus une infobulle qui flotte d'un côté ou de l'autre de la courbe : un panneau fixe à droite de la courbe (au-dessus sur téléphone, une fois un coup touché), avec le coup et qui l'a joué, puis une ligne par chiffre (évaluation et sa variation, temps passé, pendule), le lien vers Lichess, et l'échiquier à la hauteur de la courbe. Sans survol, il montre le dernier coup.
+- **Dans la liste du profil**, une partie dépliée dit si elle est analysée en profondeur (« Analyse approfondie de chaque coup ») ou rapidement, avec la barre de progression pendant qu'elle est approfondie : par l'analyse (onglet Résultats) ou par l'analyse de fond, qui publie maintenant les parties qu'elle approfondit (`deepening` de son état). La liste se relit à la fin.
+- **La liste sort du cadre du graphique** : dedans, elle débordait de 24 px sur un écran de 930 px et cachait le lien vers la partie.

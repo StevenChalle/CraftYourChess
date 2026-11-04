@@ -32,8 +32,8 @@ export function PagedGamesTable({
   const [wanted, setWanted] = useState(0)
   const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / PAGE_SIZE) - 1))
   const shown = pageSlice(games, page, PAGE_SIZE)
-  const { draft } = useAnalysisSession()
-  const reviewed = useCachedReviews(shown, draft.criteria)
+  const { draft, deepening } = useAnalysisSession()
+  const reviewed = useCachedReviews(shown, draft.criteria, deepening?.gameKey)
   const rootRef = useRef<HTMLDivElement>(null)
   return (
     <div ref={rootRef} className="scroll-mt-4 space-y-3">

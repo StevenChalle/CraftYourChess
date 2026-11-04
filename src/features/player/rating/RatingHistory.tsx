@@ -147,123 +147,123 @@ export function RatingHistory({
   const peak = peakPoint(points)
 
   return (
-    <Panel title={m.rating_chart_title()}>
-      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Picker<PeriodPreset | 'custom'>
-          value={preset}
-          ariaLabel={m.rating_period()}
-          // "Custom" only says the dates were typed: it is never picked.
-          options={preset === 'custom' ? [...PERIOD_PRESETS, 'custom'] : PERIOD_PRESETS}
-          label={(option) => PRESET_LABELS[option]()}
-          onChange={(option) => option !== 'custom' && update({ period: presetPeriod(option) })}
-        />
-        <div className="flex items-center gap-1.5 text-sm">
-          <DateField
-            label={m.setup_from()}
-            hideLabel
-            value={from}
-            max={to}
-            onChange={(value) =>
-              value && value <= to && update({ period: periodFromDates(value, to, now) })
-            }
+    <div className="space-y-4">
+      <Panel title={m.rating_chart_title()}>
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Picker<PeriodPreset | 'custom'>
+            value={preset}
+            ariaLabel={m.rating_period()}
+            // "Custom" only says the dates were typed: it is never picked.
+            options={preset === 'custom' ? [...PERIOD_PRESETS, 'custom'] : PERIOD_PRESETS}
+            label={(option) => PRESET_LABELS[option]()}
+            onChange={(option) => option !== 'custom' && update({ period: presetPeriod(option) })}
           />
-          <span aria-hidden className="text-muted-foreground">
-            –
-          </span>
-          <DateField
-            label={m.setup_to()}
-            hideLabel
-            value={to}
-            min={from}
-            max={today}
-            onChange={(value) =>
-              value &&
-              value >= from &&
-              value <= today &&
-              update({ period: periodFromDates(from, value, now) })
-            }
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          {accounts.length > 1 && (
-            <Picker
-              value={account.source}
-              ariaLabel={m.review_col_platform()}
-              options={accounts.map((item) => item.source)}
-              label={(source) => (
-                <>
-                  <SourceDot source={source} />
-                  {SOURCE_LABELS[source]}
-                </>
-              )}
-              onChange={(source) => update({ source })}
+          <div className="flex items-center gap-1.5 text-sm">
+            <DateField
+              label={m.setup_from()}
+              hideLabel
+              value={from}
+              max={to}
+              onChange={(value) =>
+                value && value <= to && update({ period: periodFromDates(value, to, now) })
+              }
             />
-          )}
-          <Picker<ChartCategory>
-            value={settings.category}
-            ariaLabel={m.time_control()}
-            options={CHART_CATEGORIES}
-            // Each with the current rating on this platform
-            label={(category) => {
-              const rating = account.categories[category]?.rating
-              return (
-                <>
-                  {categoryLabel(category)}
-                  {rating !== undefined && (
-                    <span className="num text-muted-foreground">{formatNumber(rating)}</span>
-                  )}
-                </>
-              )
-            }}
-            onChange={(category) => update({ category })}
-          />
-        </div>
-        {/* The period's figures, on the right of the filters while there is room */}
-        {first && last && peak && (
-          <div className="ml-auto flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <Figure label={m.rating_current()} value={formatNumber(last.rating)}>
-              {last.rating !== first.rating && (
-                <span
-                  title={m.rating_change()}
-                  className={cn(
-                    'num text-sm font-semibold',
-                    last.rating > first.rating ? 'text-win' : 'text-loss',
-                  )}
-                >
-                  {formatSigned(last.rating - first.rating)}
-                </span>
-              )}
-            </Figure>
-            <Figure label={m.rating_peak()} value={formatNumber(peak.rating)} />
+            <span aria-hidden className="text-muted-foreground">
+              –
+            </span>
+            <DateField
+              label={m.setup_to()}
+              hideLabel
+              value={to}
+              min={from}
+              max={today}
+              onChange={(value) =>
+                value &&
+                value >= from &&
+                value <= today &&
+                update({ period: periodFromDates(from, value, now) })
+              }
+            />
           </div>
-        )}
-      </div>
-      {query.isPending ? (
-        <p className="text-sm text-muted-foreground">
-          {found > 0
-            ? m.rating_chart_loading_games({ games: formatGameCount(found) })
-            : m.loading()}
-        </p>
-      ) : query.isError && !query.data ? (
-        <p className="text-sm text-loss">{sourceErrorMessage(account.source, query.error)}</p>
-      ) : points.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.rating_chart_empty()}</p>
-      ) : (
-        <>
-          {/* The period as the query saw it, when it fetched the points. */}
+          <div className="flex items-center gap-3">
+            {accounts.length > 1 && (
+              <Picker
+                value={account.source}
+                ariaLabel={m.review_col_platform()}
+                options={accounts.map((item) => item.source)}
+                label={(source) => (
+                  <>
+                    <SourceDot source={source} />
+                    {SOURCE_LABELS[source]}
+                  </>
+                )}
+                onChange={(source) => update({ source })}
+              />
+            )}
+            <Picker<ChartCategory>
+              value={settings.category}
+              ariaLabel={m.time_control()}
+              options={CHART_CATEGORIES}
+              // Each with the current rating on this platform
+              label={(category) => {
+                const rating = account.categories[category]?.rating
+                return (
+                  <>
+                    {categoryLabel(category)}
+                    {rating !== undefined && (
+                      <span className="num text-muted-foreground">{formatNumber(rating)}</span>
+                    )}
+                  </>
+                )
+              }}
+              onChange={(category) => update({ category })}
+            />
+          </div>
+          {/* The period's figures, on the right of the filters while there is room */}
+          {first && last && peak && (
+            <div className="ml-auto flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <Figure label={m.rating_current()} value={formatNumber(last.rating)}>
+                {last.rating !== first.rating && (
+                  <span
+                    title={m.rating_change()}
+                    className={cn(
+                      'num text-sm font-semibold',
+                      last.rating > first.rating ? 'text-win' : 'text-loss',
+                    )}
+                  >
+                    {formatSigned(last.rating - first.rating)}
+                  </span>
+                )}
+              </Figure>
+              <Figure label={m.rating_peak()} value={formatNumber(peak.rating)} />
+            </div>
+          )}
+        </div>
+        {query.isPending ? (
+          <p className="text-sm text-muted-foreground">
+            {found > 0
+              ? m.rating_chart_loading_games({ games: formatGameCount(found) })
+              : m.loading()}
+          </p>
+        ) : query.isError && !query.data ? (
+          <p className="text-sm text-loss">{sourceErrorMessage(account.source, query.error)}</p>
+        ) : points.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{m.rating_chart_empty()}</p>
+        ) : (
+          // The period as the query saw it, when it fetched the points.
           <RatingChart
             points={points}
             {...periodBounds(settings.period, query.dataUpdatedAt, joinedAt)}
           />
-          <div className="mt-4">
-            {games ? (
-              <PagedGamesTable games={games} usernames={usernames} />
-            ) : (
-              <p className="text-sm text-muted-foreground">{m.rating_games_unavailable()}</p>
-            )}
-          </div>
-        </>
-      )}
-    </Panel>
+        )}
+      </Panel>
+      {/* Under the panel, the whole width for its columns, as an import's list */}
+      {points.length > 0 &&
+        (games ? (
+          <PagedGamesTable games={games} usernames={usernames} />
+        ) : (
+          <p className="text-sm text-muted-foreground">{m.rating_games_unavailable()}</p>
+        ))}
+    </div>
   )
 }

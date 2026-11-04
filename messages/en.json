@@ -621,6 +621,9 @@
   "rating_change": "Change over the period",
   "rating_peak": "Peak",
   "rating_games_unavailable": "Lichess's rating history comes without the games: pick a shorter period to see them.",
-  "eval_chart_move_time": "{time} on this move",
-  "eval_chart_clock_left": "{clock} left"
+  "eval_chart_eval": "Evaluation",
+  "eval_chart_time_spent": "Time spent",
+  "eval_chart_clock": "Clock",
+  "deepen_background": "Deepening in the background…",
+  "deepen_quick": "Quick analysis: only the decisive moves got a deep look."
 }

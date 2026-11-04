@@ -621,6 +621,9 @@
   "rating_change": "Évolution sur la période",
   "rating_peak": "Record",
   "rating_games_unavailable": "L'historique d'Elo de Lichess ne donne pas les parties : choisis une période plus courte pour les voir.",
-  "eval_chart_move_time": "{time} sur ce coup",
-  "eval_chart_clock_left": "reste {clock}"
+  "eval_chart_eval": "Évaluation",
+  "eval_chart_time_spent": "Temps passé",
+  "eval_chart_clock": "Pendule",
+  "deepen_background": "Approfondissement par l'analyse de fond…",
+  "deepen_quick": "Analyse rapide : seuls les coups décisifs ont eu un examen approfondi."
 }

@@ -211,8 +211,19 @@ describe('runCycle', () => {
     await cycle
     expect(order).toEqual(['analyse 5', 'analyse 4', 'deepen m7,m8', 'deepen m9,m10', 'deepen m11'])
     expect(states.at(-1)).toMatchObject({ phase: 'deepening', done: 12, total: 12 })
+    // Which games are being deepened, while they are
+    expect(states.find((state) => state.done === 7 && state.current === 1)!.deepening).toHaveLength(
+      2,
+    )
+    expect(states.at(-1)!.deepening).toBeUndefined()
     expect(states).toContainEqual(
-      expect.objectContaining({ phase: 'deepening', done: 7, total: 12, current: 1 }),
+      expect.objectContaining({
+        phase: 'deepening',
+        done: 7,
+        total: 12,
+        current: 1,
+        deepening: expect.any(Array),
+      }),
     )
   })
 
