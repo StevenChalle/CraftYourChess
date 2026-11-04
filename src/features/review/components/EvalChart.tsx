@@ -377,12 +377,15 @@ function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
   )
 }
 
-/** The game as a whole: its result and opening, the rating, its length, the errors. */
+/**
+ * The game as a whole, without a board: its result and opening, then four figures side by side
+ * (rating and its change, moves, each side's errors), and the link to Lichess at the bottom. As
+ * wide and tall as a move's details with their board, so that the chart keeps its size.
+ */
 function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?: number }) {
   const last = game.positions.length - 1
-  const board = useMemo(() => boardAt(game, last), [game, last])
   const result = RESULTS[game.result]
-  const rows = [
+  const figures: { label: string; value: ReactNode }[] = [
     ...(game.rating !== undefined
       ? [
           {
@@ -391,7 +394,9 @@ function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?
               <>
                 <span className="text-text-strong">{formatNumber(game.rating)}</span>
                 {ratingChange !== undefined && ratingChange !== 0 && (
-                  <span className={cn('ml-1.5', ratingChange > 0 ? 'text-win' : 'text-loss')}>
+                  <span
+                    className={cn('ml-1.5 text-sm', ratingChange > 0 ? 'text-win' : 'text-loss')}
+                  >
                     {formatSigned(ratingChange)}
                   </span>
                 )}
@@ -418,20 +423,33 @@ function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?
     },
   ]
   return (
-    <DetailsFrame
-      title={<span className={result.className}>{result.label()}</span>}
-      subtitle={
-        game.opening && (
-          <p className="truncate text-xs text-muted-foreground" title={game.opening.name}>
-            {game.opening.eco && <span className="num mr-1.5">{game.opening.eco}</span>}
+    // 13rem of figures, 1rem of gap and a 180 px board, as MoveDetails
+    <div className="flex flex-col gap-3 md:h-[180px] md:w-[calc(14rem+180px)]">
+      <div className="space-y-1">
+        <p className={cn('text-lg font-semibold', result.className)}>{result.label()}</p>
+        {game.opening && (
+          <p className="line-clamp-2 text-sm text-text-strong" title={game.opening.name}>
             {game.opening.name}
+            {game.opening.eco && (
+              <span className="num ml-2 text-xs text-muted-foreground">{game.opening.eco}</span>
+            )}
           </p>
-        )
-      }
-      rows={rows}
-      link={lichessGameUrl(game, last, game.color, game.positions[last]!.fen)}
-      board={board}
-    />
+        )}
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {figures.map((figure) => (
+          <div key={figure.label} className="min-w-0 space-y-0.5">
+            <dt className="truncate text-xs text-muted-foreground">{figure.label}</dt>
+            <dd className="num text-base font-medium">{figure.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-auto text-xs">
+        <ExternalLink href={lichessGameUrl(game, last, game.color, game.positions[last]!.fen)}>
+          {m.training_analyse_lichess()}
+        </ExternalLink>
+      </p>
+    </div>
   )
 }
 
