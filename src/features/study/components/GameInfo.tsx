@@ -1,8 +1,11 @@
 import type { Color } from 'chessops'
+import { ExternalLink } from 'lucide-react'
 import { SideSquare } from '@/features/games/components/GamesTable'
+import { sourceLabel } from '@/features/player/sources'
 import type { ReviewGame } from '@/features/review/games'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { m } from '@/paraglide/messages'
 
 /** "1-0", "0-1", "½-½": the game's result as written on a score sheet. */
 function scoreOf(game: Pick<ReviewGame, 'result' | 'color'>): string {
@@ -12,7 +15,8 @@ function scoreOf(game: Pick<ReviewGame, 'result' | 'color'>): string {
 }
 
 /**
- * The game being studied: both players (White first) with their ratings and the result, then,
+ * The game being studied: both players (White first) with their ratings, the result and a link to
+ * the game on its platform, then,
  * under a line, its opening. Each on a single line, cut short with an ellipsis rather than wrapped
  * (the full text on hover). `player`: the reviewed player's name.
  */
@@ -46,14 +50,29 @@ export function GameInfo({ game, player }: { game: ReviewGame; player: string | 
             )
           })}
         </div>
-        <span
-          className={cn(
-            'num shrink-0 text-xl font-semibold',
-            game.result === 'win' ? 'text-win' : game.result === 'loss' ? 'text-loss' : '',
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={cn(
+              'num text-xl font-semibold',
+              game.result === 'win' ? 'text-win' : game.result === 'loss' ? 'text-loss' : '',
+            )}
+          >
+            {score}
+          </span>
+          {/* Its page on the platform; an imported game may have none */}
+          {game.url && (
+            <a
+              href={game.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-muted-foreground hover:text-primary"
+              title={m.view_on({ platform: sourceLabel(game.source) })}
+              aria-label={m.view_on({ platform: sourceLabel(game.source) })}
+            >
+              <ExternalLink className="size-4" />
+            </a>
           )}
-        >
-          {score}
-        </span>
+        </div>
       </div>
       {game.opening && (
         <p className="flex min-w-0 items-baseline gap-2 border-t pt-2 text-sm text-text-strong">

@@ -62,7 +62,8 @@ export function EnginePanel({
             <span className="text-base font-medium text-text-strong">{m.study_game_over()}</span>
           ) : (
             on && (
-              <span className="num text-2xl font-semibold text-text-strong">
+              // On a light chip, as each line's evaluation
+              <span className="num rounded-md bg-text-strong px-2 text-2xl font-semibold text-background">
                 {score ? formatScore(score) : '…'}
               </span>
             )
