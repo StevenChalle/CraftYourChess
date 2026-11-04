@@ -41,7 +41,9 @@ export function PagedGamesTable({
   const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / pageSize) - 1))
   const shown = pageSlice(games, page, pageSize)
   const { draft, deepening } = useAnalysisSession()
-  const reviewed = useCachedReviews(shown, draft.criteria, deepening?.gameKey)
+  // Read again once a game is deepened, by the session or in its panel.
+  const [deepened, setDeepened] = useState(0)
+  const reviewed = useCachedReviews(shown, draft.criteria, `${deepening?.gameKey}:${deepened}`)
   const rootRef = useRef<HTMLDivElement>(null)
   const ratingChange = (game: ReviewGame): number | undefined => {
     if (game.ratingDiff !== undefined || !oneRating || game.rating === undefined) {
@@ -65,6 +67,7 @@ export function PagedGamesTable({
                     game={review}
                     deepen={false}
                     ratingChange={ratingChange(game)}
+                    onDeepened={() => setDeepened((count) => count + 1)}
                     train={
                       <AnalyzeLink
                         game={game}
