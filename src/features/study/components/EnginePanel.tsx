@@ -62,8 +62,12 @@ export function EnginePanel({
             <span className="text-base font-medium text-text-strong">{m.study_game_over()}</span>
           ) : (
             on && (
-              // On a light chip, as each line's evaluation
-              <span className="num rounded-md bg-text-strong px-2 text-2xl font-semibold text-background">
+              <span
+                className={cn(
+                  'num rounded-md border px-2 text-2xl font-semibold',
+                  score ? scoreChip(score) : WHITE_CHIP,
+                )}
+              >
                 {score ? formatScore(score) : '…'}
               </span>
             )
@@ -120,8 +124,12 @@ export function EnginePanel({
                 >
                   {line ? (
                     <>
-                      {/* On a light chip: each line's evaluation stands out from its moves */}
-                      <span className="num w-11 shrink-0 rounded-sm bg-text-strong px-1 text-center text-xs leading-4 font-semibold text-background">
+                      <span
+                        className={cn(
+                          'num w-11 shrink-0 rounded-sm border px-1 text-center text-xs leading-4 font-semibold',
+                          scoreChip(line.score),
+                        )}
+                      >
                         {formatScore(line.score)}
                       </span>
                       <span className="min-w-0 truncate text-xs" title={lineText(node, line)}>
@@ -159,6 +167,18 @@ export function EnginePanel({
       )}
     </div>
   )
+}
+
+const WHITE_CHIP = 'border-piece-white bg-piece-white text-piece-black'
+const BLACK_CHIP = 'border-border-strong bg-piece-black text-piece-white'
+
+/**
+ * An evaluation's chip, in the colors of the side ahead: white when White is better (or equal),
+ * black when Black is; it stands out from the moves next to it.
+ */
+function scoreChip(score: WhiteScore): string {
+  const black = 'mate' in score ? score.mate < 0 : score.cp < 0
+  return black ? BLACK_CHIP : WHITE_CHIP
 }
 
 /** The preview's width, in pixels */
