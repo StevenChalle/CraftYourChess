@@ -378,9 +378,10 @@ function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
 }
 
 /**
- * The game as a whole, without a board: its result and opening, then four figures side by side
- * (rating and its change, moves, each side's errors), and the link to Lichess at the bottom. As
- * wide and tall as a move's details with their board, so that the chart keeps its size.
+ * The game as a whole, without a board: its result and opening, then four figures two by two
+ * (rating and its change, the player's errors; moves, the opponent's errors), and the link to
+ * Lichess at the bottom. As wide and tall as a move's details with their board, so that the chart
+ * keeps its size.
  */
 function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?: number }) {
   const last = game.positions.length - 1
@@ -406,16 +407,16 @@ function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?
         ]
       : []),
     {
-      label: m.eval_chart_moves(),
-      value: <span className="text-text-strong">{formatNumber(Math.ceil(last / 2))}</span>,
-    },
-    {
       label: m.eval_chart_legend_mine(),
       value: (
         <span className={game.mistakes.length > 0 ? 'text-loss' : 'text-win'}>
           {formatNumber(game.mistakes.length)}
         </span>
       ),
+    },
+    {
+      label: m.eval_chart_moves(),
+      value: <span className="text-text-strong">{formatNumber(Math.ceil(last / 2))}</span>,
     },
     {
       label: m.eval_chart_legend_theirs(),
