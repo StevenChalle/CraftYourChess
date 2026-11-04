@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+import { BackLink } from '@/components/BackLink'
 import { useImportedGames } from '@/features/import/store'
 import type { ProfileSearch } from '@/features/player/search'
 import { parseGameRef } from '@/features/review/gameRef'
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/player/review')({
  */
 function ReviewPage() {
   const search = Route.useSearch()
-  const { library, accounts } = useAnalysisSession()
+  const { library, accounts, analysis } = useAnalysisSession()
   const imported = useImportedGames()
   const ref = parseGameRef(search.review)
   const usernames: ProfileSearch = search.import
@@ -38,16 +38,17 @@ function ReviewPage() {
     retry: shouldRetry,
   })
 
-  const back = (
-    <Link
-      to={search.import ? '/player/history' : '/player'}
-      search={usernames}
-      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
-    >
-      <ArrowLeft className="size-4" />
-      {search.import ? m.study_back_import() : m.study_back_profile()}
-    </Link>
-  )
+  // Opened from the analysis's results: back there, the analysis still open.
+  const back =
+    analysis.status !== 'none' ? (
+      <BackLink label={m.back_to_analysis()} to="/player/analysis" search={usernames} />
+    ) : (
+      <BackLink
+        label={search.import ? m.study_back_import() : m.study_back_profile()}
+        to={search.import ? '/player/history' : '/player'}
+        search={usernames}
+      />
+    )
   const message = (text: string, tone = 'text-muted-foreground') => (
     <div className="space-y-3">
       {back}

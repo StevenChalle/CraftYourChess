@@ -15,5 +15,5 @@ export function ImportedGamesTab() {
     [imported],
   )
   if (games.length === 0) return <p className="text-muted-foreground">{m.history_no_games()}</p>
-  return <PagedGamesTable games={games} usernames={{ import: true }} />
+  return <PagedGamesTable games={games} />
 }

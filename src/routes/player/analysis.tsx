@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { BackLink } from '@/components/BackLink'
+import { AnalysisResults } from '@/features/review/components/AnalysisResults'
 import { ReviewRecap } from '@/features/review/components/ReviewRecap'
 import { ReviewSetup } from '@/features/review/components/ReviewSetup'
 import { isSelectionValid } from '@/features/review/selection'
@@ -8,26 +10,43 @@ import { useAnalysisSession } from '@/features/review/sessionContext'
 import { m } from '@/paraglide/messages'
 
 export const Route = createFileRoute('/player/analysis')({
-  component: AnalysisTab,
+  component: AnalysisPage,
 })
 
 /** Time to wait after the last change before searching (typing a number, clicking chips…). */
 const SEARCH_DELAY_MS = 400
 
-/** Closed accounts have no games to analyse. */
-function AnalysisTab() {
-  const { accounts, library } = useAnalysisSession()
-  if (library.kind === 'accounts' && accounts.length === 0) {
-    return <p className="text-muted-foreground">{m.analysis_unavailable()}</p>
-  }
-  return <FiltersTab />
+/**
+ * The advanced analysis, from the profile's button: back to the profile (which closes the
+ * analysis), then its filters and options. Closed accounts have no games to analyse.
+ */
+function AnalysisPage() {
+  const { accounts, library, usernames } = useAnalysisSession()
+  const back = (
+    <BackLink
+      label={usernames.import ? m.study_back_import() : m.study_back_profile()}
+      to={usernames.import ? '/player/history' : '/player'}
+      search={usernames}
+    />
+  )
+  return (
+    <div className="space-y-4">
+      {back}
+      {library.kind === 'accounts' && accounts.length === 0 ? (
+        <p className="text-muted-foreground">{m.analysis_unavailable()}</p>
+      ) : (
+        <AnalysisForm />
+      )}
+    </div>
+  )
 }
 
 /**
  * Filters and options; the games they match show up below (searched again after every change),
- * with the button launching the analysis.
+ * with the button launching the analysis. Once launched, the sections fold away and the analysis
+ * shows under the games found: its steps, then its results.
  */
-function FiltersTab() {
+function AnalysisForm() {
   const {
     accounts,
     library,
@@ -37,6 +56,7 @@ function FiltersTab() {
     search,
     analysis,
     analysisSettings,
+    analysisId,
     find,
     launch,
   } = useAnalysisSession()
@@ -72,9 +92,20 @@ function FiltersTab() {
     if (canSearch && !analysisFetching) find()
   }
 
+  // Each analysis launched (or brought back by a reload): the filters fold away, its results in
+  // sight.
+  const open = analysis.status !== 'none'
+  const resultsRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (open) resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Once per analysis, not as it goes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysisId])
+
   return (
     <div className="space-y-6" onKeyDown={onKeyDown}>
       <ReviewSetup
+        folded={open ? analysisId : undefined}
         accounts={accounts}
         sources={library.sources}
         gameTotal={gameTotal}
@@ -92,9 +123,9 @@ function FiltersTab() {
           onLaunch={() => void launch()}
         />
       )}
-      {analysis.status === 'running' && (
-        <p className="text-sm text-muted-foreground">{m.analysis_running_note()}</p>
-      )}
+      <div ref={resultsRef} className="scroll-mt-4">
+        <AnalysisResults />
+      </div>
     </div>
   )
 }

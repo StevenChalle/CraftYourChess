@@ -125,7 +125,8 @@ function gamesSummary(
 
 /**
  * Filters and thresholds of the advanced review, controlled by the analysis session (they survive
- * tab switches). The filters tab looks for the matching games after every change.
+ * leaving the page). The analysis page looks for the matching games after every change. Each new
+ * `folded` value folds every section away (an analysis launched: its results take the room).
  */
 export function ReviewSetup({
   accounts,
@@ -134,6 +135,7 @@ export function ReviewSetup({
   value: { selection, criteria },
   onChange,
   reference,
+  folded,
 }: {
   accounts: ReviewAccount[]
   /** The games' origins: the accounts', or imported games (no platform, rated or not to pick) */
@@ -144,6 +146,7 @@ export function ReviewSetup({
   onChange: (settings: ReviewSettings) => void
   /** The current analysis's settings, if any: each section can go back to them */
   reference?: ReviewSettings
+  folded?: number
 }) {
   const update = (change: Partial<GameSelection>) =>
     onChange({ selection: { ...selection, ...change }, criteria })
@@ -184,7 +187,7 @@ export function ReviewSetup({
 
   return (
     <div className="space-y-3">
-      <ExpandableGroup defaultValue="range">
+      <ExpandableGroup key={folded} defaultValue={folded === undefined ? 'range' : ''}>
         <Expandable
           value="range"
           title={m.setup_section_range()}

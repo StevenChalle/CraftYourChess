@@ -3,6 +3,7 @@ import type { Mistake } from '@/features/review/analyze'
 import {
   missedPuzzles,
   shuffle,
+  resumeTraining,
   startTraining,
   summarize,
   trainingReducer,
@@ -228,5 +229,29 @@ describe('missedPuzzles', () => {
     expect(missed.map((puzzle) => puzzle.id)).toEqual(['b', 'd'])
     // Positions not played yet are not missed.
     expect(missedPuzzles({ puzzles, results: ['after-retries'] }).map((p) => p.id)).toEqual(['a'])
+  })
+})
+
+describe('resumeTraining', () => {
+  it('takes a training up again at its position, the ones done keeping their results', () => {
+    const puzzles = ['a', 'b', 'c'].map(mistake)
+    const state = resumeTraining(puzzles, ['evaluate', 'replay'], {
+      index: 1,
+      results: ['first-try'],
+      assessments: [true],
+    })
+    expect(state).toMatchObject({ index: 1, status: 'evaluating', attempts: 0 })
+    expect(state.results).toEqual(['first-try'])
+    expect(state.assessments).toEqual([true])
+  })
+
+  it('shows the summary of a training played to the end', () => {
+    const puzzles = ['a', 'b'].map(mistake)
+    const state = resumeTraining(puzzles, undefined, {
+      index: 2,
+      results: ['first-try', 'revealed'],
+      assessments: [],
+    })
+    expect(state.status).toBe('summary')
   })
 })

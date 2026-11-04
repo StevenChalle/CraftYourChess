@@ -5,13 +5,20 @@ import type { GameLibrary } from './library'
 import type { ReviewProgress } from './progress'
 import type { GameSelection } from './selection'
 import type { ReviewSettings } from './settings'
+import type { TrainingProgress } from '@/features/training/session'
 import type { Exercise, TrainingSettings } from '@/features/training/settings'
+import type { ReviewCriteria } from './criteria'
 import type { ProfileSearch } from '@/features/player/search'
 
 /**
- * The analysis page's state, shared by its tabs (filters, analysis, training): see
- * AnalysisSessionProvider (session.tsx).
+ * The profile's analysis and training, shared by its pages (profile, analysis, training, review):
+ * see AnalysisSessionProvider (session.tsx).
  */
+
+/** The pages an open analysis goes with: leaving them for another closes it. */
+export const ANALYSIS_PAGES = ['/player/analysis', '/player/training', '/player/review']
+/** The training's page: leaving it closes the training. */
+export const TRAINING_PAGE = '/player/training'
 
 export type SearchState =
   | { status: 'idle' }
@@ -27,7 +34,7 @@ export type AnalysisState =
   | { status: 'error'; error: Error; settings: ReviewSettings }
 
 /**
- * A training tab: first its options, then the board. `run` changes with every restart, which
+ * A training: first its options, then the board. `run` changes with every restart, which
  * remounts TrainingView (fresh draw and engine).
  */
 export type TrainingPhase =
@@ -41,19 +48,22 @@ export type TrainingPhase =
       exercises?: Exercise[]
     }
 
-export type TrainingTab = {
-  /** Fixed for the tab's life, the smallest free one when opened: its title and route */
-  number: number
-  /** The analysis its errors come from: an older one once another analysis is launched */
-  analysisId: number
-  /** The errors it can replay, kept even when another analysis replaces them */
+/** Where a training was opened: back there when it closes. */
+export type TrainingOrigin = { to: string; search: Record<string, unknown> }
+
+/** The training open, on its own page: one at a time, closed when the page is left. */
+export type OpenTraining = {
+  /** The errors it can replay */
   mistakes: Mistake[]
   /** The analysis's rules: valid moves when replaying, and the lowest error */
   validMaxDrop: number
   errorMinDrop: number
   phase: TrainingPhase
-  /** Every position has been played: closing it asks nothing */
+  /** Every position has been played: leaving it asks nothing */
   finished: boolean
+  /** How far it went, for a reload of the page */
+  progress?: TrainingProgress
+  from: TrainingOrigin
 }
 
 export type Session = {
@@ -69,31 +79,35 @@ export type Session = {
   setDraft: (settings: ReviewSettings) => void
   search: SearchState
   analysis: AnalysisState
-  /** Increases with every analysis launched: trainings from an older one are told apart */
+  /** Increases with every analysis launched */
   analysisId: number
-  trainings: TrainingTab[]
+  training: OpenTraining | undefined
+  /** A training asked by a link waits for its game's analysis */
+  trainingPending: boolean
   /** The settings of the current analysis, which each section of the form can go back to */
   analysisSettings: ReviewSettings | undefined
   /** Looks for the games of the filters being edited (the filters tab calls it on every change) */
   find: () => void
-  /** Analyses the games found, with the rules being edited (asks first if an analysis exists), then shows the analysis tab */
+  /** Analyses the games found, with the rules being edited (asks first if an analysis exists) */
   launch: () => Promise<void>
-  /** Opens a training tab on its options, for the errors of the current analysis */
+  /** Opens the training page on its options, for the errors of the current analysis */
   newTraining: () => void
-  /** Opens a training tab replaying these errors right away, with the default options */
-  trainGame: (mistakes: Mistake[]) => void
-  /** Starts the training of a tab with these options, remembered for next time */
-  launchTraining: (number: number, settings: TrainingSettings) => void
+  /**
+   * Opens the training page replaying these errors right away, with the default options; judged
+   * with `criteria` (the analysis's when omitted)
+   */
+  trainGame: (mistakes: Mistake[], criteria?: ReviewCriteria) => void
+  /** Starts the training with these options, remembered for next time */
+  launchTraining: (settings: TrainingSettings) => void
   /** The same training again, in a new draw */
-  restartTraining: (number: number) => void
+  restartTraining: () => void
   /** These positions again (the moves missed at first), moves only */
-  replayMissed: (number: number, puzzles: Mistake[]) => void
-  /** Closes a training tab (asks first unless every position has been played) */
-  closeTraining: (number: number) => Promise<void>
-  setTrainingFinished: (number: number, finished: boolean) => void
-  /** Back to the analysis results */
-  showResults: () => void
-  /** Stops the analysis under way, drops it and shows the filters */
+  replayMissed: (puzzles: Mistake[]) => void
+  setTrainingFinished: (finished: boolean) => void
+  setTrainingProgress: (progress: TrainingProgress) => void
+  /** Leaves the training page, back where it was opened (asks first while it is under way) */
+  leaveTraining: () => void
+  /** Stops the analysis under way and drops it: the filters stay, to change them */
   stopAnalysis: () => void
   /** The deepening under way, if any */
   deepening: Deepening | undefined
@@ -101,14 +115,6 @@ export type Session = {
   deepenGames: (gameKeys: string[], scope: Deepening['scope']) => void
   /** Stops the deepening: what was found stays */
   stopDeepening: () => void
-}
-
-/** The smallest number no open training tab has: closed tabs free theirs. */
-export function freeNumber(trainings: Pick<TrainingTab, 'number'>[]): number {
-  const used = new Set(trainings.map((tab) => tab.number))
-  let number = 1
-  while (used.has(number)) number += 1
-  return number
 }
 
 /** A game's key in the results: its platform and id. */

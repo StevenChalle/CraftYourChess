@@ -15,7 +15,6 @@ import { OPENING_MOVES, THEMES, themeCounts, type Theme } from '@/features/revie
 import { ERROR_RANGE } from '@/features/review/criteria'
 import { ThresholdSlider } from '@/features/review/components/ThresholdSlider'
 import { lichessMarkers } from '@/features/review/markers'
-import { useAnalysisSession, type TrainingTab } from '@/features/review/sessionContext'
 import { formatGameCount, formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -227,16 +226,25 @@ function advancedSummary(
 }
 
 /**
- * The options of a training tab, before it starts: the order of the positions, how many games,
+ * The options of a training, before it starts: the order of the positions, how many games,
  * how serious the errors. Starts from the options last launched; launching remembers them.
  */
-export function TrainingSetup({ tab }: { tab: TrainingTab }) {
-  const { launchTraining } = useAnalysisSession()
+export function TrainingSetup({
+  mistakes,
+  errorMinDrop,
+  onLaunch,
+}: {
+  /** The errors it can replay */
+  mistakes: Mistake[]
+  /** The analysis's lowest error */
+  errorMinDrop: number
+  onLaunch: (settings: TrainingSettings) => void
+}) {
   const [settings, setSettings] = useState<TrainingSettings>(loadTrainingSettings)
   const update = (change: Partial<TrainingSettings>) => setSettings({ ...settings, ...change })
 
-  const options = toTrainingOptions(settings, tab.errorMinDrop)
-  const games = mistakesByGame(tab.mistakes, options)
+  const options = toTrainingOptions(settings, errorMinDrop)
+  const games = mistakesByGame(mistakes, options)
   // One position per game: as many positions as games.
   const positions = settings.onePerGame
     ? games.length
@@ -260,12 +268,12 @@ export function TrainingSetup({ tab }: { tab: TrainingTab }) {
     settings.gamesLimit === DEFAULT_TRAINING_SETTINGS.gamesLimit &&
     !settings.limitPositions &&
     settings.positionsLimit === DEFAULT_TRAINING_SETTINGS.positionsLimit &&
-    options.minDrop === tab.errorMinDrop
+    options.minDrop === errorMinDrop
   const exercisesDefault = settings.exercises.join() === DEFAULT_TRAINING_SETTINGS.exercises.join()
   const isDefault = themesDefault && exercisesDefault && advancedDefault
 
   const canLaunch = positions > 0 && limitValid
-  const launch = () => launchTraining(tab.number, settings)
+  const launch = () => onLaunch(settings)
 
   return (
     // Enter in a field launches the training.
@@ -289,7 +297,7 @@ export function TrainingSetup({ tab }: { tab: TrainingTab }) {
           }}
         >
           <ThemeChips
-            mistakes={tab.mistakes}
+            mistakes={mistakes}
             options={options}
             onChange={(themes) => update({ themes })}
           />
@@ -323,7 +331,7 @@ export function TrainingSetup({ tab }: { tab: TrainingTab }) {
         <Expandable
           value="advanced"
           title={m.training_setup_advanced()}
-          summary={advancedSummary(settings, options.minDrop, tab.errorMinDrop)}
+          summary={advancedSummary(settings, options.minDrop, errorMinDrop)}
           defaults={{
             disabled: advancedDefault,
             onClick: () =>
@@ -401,7 +409,7 @@ export function TrainingSetup({ tab }: { tab: TrainingTab }) {
                 label={m.training_setup_min_drop()}
                 hint={m.training_setup_min_drop_hint({ value: String(options.minDrop) })}
                 value={options.minDrop}
-                range={{ min: tab.errorMinDrop, max: ERROR_RANGE.max }}
+                range={{ min: errorMinDrop, max: ERROR_RANGE.max }}
                 markers={lichessMarkers()}
                 note={m.setup_markers_note()}
                 onChange={(minDrop) => update({ minDrop })}

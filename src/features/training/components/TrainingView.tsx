@@ -21,7 +21,9 @@ import {
 import {
   currentPuzzle,
   missedPuzzles,
+  resumeTraining,
   startTraining,
+  type TrainingProgress as SavedProgress,
   trainingReducer,
   type TrainingState,
 } from '../session'
@@ -84,6 +86,8 @@ export function TrainingView({
   onRestart,
   onReplayMissed,
   onExit,
+  progress,
+  onProgress,
 }: {
   /** The positions to replay, in this order (see trainingPuzzles) */
   puzzles: Mistake[]
@@ -98,12 +102,25 @@ export function TrainingView({
   onRestart?: () => void
   /** The positions whose move was missed at first, again, from the summary */
   onReplayMissed?: (puzzles: Mistake[]) => void
-  /** Back to the analysis results, from the summary */
+  /** Leaves the training, from the summary */
   onExit: () => void
+  /** Where to take it up again (a reload of the page) */
+  progress?: SavedProgress
+  /** Told as each position is done, to take it up again there */
+  onProgress?: (progress: SavedProgress) => void
 }) {
-  const [state, dispatch] = useReducer(trainingReducer, { puzzles, exercises }, (initial) =>
-    startTraining(initial.puzzles, initial.exercises),
+  const [state, dispatch] = useReducer(
+    trainingReducer,
+    { puzzles, exercises, progress },
+    (initial) =>
+      initial.progress
+        ? resumeTraining(initial.puzzles, initial.exercises, initial.progress)
+        : startTraining(initial.puzzles, initial.exercises),
   )
+  const tellProgress = useEffectEvent((value: SavedProgress) => onProgress?.(value))
+  useEffect(() => {
+    tellProgress({ index: state.index, results: state.results, assessments: state.assessments })
+  }, [state.index, state.results, state.assessments])
   const [engineFailed, setEngineFailed] = useState(false)
   const [coach] = useState(() => new Coach(validMaxDrop))
   const layoutRef = useRef<HTMLDivElement>(null)

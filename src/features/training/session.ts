@@ -98,6 +98,30 @@ export function startTraining(
   }
 }
 
+/** How far a training went: what a reload of the page brings back. */
+export type TrainingProgress = Pick<TrainingState, 'index' | 'results' | 'assessments'>
+
+/**
+ * A training taken up again where it was (a reload of the page): the positions done keep their
+ * results, the current one starts over, as when first shown.
+ */
+export function resumeTraining(
+  puzzles: Mistake[],
+  exercises: Exercise[] | undefined,
+  progress: TrainingProgress,
+): TrainingState {
+  const fresh = startTraining(puzzles, exercises)
+  if (fresh.status === 'summary') return fresh
+  const index = Math.min(Math.max(progress.index, 0), puzzles.length)
+  return {
+    ...fresh,
+    index,
+    status: index >= puzzles.length ? 'summary' : fresh.status,
+    results: progress.results.slice(0, index),
+    assessments: progress.assessments.slice(0, index),
+  }
+}
+
 /**
  * The player's evaluation judged against the engine's (known once the best move is): undefined
  * until both are there.

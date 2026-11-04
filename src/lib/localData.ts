@@ -6,8 +6,9 @@ export const LOCAL_DATA_CLEARED = 'craftyourchess:local-data-cleared'
 /**
  * Deletes everything CraftYourChess keeps in this browser: localStorage (language choice, recent
  * searches, analysis settings, training options, board look, filters of the rating chart, games
- * per page) and the IndexedDB database (accounts' games, analysis cache). The app's offline
- * files (service worker cache) are left alone. False if something could not be deleted.
+ * per page, the analysis and training open) and the IndexedDB database (accounts' games, analysis
+ * cache). The app's offline files (service worker cache) are left alone. False if something could
+ * not be deleted.
  */
 export async function clearLocalData(): Promise<boolean> {
   let cleared = true

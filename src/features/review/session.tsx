@@ -1,11 +1,12 @@
-import { useNavigate, useRouter } from '@tanstack/react-router'
-import { CircleX, RefreshCw } from 'lucide-react'
+import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
+import { RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { ProfileSearch } from '@/features/player/search'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useKeepAwake } from '@/hooks/useKeepAwake'
 import { beginActivity, waitForOthers, watchOthers, withActivity } from '@/lib/activity'
 import { trainingPuzzles } from '@/features/training/order'
+import type { TrainingProgress } from '@/features/training/session'
 import {
   DEFAULT_TRAINING_SETTINGS,
   saveTrainingSettings,
@@ -20,10 +21,17 @@ import {
   withDeepPosition,
   type Mistake,
 } from './analyze'
-import { DEFAULT_CRITERIA } from './criteria'
+import { DEFAULT_CRITERIA, type ReviewCriteria } from './criteria'
 import type { FoundGames, ReviewAccount } from './fetch'
 import type { GameLibrary } from './library'
-import { parseGameRef } from './gameRef'
+import { gameRef as refOf, parseGameRef } from './gameRef'
+import {
+  loadOpenAnalysis,
+  loadOpenTraining,
+  profileKey,
+  saveOpenAnalysis,
+  saveOpenTraining,
+} from './openSession'
 import { defaultSelection } from './selection'
 import {
   loadReviewSettings,
@@ -35,11 +43,12 @@ import {
   SessionContext,
   type AnalysisState,
   type SearchState,
-  freeNumber,
   reviewedGameKey,
   type Deepening,
+  type OpenTraining,
   type Session,
-  type TrainingTab,
+  ANALYSIS_PAGES,
+  TRAINING_PAGE,
 } from './sessionContext'
 
 /** The quick review: the last game (or the one picked in the history), default rules. */
@@ -54,11 +63,16 @@ function quickSettings(library: GameLibrary): ReviewSettings {
 }
 
 /**
- * Holds the analysis state of the profile page, shared by its tabs (analysis filters, results,
- * trainings) so switching tabs loses nothing. A search, an analysis and a training session are
- * independent: the user can look for other games while an analysis runs. Leaving the page drops
- * everything (nothing is saved). A link with `start="last"` starts the quick review, one with
- * `game` the review of that game: on arrival, or later from inside the page.
+ * Holds the analysis state of a profile, shared by its pages: the analysis page (filters, then the
+ * analysis and its results), the training page, a game's review. A search, an analysis and a
+ * training are independent: the user can look for other games while an analysis runs.
+ *
+ * The analysis stays open while the player is on its pages (analysis, training, review), and closes
+ * once they leave them; the training, one at a time, closes when its page is left. Both are kept in
+ * this browser while open (openSession.ts), so that reloading the page brings them back.
+ *
+ * A link with `start="last"` starts the quick review, one with `game` the review of that game
+ * (with `train`, then its training): on arrival, or later from inside the page.
  */
 export function AnalysisSessionProvider({
   accounts,
@@ -111,7 +125,15 @@ export function AnalysisSessionProvider({
         }
       : { status: 'none' },
   )
-  const [trainings, setTrainings] = useState<TrainingTab[]>([])
+  const profile = profileKey(usernames)
+  const pathname = useLocation({ select: (location) => location.pathname })
+  const router = useRouter()
+  // What was open before a reload, only on the pages it goes with (left meanwhile otherwise).
+  const [restored] = useState(() => ({
+    analysis: !quick && ANALYSIS_PAGES.includes(pathname) ? loadOpenAnalysis(profile) : undefined,
+    training: pathname === TRAINING_PAGE ? loadOpenTraining(profile) : undefined,
+  }))
+  const [training, setTraining] = useState<OpenTraining | undefined>(restored.training)
   const [analysisId, setAnalysisId] = useState(0)
   const [deepening, setDeepening] = useState<Deepening | undefined>(undefined)
   const deepenJob = useRef<AbortController | undefined>(undefined)
@@ -124,8 +146,9 @@ export function AnalysisSessionProvider({
   /** The analysis (analysisId) whose mistakes to train on as soon as it is done */
   const trainOn = useRef<number | undefined>(undefined)
   /** Training restarts, to remount the board each time */
-  const runCount = useRef(0)
-  const router = useRouter()
+  const runCount = useRef(
+    restored.training?.phase.kind === 'running' ? restored.training.phase.run : 0,
+  )
 
   useKeepAwake(analysis.status === 'running' || deepening !== undefined)
 
@@ -155,11 +178,12 @@ export function AnalysisSessionProvider({
       setDeepening(undefined)
       analysisCount.current += 1
       setAnalysisId(analysisCount.current)
-      setTrainings((tabs) => tabs.filter((tab) => tab.phase.kind === 'running'))
       setAnalysis({ status: 'running', progress: { phase: 'fetching' }, settings })
+      saveOpenAnalysis(profile, { settings })
       try {
         const found = await getFound(signal)
         if (signal.aborted) return
+        saveOpenAnalysis(profile, { settings, refs: found.games.map(refOf) })
         const games =
           found.games.length === 0
             ? []
@@ -190,12 +214,27 @@ export function AnalysisSessionProvider({
         }
       }
     },
-    [],
+    [profile],
   )
 
   // Stops everything when the page goes away (the provider is remounted for other accounts).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => stopAll, [])
+
+  // The analysis open before a reload, run again: its games found again by its filters (the
+  // store has them), the evaluations from the cache.
+  useEffect(() => {
+    const saved = restored.analysis
+    if (!saved) return
+    void runAnalysis(saved.settings, async (signal) => {
+      const found = await library.find(saved.settings.selection, signal)
+      if (!saved.refs) return found
+      const refs = new Set(saved.refs)
+      return { ...found, games: found.games.filter((game) => refs.has(refOf(game))) }
+    })
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // A quick review asked by a link: the last game, or one picked in the games list. Then the
   // request leaves the URL, so that reloading does not start it again. In StrictMode the effect
@@ -214,7 +253,12 @@ export function AnalysisSessionProvider({
           ref ? library.findOne(ref, signal) : library.find(settings.selection, signal),
         )
       }
-      void navigate({ to: '/player/results', search: usernames, replace: true })
+      // A training asked: its page waits for the analysis. Otherwise, the analysis page.
+      void navigate({
+        to: train && ref ? TRAINING_PAGE : '/player/analysis',
+        search: usernames,
+        replace: true,
+      })
     })()
     // Once per request: the latest analysis and accounts are the ones to use.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,12 +314,6 @@ export function AnalysisSessionProvider({
     })
   }, [analysis.status, confirm])
 
-  // Like the tabs, keeps the scroll position: the training tab places its board itself.
-  const goTo = useCallback(
-    (to: '/player/results') => void navigate({ to, search: usernames, resetScroll: false }),
-    [navigate, usernames],
-  )
-
   const launch = useCallback(async () => {
     if (search.status !== 'found' || !(await confirmReplace())) return
     const { found, selection } = search
@@ -283,29 +321,17 @@ export function AnalysisSessionProvider({
     // Remembered for next time: the settings of the last analysis launched from the filters.
     if (library.kind === 'accounts') saveReviewSettings(settings)
     void runAnalysis(settings, async () => found)
-    goTo('/player/results')
-  }, [search, draft.criteria, confirmReplace, runAnalysis, goTo, library.kind])
+  }, [search, draft.criteria, confirmReplace, runAnalysis, library.kind])
 
-  const showTraining = useCallback(
-    (number: number) =>
-      void navigate({
-        to: '/player/training/$number',
-        params: { number: String(number) },
-        search: usernames,
-        resetScroll: false,
-      }),
-    [navigate, usernames],
-  )
-
-  /** A new tab on the errors of the current analysis, on its options or already running. */
+  /**
+   * Opens the training page on these errors, on its options or already running; it replaces any
+   * training open (there is none: leaving its page closed it). Back where it was opened from.
+   */
   const openTraining = useCallback(
-    (mistakes: Mistake[], running: boolean) => {
-      if (analysis.status !== 'done') return
+    (mistakes: Mistake[], criteria: ReviewCriteria, running: boolean) => {
       runCount.current += 1
-      const { criteria } = analysis.outcome
-      const tab: TrainingTab = {
-        number: freeNumber(trainings),
-        analysisId,
+      const { location } = router.state
+      setTraining({
         mistakes,
         validMaxDrop: criteria.validMaxDrop,
         errorMinDrop: criteria.errorMinDrop,
@@ -321,111 +347,145 @@ export function AnalysisSessionProvider({
             }
           : { kind: 'options' },
         finished: false,
+        from: {
+          to: location.pathname === TRAINING_PAGE ? '/player' : location.pathname,
+          search: location.search as Record<string, unknown>,
+        },
+      })
+      // The training page places its board itself.
+      if (location.pathname !== TRAINING_PAGE) {
+        void navigate({ to: TRAINING_PAGE, search: usernames, resetScroll: false })
       }
-      setTrainings((tabs) => [...tabs, tab])
-      showTraining(tab.number)
     },
-    [analysis, analysisId, trainings, showTraining],
+    [router, navigate, usernames],
   )
 
   const newTraining = useCallback(() => {
     if (analysis.status !== 'done') return
     openTraining(
       analysis.outcome.games.flatMap((game) => game.mistakes),
+      analysis.outcome.criteria,
       false,
     )
   }, [analysis, openTraining])
 
   const trainGame = useCallback(
-    (mistakes: Mistake[]) => openTraining(mistakes, true),
-    [openTraining],
+    (mistakes: Mistake[], criteria?: ReviewCriteria) => {
+      const rules = criteria ?? (analysis.status === 'done' ? analysis.outcome.criteria : undefined)
+      openTraining(mistakes, rules ?? draft.criteria, true)
+    },
+    [analysis, draft.criteria, openTraining],
   )
 
   // A game opened to train on: its training as soon as its analysis (from the cache, at once) is
-  // done; the results stay if it has no mistakes.
+  // done. Without mistakes, its analysis instead.
   useEffect(() => {
     if (analysis.status !== 'done' || trainOn.current !== analysisId) return
     trainOn.current = undefined
     const mistakes = analysis.outcome.games.flatMap((item) => item.mistakes)
     if (mistakes.length > 0) trainGame(mistakes)
-  }, [analysis, analysisId, trainGame])
+    else void navigate({ to: '/player/analysis', search: usernames, replace: true })
+  }, [analysis, analysisId, trainGame, navigate, usernames])
 
   const updateTraining = useCallback(
-    (number: number, change: (tab: TrainingTab) => TrainingTab) =>
-      setTrainings((tabs) => tabs.map((tab) => (tab.number === number ? change(tab) : tab))),
+    (change: (training: OpenTraining) => OpenTraining) =>
+      setTraining((current) => current && change(current)),
     [],
   )
 
   const launchTraining = useCallback(
-    (number: number, settings: TrainingSettings) => {
+    (settings: TrainingSettings) => {
       saveTrainingSettings(settings)
       runCount.current += 1
       const run = runCount.current
-      updateTraining(number, (tab) => ({
-        ...tab,
+      updateTraining((current) => ({
+        ...current,
         phase: {
           kind: 'running',
           settings,
-          puzzles: trainingPuzzles(tab.mistakes, toTrainingOptions(settings, tab.errorMinDrop)),
+          puzzles: trainingPuzzles(
+            current.mistakes,
+            toTrainingOptions(settings, current.errorMinDrop),
+          ),
           run,
         },
         finished: false,
+        progress: undefined,
       }))
     },
     [updateTraining],
   )
 
-  const restartTraining = useCallback(
-    (number: number) => {
-      runCount.current += 1
-      const run = runCount.current
-      updateTraining(number, (tab) =>
-        tab.phase.kind === 'running'
-          ? {
-              ...tab,
-              phase: {
-                ...tab.phase,
-                puzzles: trainingPuzzles(
-                  tab.mistakes,
-                  toTrainingOptions(tab.phase.settings, tab.errorMinDrop),
-                ),
-                run,
-                exercises: undefined,
-              },
-              finished: false,
-            }
-          : tab,
-      )
-    },
-    [updateTraining],
-  )
+  const restartTraining = useCallback(() => {
+    runCount.current += 1
+    const run = runCount.current
+    updateTraining((current) =>
+      current.phase.kind === 'running'
+        ? {
+            ...current,
+            phase: {
+              ...current.phase,
+              puzzles: trainingPuzzles(
+                current.mistakes,
+                toTrainingOptions(current.phase.settings, current.errorMinDrop),
+              ),
+              run,
+              exercises: undefined,
+            },
+            finished: false,
+            progress: undefined,
+          }
+        : current,
+    )
+  }, [updateTraining])
 
   const replayMissed = useCallback(
-    (number: number, puzzles: Mistake[]) => {
+    (puzzles: Mistake[]) => {
       runCount.current += 1
       const run = runCount.current
-      updateTraining(number, (tab) =>
-        tab.phase.kind === 'running'
+      updateTraining((current) =>
+        current.phase.kind === 'running'
           ? {
-              ...tab,
-              phase: { ...tab.phase, puzzles, run, exercises: ['replay'] },
+              ...current,
+              phase: { ...current.phase, puzzles, run, exercises: ['replay'] },
               finished: false,
+              progress: undefined,
             }
-          : tab,
+          : current,
       )
     },
     [updateTraining],
   )
 
-  const setTrainingFinished = useCallback((number: number, finished: boolean) => {
-    setTrainings((tabs) =>
-      tabs.some((tab) => tab.number === number && tab.finished !== finished)
-        ? tabs.map((tab) => (tab.number === number ? { ...tab, finished } : tab))
-        : tabs,
-    )
-  }, [])
+  const setTrainingFinished = useCallback(
+    (finished: boolean) =>
+      setTraining((current) =>
+        current && current.finished !== finished ? { ...current, finished } : current,
+      ),
+    [],
+  )
 
-  const showResults = useCallback(() => goTo('/player/results'), [goTo])
+  const setTrainingProgress = useCallback(
+    (progress: TrainingProgress) => updateTraining((current) => ({ ...current, progress })),
+    [updateTraining],
+  )
+
+  /**
+   * Back where the training was opened: the browser's previous page when there is one in the app,
+   * its origin otherwise (after a reload). The page left, the training closes (see below); one
+   * under way asks first (LeaveGuard).
+   */
+  const leaveTraining = useCallback(() => {
+    if (router.history.canGoBack()) router.history.back()
+    else if (training) {
+      // Its origin is one of the profile's pages, kept as a plain path.
+      void navigate({
+        to: training.from.to,
+        search: training.from.search,
+        replace: true,
+      } as unknown as Parameters<typeof navigate>[0])
+    } else void navigate({ to: '/player', search: usernames, replace: true })
+  }, [router, training, navigate, usernames])
 
   /** Stops the analysis under way and drops it: back to the filters, to change them. */
   const stopAnalysis = useCallback(() => {
@@ -433,8 +493,8 @@ export function AnalysisSessionProvider({
     deepenJob.current?.abort()
     setDeepening(undefined)
     setAnalysis({ status: 'none' })
-    void navigate({ to: '/player/analysis', search: usernames, resetScroll: false })
-  }, [navigate, usernames])
+    saveOpenAnalysis(profile, undefined)
+  }, [profile])
 
   /**
    * Deepens these games one after the other. It holds an activity (the background analysis waits)
@@ -525,47 +585,23 @@ export function AnalysisSessionProvider({
     setDeepening(undefined)
   }, [])
 
-  /** Closing the tab on screen shows its neighbor, else the results (or the filters). */
-  const closeTraining = useCallback(
-    async (number: number) => {
-      const index = trainings.findIndex((tab) => tab.number === number)
-      const tab = trainings[index]
-      if (!tab) return
-      // Only a training under way has something to lose (not its options, nor once finished).
-      if (
-        tab.phase.kind === 'running' &&
-        !tab.finished &&
-        !(await confirm({
-          icon: CircleX,
-          title: m.confirm_close_training_title(),
-          description: m.confirm_close_training_body(),
-          confirmLabel: m.confirm_close_training_action(),
-          cancelLabel: m.confirm_cancel(),
-        }))
-      ) {
-        return
-      }
-      // Leave the tab first: without its training, it would redirect elsewhere.
-      const shown = router.state.location.pathname === `/player/training/${number}`
-      const neighbor = trainings[index + 1] ?? trainings[index - 1]
-      const leave = !shown
-        ? Promise.resolve()
-        : neighbor
-          ? navigate({
-              to: '/player/training/$number',
-              params: { number: String(neighbor.number) },
-              search: usernames,
-              resetScroll: false,
-            })
-          : navigate({
-              to: analysis.status === 'none' ? '/player/analysis' : '/player/results',
-              search: usernames,
-              resetScroll: false,
-            })
-      void leave.then(() => setTrainings((tabs) => tabs.filter((item) => item.number !== number)))
-    },
-    [trainings, confirm, router, analysis.status, navigate, usernames],
-  )
+  // Leaving the training's page closes it; leaving the analysis's pages closes the analysis (the
+  // player was asked first while it ran: LeaveGuard).
+  useEffect(() => {
+    if (pathname !== TRAINING_PAGE) setTraining(undefined)
+    if (!ANALYSIS_PAGES.includes(pathname) && analysisRef.current.status !== 'none' && !quick) {
+      analysisJob.current?.abort()
+      deepenJob.current?.abort()
+      setDeepening(undefined)
+      setAnalysis({ status: 'none' })
+      saveOpenAnalysis(profile, undefined)
+    }
+    // Only when the page changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+
+  // The training open is kept for a reload, as it goes.
+  useEffect(() => saveOpenTraining(profile, training), [profile, training])
 
   const analysisSettings = analysis.status === 'none' ? undefined : analysis.settings
 
@@ -579,7 +615,8 @@ export function AnalysisSessionProvider({
     search,
     analysis,
     analysisId,
-    trainings,
+    training,
+    trainingPending: trainOn.current !== undefined,
     analysisSettings,
     find,
     launch,
@@ -588,9 +625,9 @@ export function AnalysisSessionProvider({
     launchTraining,
     restartTraining,
     replayMissed,
-    closeTraining,
     setTrainingFinished,
-    showResults,
+    setTrainingProgress,
+    leaveTraining,
     stopAnalysis,
     deepening,
     deepenGames: (keys, scope) => void deepenGames(keys, scope),

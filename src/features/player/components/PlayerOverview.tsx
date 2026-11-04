@@ -31,9 +31,7 @@ export function PlayerOverview({ usernames }: { usernames: PlayerUsernames }) {
           </p>
         )
       })}
-      {accounts.length > 0 && (
-        <RatingHistory profile={profileKey(usernames)} usernames={usernames} accounts={accounts} />
-      )}
+      {accounts.length > 0 && <RatingHistory profile={profileKey(usernames)} accounts={accounts} />}
     </div>
   )
 }

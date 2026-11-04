@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { TablePagination } from '@/components/TablePagination'
-import type { ProfileSearch } from '@/features/player/search'
 import { GamePanel } from '@/features/review/components/GamePanel'
 import { gameRef } from '@/features/review/gameRef'
 import type { ReviewGame } from '@/features/review/games'
@@ -22,16 +21,13 @@ import { GamesTable } from './GamesTable'
  * in this browser), the arrows under the list. A game is analysed right where it is: its row opens
  * on the progress, then on the game. A game analysed before shows its errors and opens onto its
  * evaluation chart, as in the analysis's results (judged from the cache with the analysis's
- * criteria). New games arriving keep the page shown. `usernames`: the accounts
- * searched, or the import, for the links.
+ * criteria). New games arriving keep the page shown.
  */
 export function PagedGamesTable({
   games,
-  usernames,
   oneRating = false,
 }: {
   games: ReviewGame[]
-  usernames: ProfileSearch
   /**
    * The games all count for the same rating (one platform, one time control, rated): each one's
    * change is from the game before it, when the platform does not say it (Chess.com)
@@ -42,7 +38,7 @@ export function PagedGamesTable({
   const [pageSize, setPageSize] = useState(loadPageSize)
   const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / pageSize) - 1))
   const shown = pageSlice(games, page, pageSize)
-  const { draft, deepening } = useAnalysisSession()
+  const { draft, deepening, trainGame } = useAnalysisSession()
   // Read again once a game is deepened, by the session or in its panel.
   const [deepened, setDeepened] = useState(0)
   const reviewed = useCachedReviews(shown, draft.criteria, `${deepening?.gameKey}:${deepened}`)
@@ -81,11 +77,10 @@ export function PagedGamesTable({
                     onDeepened={() => setDeepened((count) => count + 1)}
                     train={
                       <AnalyzeLink
-                        game={game}
-                        usernames={usernames}
                         analysed
                         disabled={review.mistakes.length === 0}
                         size="sm"
+                        onTrain={() => trainGame(review.mistakes, draft.criteria)}
                       />
                     }
                   />
@@ -118,8 +113,6 @@ export function PagedGamesTable({
               <>
                 <ReviewLink game={game} compact className="max-sm:hidden" />
                 <AnalyzeLink
-                  game={game}
-                  usernames={usernames}
                   analysed={review !== undefined}
                   disabled={
                     review
@@ -128,6 +121,7 @@ export function PagedGamesTable({
                   }
                   compact
                   busy={busy}
+                  onTrain={() => review && trainGame(review.mistakes, draft.criteria)}
                   onAnalyze={() => {
                     here.start(game)
                     setOpenNow({ key: reviewedGameKey(game) })

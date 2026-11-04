@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import {
   ChevronFirst,
   ChevronLast,
@@ -97,7 +97,7 @@ export function StudyView({
 }) {
   const ref = gameRef(game)
   const navigate = useNavigate()
-  const { draft } = useAnalysisSession()
+  const { draft, trainGame } = useAnalysisSession()
   const criteria = draft.criteria
   const wide = useMediaQuery(SIDE_BY_SIDE)
 
@@ -317,7 +317,7 @@ export function StudyView({
       work={work}
       failed={workFailed}
       mistakes={mistakes}
-      training={{ ...usernames, game: ref, train: true as const }}
+      onTrain={() => review && trainGame(review.mistakes, criteria)}
       onAnalyse={() => void analyse()}
       onDeepen={() => void deepen()}
       onStop={stopWork}
@@ -465,7 +465,7 @@ function StudyAction({
   work,
   failed,
   mistakes,
-  training,
+  onTrain,
   onAnalyse,
   onDeepen,
   onStop,
@@ -474,7 +474,7 @@ function StudyAction({
   work: Work | undefined
   failed: boolean
   mistakes: number
-  training: ProfileSearch & { game: string; train: true }
+  onTrain: () => void
   onAnalyse: () => void
   onDeepen: () => void
   onStop: () => void
@@ -525,11 +525,9 @@ function StudyAction({
   return (
     <div className="flex items-center gap-2">
       {mistakes > 0 ? (
-        <Button asChild className="flex-1">
-          <Link to="/player/results" search={training}>
-            <Swords data-icon="inline-start" />
-            {m.study_train({ count: mistakes, formatted: formatNumber(mistakes) })}
-          </Link>
+        <Button className="flex-1" onClick={onTrain}>
+          <Swords data-icon="inline-start" />
+          {m.study_train({ count: mistakes, formatted: formatNumber(mistakes) })}
         </Button>
       ) : (
         <p className="flex-1 text-sm text-win">{m.study_no_mistakes()}</p>
