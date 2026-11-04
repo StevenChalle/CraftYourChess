@@ -3,10 +3,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { SourceLabel } from '@/features/player/components/SourceBadge'
-import { categoryLabel, sourceErrorMessage } from '@/features/player/sources'
+import { sourceErrorMessage } from '@/features/player/sources'
 import { detectDevice } from '@/lib/device'
 import { formatEstimate, formatGameCount, formatNumber } from '@/lib/format'
-import { GAME_CATEGORIES, type GameSource } from '@/features/games/normalize'
 import { m } from '@/paraglide/messages'
 import type { ReviewCriteria } from '../criteria'
 import { analysisWorkLeft, type WorkLeft } from '../analyze'
@@ -15,12 +14,10 @@ import { deviceProfile, workSeconds, workSpeedup } from '../estimate'
 import type { FetchProgress, FoundGames } from '../fetch'
 import { LARGE_REVIEW } from '../selection'
 
-const SOURCES: GameSource[] = ['lichess', 'chesscom', 'import']
-
 /**
- * What the search found (shown under the filters), how long the analysis should take, and the
- * button to launch it (top right). `launched`: the analysis below already has these filters and
- * rules, launching it again would only confuse: the button waits for a change.
+ * The foot of the analysis options: what the search found and how long the analysis should take on
+ * the left, the button launching it on the right. `launched`: the analysis below already has these
+ * filters and rules, launching it again would only confuse: the button waits for a change.
  */
 export function ReviewRecap({
   found,
@@ -29,7 +26,7 @@ export function ReviewRecap({
   onLaunch,
   launched = false,
 }: {
-  /** undefined while the games are being looked for: the box shows a loader instead */
+  /** undefined while the games are being looked for: a loader instead */
   found?: FoundGames
   /** How far the search is, platform by platform, while it runs */
   progress?: FetchProgress
@@ -39,15 +36,15 @@ export function ReviewRecap({
 }) {
   if (!found) {
     return (
-      <div className="rounded-md bg-muted/50 p-4" role="status">
-        <RecapHeader launchDisabled onLaunch={onLaunch}>
-          <span className="flex items-center gap-2 text-lg text-muted-foreground">
-            <LoaderCircle aria-hidden className="size-5 animate-spin" />
+      <RecapFooter launchDisabled onLaunch={onLaunch}>
+        <div role="status" className="space-y-2">
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <LoaderCircle aria-hidden className="size-4 animate-spin" />
             {m.setup_finding()}
           </span>
           {progress && <SearchProgress progress={progress} />}
-        </RecapHeader>
-      </div>
+        </div>
+      </RecapFooter>
     )
   }
   return <FoundRecap found={found} criteria={criteria} onLaunch={onLaunch} launched={launched} />
@@ -82,8 +79,8 @@ function SearchProgress({ progress }: { progress: FetchProgress }) {
   )
 }
 
-/** The box's top: its title and what it holds, the button launching the analysis on the right. */
-function RecapHeader({
+/** The foot's layout: what was found on the left, the button launching the analysis on the right. */
+function RecapFooter({
   launchDisabled = false,
   launchHint,
   onLaunch,
@@ -97,17 +94,14 @@ function RecapHeader({
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="space-y-3">
-        <p className="label-etabli">{m.recap_title()}</p>
-        {children}
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <Button size="lg" disabled={launchDisabled} onClick={onLaunch}>
+      <div className="min-w-0 flex-1">{children}</div>
+      <div className="flex flex-col items-end gap-1 max-sm:w-full">
+        <Button size="lg" disabled={launchDisabled} onClick={onLaunch} className="max-sm:w-full">
           <Play data-icon="inline-start" />
           {m.recap_launch()}
         </Button>
         {launchHint && (
-          <p className="max-w-56 text-right text-xs text-muted-foreground">{launchHint}</p>
+          <p className="max-w-64 text-right text-xs text-muted-foreground">{launchHint}</p>
         )}
       </div>
     </div>
@@ -149,58 +143,37 @@ function FoundRecap({
   const ready = seconds === 0
   // On a phone or a tablet: how much faster a computer would be.
   const speedup = work && device === 'mobile' ? workSpeedup(work, criteria, profile) : undefined
-  const bySource = SOURCES.map((source) => ({
-    source,
-    count: games.filter((game) => game.source === source).length,
-  })).filter(({ count }) => count > 0)
   // Their evaluations are reused: already left out of the estimate.
   const serverAnalysed = games.filter((game) => game.serverCps !== undefined).length
-  const byCategory = GAME_CATEGORIES.map((category) => ({
-    category,
-    count: games.filter((game) => game.category === category).length,
-  })).filter(({ count }) => count > 0)
+
+  const estimate =
+    seconds === undefined
+      ? m.recap_estimating()
+      : seconds === 0
+        ? m.recap_estimate_ready()
+        : m.recap_estimate({ time: formatEstimate(seconds) })
 
   return (
-    <div className="space-y-4">
-      {failures.map(({ source, error }) => (
-        <p key={source} className="text-sm text-loss">
-          {sourceErrorMessage(source, error)}
-        </p>
-      ))}
-
-      {games.length === 0 ? (
-        <p className="text-muted-foreground">{m.recap_none()}</p>
-      ) : (
-        <div className="space-y-3 rounded-md bg-muted/50 p-4">
-          <RecapHeader
-            onLaunch={onLaunch}
-            launchDisabled={launched}
-            launchHint={launched ? m.recap_launched() : undefined}
-          >
-            <p className="num text-2xl font-medium text-text-strong">
-              {formatGameCount(games.length)}
-            </p>
-          </RecapHeader>
-          <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            {bySource.map(({ source, count }) => (
-              <span key={source} className="inline-flex items-center gap-1.5">
-                <SourceLabel source={source} />
-                <span className="num text-muted-foreground">{formatNumber(count)}</span>
-              </span>
-            ))}
-            {byCategory.map(({ category, count }) => (
-              <span key={category} className="text-muted-foreground">
-                {categoryLabel(category)} <span className="num">{formatNumber(count)}</span>
-              </span>
-            ))}
+    <RecapFooter
+      onLaunch={onLaunch}
+      launchDisabled={launched || games.length === 0}
+      launchHint={launched ? m.recap_launched() : undefined}
+    >
+      <div className="space-y-1">
+        {failures.map(({ source, error }) => (
+          <p key={source} className="text-sm text-loss">
+            {sourceErrorMessage(source, error)}
           </p>
-          <div className="space-y-0.5 pt-1">
-            <p className="text-text-strong">
-              {seconds === undefined
-                ? m.recap_estimating()
-                : seconds === 0
-                  ? m.recap_estimate_ready()
-                  : m.recap_estimate({ time: formatEstimate(seconds) })}
+        ))}
+        {games.length === 0 ? (
+          <p className="text-muted-foreground">{m.recap_none()}</p>
+        ) : (
+          <>
+            <p className="flex flex-wrap items-baseline gap-x-2">
+              <span className="num text-lg font-medium text-text-strong">
+                {m.recap_found({ games: formatGameCount(games.length) })}
+              </span>
+              <span className="text-muted-foreground">· {estimate}</span>
             </p>
             {speedup !== undefined && (
               <p className="text-sm text-text-strong">
@@ -220,15 +193,15 @@ function FoundRecap({
                 })}
               </p>
             )}
-          </div>
-          {games.length >= LARGE_REVIEW && !ready && (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Save aria-hidden className="size-3.5 shrink-0" />
-              {m.recap_progress_saved()}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+            {games.length >= LARGE_REVIEW && !ready && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Save aria-hidden className="size-3.5 shrink-0" />
+                {m.recap_progress_saved()}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </RecapFooter>
   )
 }
