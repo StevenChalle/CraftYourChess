@@ -1,4 +1,5 @@
 import type { Color } from 'chessops'
+import type { ReactNode } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { SideSquare } from '@/features/games/components/GamesTable'
 import { sourceLabel } from '@/features/player/sources'
@@ -20,7 +21,16 @@ function scoreOf(game: Pick<ReviewGame, 'result' | 'color'>): string {
  * under a line, its opening. Each on a single line, cut short with an ellipsis rather than wrapped
  * (the full text on hover). `player`: the reviewed player's name.
  */
-export function GameInfo({ game, player }: { game: ReviewGame; player: string | undefined }) {
+export function GameInfo({
+  game,
+  player,
+  aside,
+}: {
+  game: ReviewGame
+  player: string | undefined
+  /** Under the result, on the right */
+  aside?: ReactNode
+}) {
   const side = (color: Color) =>
     color === game.color
       ? { name: player ?? '?', rating: game.rating, strong: true }
@@ -50,28 +60,31 @@ export function GameInfo({ game, player }: { game: ReviewGame; player: string | 
             )
           })}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span
-            className={cn(
-              'num text-xl font-semibold',
-              game.result === 'win' ? 'text-win' : game.result === 'loss' ? 'text-loss' : '',
-            )}
-          >
-            {score}
-          </span>
-          {/* Its page on the platform; an imported game may have none */}
-          {game.url && (
-            <a
-              href={game.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-muted-foreground hover:text-primary"
-              title={m.view_on({ platform: sourceLabel(game.source) })}
-              aria-label={m.view_on({ platform: sourceLabel(game.source) })}
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'num text-xl font-semibold',
+                game.result === 'win' ? 'text-win' : game.result === 'loss' ? 'text-loss' : '',
+              )}
             >
-              <ExternalLink className="size-4" />
-            </a>
-          )}
+              {score}
+            </span>
+            {/* Its page on the platform; an imported game may have none */}
+            {game.url && (
+              <a
+                href={game.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-muted-foreground hover:text-primary"
+                title={m.view_on({ platform: sourceLabel(game.source) })}
+                aria-label={m.view_on({ platform: sourceLabel(game.source) })}
+              >
+                <ExternalLink className="size-4" />
+              </a>
+            )}
+          </div>
+          {aside}
         </div>
       </div>
       {game.opening && (

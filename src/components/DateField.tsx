@@ -31,8 +31,10 @@ export function DateField({
         min={min}
         max={max}
         onChange={(event) => onChange(event.target.value)}
-        // As high as the selects: the input's own height (h-control) would win otherwise.
-        className="h-8! w-auto bg-muted px-2.5 [color-scheme:dark]"
+        // As high as the selects: the input's own height (h-control) would win otherwise. A little
+        // smaller than their text, on a phone too (an input's is larger there): the date's
+        // figures look bigger than words.
+        className="h-8! w-auto bg-muted px-2.5 text-[13px]! tabular-nums [color-scheme:dark]"
       />
     </span>
   )

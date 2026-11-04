@@ -152,7 +152,7 @@
   "training_delta_title": "Écart avec la position ({eval})",
   "training_explore": "Essayer un autre coup",
   "training_explore_hint": "Essayez un coup pour voir ce qu'il donne.",
-  "training_analyse_lichess": "Analyser sur Lichess",
+  "training_study_position": "Étudier cette position",
   "training_valid_moves": [
     {
       "declarations": ["input count", "input formatted", "local countPlural = count: plural"],

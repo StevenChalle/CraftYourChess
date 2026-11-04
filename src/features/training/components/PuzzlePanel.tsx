@@ -1,10 +1,22 @@
 import type { Color } from 'chessops'
-import { ArrowRight, Check, Lightbulb, LoaderCircle, RotateCcw, Shuffle, X } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  Lightbulb,
+  LoaderCircle,
+  RotateCcw,
+  Search,
+  Shuffle,
+  X,
+} from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { useState, type PointerEvent, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ExternalLink } from '@/features/player/components/ExternalLink'
 import type { Mistake } from '@/features/review/analyze'
+import { gameRef } from '@/features/review/gameRef'
+import { useAnalysisSession } from '@/features/review/sessionContext'
 import { SideSquare } from '@/features/games/components/GamesTable'
 import { forColor, isValidMove } from '@/features/review/errors'
 import { useValidMaxDrop } from '../criteria'
@@ -13,7 +25,7 @@ import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { evalDelta, formatDelta, formatEval } from '../evaluation'
 import { REFERENCE_LINES } from '../coach'
-import { lichessGameUrl, play, sameMove, sanOf } from '../moves'
+import { play, sameMove, sanOf } from '../moves'
 import { EvaluationPanel } from './EvaluationPanel'
 import { MovePreview } from './MovePreview'
 import type { TrainingAction, TrainingState } from '../session'
@@ -161,13 +173,22 @@ function MoveLine({
   )
 }
 
-/** Going further: the whole game on Lichess at this position, and the game on its platform. */
+/**
+ * Going further: the game's study page at this position (a link: ctrl + click opens it in another
+ * tab, the training going on here), and the game on its platform.
+ */
 function DeeperLinks({ puzzle }: { puzzle: Mistake }) {
+  const { usernames } = useAnalysisSession()
   return (
     <p className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-sm">
-      <ExternalLink href={lichessGameUrl(puzzle.game, puzzle.ply, puzzle.color, puzzle.fen)}>
-        {m.training_analyse_lichess()}
-      </ExternalLink>
+      <Link
+        to="/player/review"
+        search={{ ...usernames, review: gameRef(puzzle.game), ply: puzzle.ply }}
+        className="inline-flex items-center gap-1 text-primary hover:underline"
+      >
+        <Search className="size-3.5" aria-hidden />
+        {m.training_study_position()}
+      </Link>
       {puzzle.game.url && (
         <ExternalLink href={puzzle.game.url}>{m.training_view_game()}</ExternalLink>
       )}

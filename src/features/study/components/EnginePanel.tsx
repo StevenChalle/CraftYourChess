@@ -78,28 +78,7 @@ export function EnginePanel({
             </span>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-          <Cpu className="size-3.5" aria-hidden />
-          {m.study_engine()}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={on}
-            aria-label={m.study_engine_toggle()}
-            onClick={() => onToggle(!on)}
-            className={cn(
-              'relative h-5 w-9 rounded-full border transition-colors',
-              on ? 'border-primary bg-primary' : 'border-border-strong bg-field',
-            )}
-          >
-            <span
-              className={cn(
-                'absolute top-0.5 size-3.5 rounded-full transition-[left]',
-                on ? 'left-[1.1rem] bg-primary-foreground' : 'left-0.5 bg-muted-foreground',
-              )}
-            />
-          </button>
-        </div>
+        <EngineSwitch on={on} onToggle={onToggle} />
       </div>
       {failed ? (
         <p className="text-sm text-loss">{m.training_engine_failed()}</p>
@@ -185,6 +164,34 @@ const BLACK_CHIP = 'border-border-strong bg-piece-black text-piece-white'
 function scoreChip(score: WhiteScore): string {
   const black = 'mate' in score ? score.mate < 0 : score.cp < 0
   return black ? BLACK_CHIP : WHITE_CHIP
+}
+
+/** "Stockfish" and its on / off switch. */
+export function EngineSwitch({ on, onToggle }: { on: boolean; onToggle: (on: boolean) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+      <Cpu className="size-3.5" aria-hidden />
+      {m.study_engine()}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={m.study_engine_toggle()}
+        onClick={() => onToggle(!on)}
+        className={cn(
+          'relative h-5 w-9 rounded-full border transition-colors',
+          on ? 'border-primary bg-primary' : 'border-border-strong bg-field',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 size-3.5 rounded-full transition-[left]',
+            on ? 'left-[1.1rem] bg-primary-foreground' : 'left-0.5 bg-muted-foreground',
+          )}
+        />
+      </button>
+    </div>
+  )
 }
 
 /** The preview's width, in pixels */

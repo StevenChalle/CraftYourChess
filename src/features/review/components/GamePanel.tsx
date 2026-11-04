@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useBackground } from '@/features/background/backgroundContext'
 import { SideSquare } from '@/features/games/components/GamesTable'
-import { SourceLabel } from '@/features/player/components/SourceBadge'
-import { formatDate, formatDuration, formatNumber, formatTime } from '@/lib/format'
+import { formatDuration, formatNumber } from '@/lib/format'
 import { m } from '@/paraglide/messages'
 import { withActivity } from '@/lib/activity'
 import { deepenGame, shallowPositions, withDeepPosition, type ReviewedGame } from '../analyze'
@@ -15,14 +14,15 @@ import { reviewedGameKey, useAnalysisSession } from '../sessionContext'
 import { EvalChart } from './EvalChart'
 
 /**
- * An analysed game, opened in the results: the columns hidden on a phone, the evaluation chart,
- * whether every move had a deep look (on the legend's line), and deepening the positions that only
- * had a quick look, or its progress. `deepen`: false outside the analysis's results (a game of the
- * profile, judged from the cache), where the session cannot deepen it: the game is deepened here
- * instead, from the legend's line (`onDeepened` once done, for the list to read it again), and the
- * progress of a deepening under way elsewhere shows (the Results tab's, the background analysis's). `ratingChange`: for the
- * chart's summary of the game, when known (Lichess says it itself). `train`: the training of the
- * game's errors, beside the review page's button in the chart's details.
+ * An analysed game, opened in the results: its opponent on a phone (hidden from the row), the
+ * evaluation chart, whether every move had a deep look (on the legend's line), and deepening the
+ * positions that only had a quick look, or its progress. `deepen`: false outside the analysis's
+ * results (a game of the profile, judged from the cache), where the session cannot deepen it: the
+ * game is deepened here instead, from the legend's line (`onDeepened` once done, for the list to
+ * read it again), and the progress of a deepening under way elsewhere shows (the analysis's, the
+ * background analysis's). `ratingChange`: for the chart's summary of the game, when known (Lichess
+ * says it itself). `train`: the training of the game's errors, beside the review page's button in
+ * the chart's details.
  */
 export function GamePanel({
   game: received,
@@ -51,13 +51,8 @@ export function GamePanel({
 
   return (
     <div className="space-y-3">
+      {/* On a phone, the opponent the row hides; its date and platform would be too much */}
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:hidden">
-        {!game.undated && (
-          <span className="num text-muted-foreground">
-            {formatDate(game.playedAt)} {formatTime(game.playedAt)}
-          </span>
-        )}
-        <SourceLabel source={game.source} />
         <span className="inline-flex items-center gap-2">
           <SideSquare color={game.color} />
           <span className="text-text-strong">{game.opponent.name}</span>

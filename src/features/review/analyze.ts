@@ -45,7 +45,7 @@ export type Mistake = {
   id: string
   /** Half-move number of the position before the error, in the game: its order among the others */
   ply: number
-  /** With its moves: the whole game on Lichess (lichessGameUrl) */
+  /** With its moves: the game's study page at this position */
   game: Pick<
     ReviewGame,
     'source' | 'id' | 'url' | 'playedAt' | 'opponent' | 'sanMoves' | 'initialFen'

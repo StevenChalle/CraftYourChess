@@ -10,7 +10,7 @@ export type GameRef =
   | { source: 'chesscom'; id: string; year: number; month: number }
   | { source: 'import'; id: string }
 
-export function gameRef(game: GameSummary): string {
+export function gameRef(game: Pick<GameSummary, 'source' | 'id' | 'playedAt'>): string {
   if (game.source === 'lichess') return `lichess:${game.id}`
   if (game.source === 'import') return `import:${game.id}`
   const year = game.playedAt.getUTCFullYear()

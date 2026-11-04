@@ -152,7 +152,7 @@
   "training_delta_title": "Change from the position ({eval})",
   "training_explore": "Try another move",
   "training_explore_hint": "Try any move to see what it gives.",
-  "training_analyse_lichess": "Analyze on Lichess",
+  "training_study_position": "Study this position",
   "training_valid_moves": [
     {
       "declarations": ["input count", "input formatted", "local countPlural = count: plural"],

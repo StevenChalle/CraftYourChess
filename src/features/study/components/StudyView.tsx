@@ -46,7 +46,7 @@ import { formatScore, LIVE_DEPTH, shownLines } from '../liveEngine'
 import { gamePly, moveNotes, startStudy, studyReducer, variationStart } from '../study'
 import { gameNodeAt, getNode } from '../tree'
 import { useLiveAnalysis } from '../useLiveAnalysis'
-import { EnginePanel } from './EnginePanel'
+import { EnginePanel, EngineSwitch } from './EnginePanel'
 import { GameInfo } from './GameInfo'
 import { MoveList } from './MoveList'
 import { EVAL_BAR, StudyBoard } from './StudyBoard'
@@ -104,7 +104,7 @@ export function StudyView({
   const [state, dispatch] = useReducer(studyReducer, undefined, () => startStudy(game, ply))
   const node = getNode(state.tree, state.current)
   const [orientation, setOrientation] = useState(game.color)
-  const [phoneTab, setPhoneTab] = useState<PhoneTab>('moves')
+  const [phoneTab, setPhoneTab] = useState<PhoneTab>('chart')
 
   // The analysis: from the cache, or made here (then deepened here).
   const cached = useCachedReviews(
@@ -368,10 +368,15 @@ export function StudyView({
         </div>
         {controls}
         {action}
-        <GameInfo game={game} player={player} />
+        {/* No room for the engine's panel on arrival: its switch at least, by the result */}
+        <GameInfo
+          game={game}
+          player={player}
+          aside={<EngineSwitch on={engineOn} onToggle={setEngineOn} />}
+        />
         <div>
           <nav className="flex gap-6 border-b" aria-label={m.tabs_label()}>
-            {(['moves', 'engine', 'chart'] as const).map((tab) => (
+            {(['chart', 'engine', 'moves'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
