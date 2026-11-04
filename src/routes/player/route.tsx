@@ -161,8 +161,9 @@ function HeaderActions({ usernames }: { usernames: ProfileSearch }) {
 }
 
 /**
- * Leaving the training page while the training is under way, or the analysis's pages while it runs
- * (for other accounts too), asks first: they close. A reload asks nothing: both come back.
+ * Leaving the training page while the training is under way (some position played, not all), or
+ * the analysis's pages while it runs (for other accounts too), asks first: they close. A reload
+ * asks nothing: both come back.
  */
 function LeaveGuard({ usernames }: { usernames: ProfileSearch }) {
   const { analysis, training } = useAnalysisSession()
@@ -177,7 +178,13 @@ function LeaveGuard({ usernames }: { usernames: ProfileSearch }) {
         Boolean(search.import) !== Boolean(usernames.import)
       const trainingLeft =
         current.pathname === TRAINING_PAGE && (next.pathname !== TRAINING_PAGE || otherProfile)
-      if (trainingLeft && training?.phase.kind === 'running' && !training.finished) {
+      // Only a training with positions played has something to lose.
+      if (
+        trainingLeft &&
+        training?.phase.kind === 'running' &&
+        !training.finished &&
+        (training.progress?.index ?? 0) > 0
+      ) {
         setReason('training')
         return true
       }

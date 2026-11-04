@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, type Dispatch, type SetStateAction } from 'react'
 import type { Mistake, ReviewOutcome } from './analyze'
 import type { FetchProgress, FoundGames, ReviewAccount } from './fetch'
 import type { GameLibrary } from './library'
@@ -109,6 +109,12 @@ export type Session = {
   leaveTraining: () => void
   /** Stops the analysis under way and drops it: the filters stay, to change them */
   stopAnalysis: () => void
+  /**
+   * Where the profile's list of games stands (its page, its game open): found again when coming
+   * back from a review or a training
+   */
+  gameList: GameListView
+  setGameList: Dispatch<SetStateAction<GameListView>>
   /** The deepening under way, if any */
   deepening: Deepening | undefined
   /** Deepens these games of the analysis, one after the other (replaces any deepening) */
@@ -116,6 +122,9 @@ export type Session = {
   /** Stops the deepening: what was found stays */
   stopDeepening: () => void
 }
+
+/** The page a list of games shows, and its game open (reviewedGameKey). */
+export type GameListView = { page: number; open?: string }
 
 /** A game's key in the results: its platform and id. */
 export function reviewedGameKey(game: { source: string; id: string }): string {

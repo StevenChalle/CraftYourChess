@@ -154,6 +154,7 @@ export function GamesTable<G extends GameSummary>({
           const row = (
             <TableRow
               key={key}
+              data-game={key}
               onClick={onRowClick}
               className={cn(
                 openable && 'cursor-pointer',

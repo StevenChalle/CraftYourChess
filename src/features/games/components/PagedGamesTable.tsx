@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TablePagination } from '@/components/TablePagination'
 import { GamePanel } from '@/features/review/components/GamePanel'
 import { gameRef } from '@/features/review/gameRef'
@@ -34,11 +34,14 @@ export function PagedGamesTable({
    */
   oneRating?: boolean
 }) {
-  const [wanted, setWanted] = useState(0)
+  // The page and the game open live in the session: coming back from a review or a training finds
+  // them again.
+  const { draft, deepening, trainGame, gameList, setGameList } = useAnalysisSession()
+  const wanted = gameList.page
+  const setWanted = (page: number) => setGameList((view) => ({ ...view, page }))
   const [pageSize, setPageSize] = useState(loadPageSize)
   const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / pageSize) - 1))
   const shown = pageSlice(games, page, pageSize)
-  const { draft, deepening, trainGame } = useAnalysisSession()
   // Read again once a game is deepened, by the session or in its panel.
   const [deepened, setDeepened] = useState(0)
   const reviewed = useCachedReviews(shown, draft.criteria, `${deepening?.gameKey}:${deepened}`)
@@ -48,6 +51,20 @@ export function PagedGamesTable({
   const reviewOf = (game: ReviewGame) =>
     reviewed.get(gameRef(game)) ?? here.analysed.get(gameRef(game))
   const rootRef = useRef<HTMLDivElement>(null)
+
+  // Back on the list with a game open: that game in sight, once its row can open.
+  const [restoredOpen] = useState(gameList.open)
+  const scrolled = useRef(false)
+  useEffect(() => {
+    if (!restoredOpen || scrolled.current) return
+    const row = rootRef.current?.querySelector(`[data-game="${CSS.escape(restoredOpen)}"]`)
+    if (!row || ![...reviewed.keys(), ...here.analysed.keys()].length) return
+    scrolled.current = true
+    // Below the page's header, with a little room above.
+    row.scrollIntoView({ block: 'start' })
+    window.scrollBy(0, -96)
+  }, [restoredOpen, reviewed, here.analysed])
+
   const ratingChange = (game: ReviewGame): number | undefined => {
     if (game.ratingDiff !== undefined || !oneRating || game.rating === undefined) {
       return game.ratingDiff
@@ -61,6 +78,15 @@ export function PagedGamesTable({
         <GamesTable
           games={shown}
           expandable={{
+            defaultOpen: gameList.open,
+            onToggle: (key, open) =>
+              setGameList((view) =>
+                open
+                  ? { ...view, open: key }
+                  : view.open === key
+                    ? { ...view, open: undefined }
+                    : view,
+              ),
             canOpen: (game) => reviewOf(game) !== undefined || here.current?.ref === gameRef(game),
             openNow,
             render: (game) => {
@@ -125,6 +151,7 @@ export function PagedGamesTable({
                   onAnalyze={() => {
                     here.start(game)
                     setOpenNow({ key: reviewedGameKey(game) })
+                    setGameList((view) => ({ ...view, open: reviewedGameKey(game) }))
                   }}
                 />
               </>
