@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ScanSearch } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { GameSummary } from '@/features/games/normalize'
 import { gameRef } from '@/features/review/gameRef'
@@ -9,7 +9,7 @@ import { m } from '@/paraglide/messages'
 
 /**
  * To the game's review page (board, engine, variations), at the half-move `ply`. A labelled
- * button, or an icon alone (`compact`) where room is short.
+ * button, or an icon alone on a background (`compact`) where room is short.
  */
 export function ReviewLink({
   game,
@@ -29,9 +29,9 @@ export function ReviewLink({
   return (
     <Button
       asChild
-      variant={compact ? 'ghost' : 'outline'}
-      size={compact ? 'icon-sm' : size}
-      className={cn(compact && 'text-muted-foreground hover:text-primary', className)}
+      variant={compact ? 'secondary' : 'outline'}
+      size={compact ? 'icon-xs' : size}
+      className={cn(compact && '[&_svg]:size-3.5', className)}
     >
       <Link
         to="/player/review"
@@ -39,7 +39,7 @@ export function ReviewLink({
         title={m.study_review_title()}
         aria-label={m.study_review_title()}
       >
-        <ScanSearch data-icon={compact ? undefined : 'inline-start'} />
+        <Search data-icon={compact ? undefined : 'inline-start'} />
         {!compact && m.study_review()}
       </Link>
     </Button>

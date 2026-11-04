@@ -112,6 +112,7 @@ export function PagedGamesTable({
                   usernames={usernames}
                   analysed={review !== undefined}
                   disabled={review?.mistakes.length === 0}
+                  compact
                 />
               </>
             )

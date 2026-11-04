@@ -89,13 +89,13 @@ export function ReviewResults({
                     {formatNumber(game.mistakes.length)}
                   </span>
                   <Button
-                    size="xs"
+                    size="icon-xs"
                     disabled={game.mistakes.length === 0}
                     onClick={() => onTrain(game.mistakes)}
                     title={m.replay_game()}
+                    aria-label={m.replay_game()}
                   >
-                    <Swords data-icon="inline-start" />
-                    <span className="max-sm:sr-only">{m.replay_game_short()}</span>
+                    <Swords className="size-3.5" />
                   </Button>
                 </span>
               ),
