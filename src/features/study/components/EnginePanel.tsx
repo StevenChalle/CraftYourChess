@@ -1,4 +1,5 @@
 import { Cpu } from 'lucide-react'
+import { useState } from 'react'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -8,7 +9,8 @@ import type { WhiteScore } from '@/features/review/errors'
 
 /**
  * The live engine: on or off, the position's evaluation and depth, then its best lines. A click
- * on a move of a line plays the line up to it.
+ * on a move of a line plays the line up to it; the lines hold still while the mouse is over them,
+ * so that a deeper search does not move the move about to be clicked.
  */
 export function EnginePanel({
   on,
@@ -32,6 +34,8 @@ export function EnginePanel({
   failed: boolean
   onPlay: (moves: string[]) => void
 }) {
+  const [held, setHeld] = useState<{ fen: string; lines: ShownLine[] }>()
+  const shown = held?.fen === node.fen ? held.lines : lines
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -77,9 +81,13 @@ export function EnginePanel({
       ) : (
         on &&
         !node.over && (
-          <ol className="space-y-1 text-sm">
+          <ol
+            className="space-y-1 text-sm"
+            onMouseEnter={() => lines.length > 0 && setHeld({ fen: node.fen, lines })}
+            onMouseLeave={() => setHeld(undefined)}
+          >
             {Array.from({ length: LIVE_LINES }, (_, index) => {
-              const line = lines[index]
+              const line = shown[index]
               return (
                 <li
                   key={index}

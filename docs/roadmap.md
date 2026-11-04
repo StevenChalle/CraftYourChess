@@ -32,7 +32,8 @@
 - [x] Analyse de fond des joueurs favoris ([background-analysis.md](background-analysis.md))
 - [x] Parties de la période sous le graphique de l'Elo, lues dans le magasin, mises à jour toutes les 15 s pendant qu'on joue (l'onglet Parties retiré)
 - [ ] Montrer le résultat de l'analyse de fond sur son propre profil (dernières parties déjà analysées, puis évolution)
-- [ ] Liste des parties filtrable, et visionneuse de partie (chessground + chessops)
+- [x] Visionneuse de partie : page de revue avec Stockfish en direct et variantes ([game-review.md](game-review.md))
+- [ ] Enregistrer les variantes de la page de revue
 - [ ] Étendre l'effacement des données locales (page `/legal`) aux parties importées
 
 ## Plus tard

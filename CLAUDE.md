@@ -9,6 +9,7 @@ Application web (PWA installable) pour explorer les stats et les parties d'un jo
 - Feuille de route : [docs/roadmap.md](docs/roadmap.md)
 - Cache des analyses dans le navigateur (conception et règles) : [docs/analysis-cache.md](docs/analysis-cache.md)
 - Parties des comptes dans le navigateur, synchro incrémentale : [docs/game-store.md](docs/game-store.md)
+- Revue d'une partie (échiquier, moteur en direct, variantes) : [docs/game-review.md](docs/game-review.md)
 - Analyse de fond des joueurs favoris : [docs/background-analysis.md](docs/background-analysis.md)
 - Checklists en cours, à supprimer une fois terminées : [docs/domain-craftyourchess.md](docs/domain-craftyourchess.md) (finitions du domaine), [docs/staging.md](docs/staging.md) (environnement de staging, reporté), [docs/logo-prompt.md](docs/logo-prompt.md) (prompt logo pour ChatGPT et Gemini), [docs/identity-brief.md](docs/identity-brief.md) (identité visuelle avec Claude Design)
 
@@ -40,7 +41,7 @@ src/
   routes/             # une route par fichier (TanStack Router), routeTree.gen.ts est généré automatiquement
   components/ui/      # composants shadcn, générés par la CLI, modifiables
   theme/              # thème « L'Établi » : tokens (etabli.css) et polices (fonts/)
-  routes/player/      # page du joueur, un onglet par fichier : Aperçu (index : graphique de l'Elo et parties de la période), Parties d'un import (history), Analyse (analysis), Résultats (results), un onglet fermable par entraînement (training.$number) ; la session d'analyse est portée par route.tsx. routes/analysis/ ne fait que rediriger les anciennes adresses
+  routes/player/      # page du joueur, un onglet par fichier : Aperçu (index : graphique de l'Elo et parties de la période), Parties d'un import (history), Analyse (analysis), Résultats (results), un onglet fermable par entraînement (training.$number), la revue d'une partie sans les onglets (review) ; la session d'analyse est portée par route.tsx. routes/analysis/ ne fait que rediriger les anciennes adresses
   components/         # composants applicatifs partagés (board/, SettingsMenu, Footer, FeedbackLink…)
   hooks/              # hooks transverses (useConfirm, useKeepAwake, usePageMeta : titre et référencement de chaque page)
   features/<nom>/     # code propre à une fonctionnalité, à créer au besoin
@@ -48,6 +49,7 @@ src/
   features/games/     # résumé commun d'une partie (normalize.ts), table des parties (GamesTable, PagedGamesTable), magasin des parties des comptes (store.ts, periods.ts)
   features/review/    # analyse : criteria.ts, selection.ts, fetch.ts (recherche), estimate.ts, errors.ts (erreur, coup valide), analyze.ts (deux passes, approfondissement), cache.ts (évaluations gardées par position dans IndexedDB), library.ts (parties des comptes ou importées), themes.ts (thèmes des erreurs), phases.ts, settings.ts, session des onglets d'analyse (session.tsx), graphique d'évaluation (components/EvalChart.tsx)
   features/training/  # rejouer ses erreurs : session.ts (reducer), order.ts (ordre de jeu, options), settings.ts (options mémorisées), coach.ts (Stockfish), moves.ts (FEN/UCI), evaluation.ts
+  features/study/     # revue d'une partie (docs/game-review.md) : tree.ts (arbre des coups et variantes), study.ts (réducteur, notes des coups), liveEngine.ts (Stockfish en direct), composants de la page
   features/import/    # import de parties PGN : pgn.ts (lecture, joueur, côté), store.ts (lot en mémoire), fenêtre d'import et onglet Parties d'un import
   features/background/ # analyse de fond des joueurs favoris : favorites.ts (favoris, nombre de parties), runner.ts (boucle), étoile du profil, indicateur de l'en-tête, réglages
   features/contact/   # formulaire de retours (FeedbackForm)

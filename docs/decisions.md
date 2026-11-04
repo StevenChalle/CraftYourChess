@@ -857,3 +857,14 @@ Rien de nouveau n'est stocké : les pendules arrivent avec chaque partie (`clock
 - **Variation d'Elo** : Lichess la donne (`ratingDiff`) ; pour Chess.com, la liste du profil la calcule depuis la partie précédente de la liste (mêmes plateforme, cadence et parties classées : `oneRating` de `PagedGamesTable`). Inconnue pour la plus ancienne de la période et pour les imports.
 - **Ouverture** : celle que donnent les plateformes, sans rien enregistrer de plus (la partie brute est déjà gardée) : `opening=true` dans les exports Lichess, `ECOUrl` et `ECO` du PGN Chess.com, `Opening` / `ECO` d'un PGN importé. Les parties Lichess téléchargées avant ce changement n'en ont pas.
 - **L'état d'approfondissement** (« Analyse approfondie de chaque coup » / « Analyse rapide ») passe sur la ligne de la légende, à droite ; la barre de progression et « Approfondir » restent dessous.
+
+## 2026-11-05 : une page pour revoir une partie, avec Stockfish en direct et les variantes
+
+Pour étudier une partie sans partir sur Lichess ou Chess.com : `/player/review` (détails dans [game-review.md](game-review.md)).
+
+- **Sous l'en-tête du profil, sans ses onglets**, pour garder la session (entraînement, critères) ; pour toutes les parties (Lichess, Chess.com, importées).
+- **Le même échiquier que l'entraînement** (réglages, taille, disposition), une barre d'évaluation, la courbe sous l'échiquier, le panneau à droite ; sur téléphone, l'échiquier en haut et des onglets Coups / Moteur / Courbe.
+- **Stockfish en direct** sur la position affichée (3 lignes, jusqu'à la profondeur 22), arrêté à chaque changement de position, activité du joueur (l'analyse de fond attend).
+- **Pas d'analyse automatique à l'ouverture** d'une partie non analysée : un bouton, parce que l'analyse et le moteur en direct se partageraient le processeur et ralentiraient l'exploration.
+- **Variantes** jouées sur l'échiquier ou depuis une ligne du moteur, affichées comme sur Lichess, non enregistrées pour l'instant ; promotion en dame.
+- **Le lien « Analyze on Lichess »** du panneau de la courbe devient un bouton Review ; une icône Review sur chaque ligne des listes de parties.

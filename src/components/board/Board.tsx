@@ -46,8 +46,12 @@ export function Board({ config, className }: BoardProps) {
     const api = apiRef.current
     if (!config || !api) return
     api.set(config)
-    // A new position: drop any piece still selected in the previous one (and its stale dests).
-    if (config.fen !== fenRef.current) api.cancelMove()
+    // A new position: drop any piece still selected in the previous one (and its stale dests),
+    // and the arrows drawn on the previous one.
+    if (config.fen !== fenRef.current) {
+      api.cancelMove()
+      api.setShapes([])
+    }
     fenRef.current = config.fen
   }, [config])
 
