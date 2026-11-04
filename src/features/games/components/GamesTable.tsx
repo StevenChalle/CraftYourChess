@@ -253,21 +253,24 @@ export function GamesTable<G extends GameSummary>({
               </TableCell>
               <TableCell className={result.className}>{result.label()}</TableCell>
               {extra && <TableCell className="text-right">{extra.cell(game)}</TableCell>}
-              <TableCell className="text-right whitespace-nowrap">
-                {action?.(game)}
-                {/* Imported games may have no page to link to */}
-                {game.url && (
-                  <a
-                    href={game.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-2 inline-block align-middle text-muted-foreground hover:text-primary"
-                    title={m.view_on({ platform: sourceLabel(game.source) })}
-                    aria-label={m.view_on({ platform: sourceLabel(game.source) })}
-                  >
-                    <ExternalLinkIcon className="size-4" />
-                  </a>
-                )}
+              <TableCell className="whitespace-nowrap">
+                {/* Centered on the button's line, whatever the text's baseline */}
+                <div className="flex items-center justify-end gap-2">
+                  {action?.(game)}
+                  {/* Imported games may have no page to link to */}
+                  {game.url && (
+                    <a
+                      href={game.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-primary"
+                      title={m.view_on({ platform: sourceLabel(game.source) })}
+                      aria-label={m.view_on({ platform: sourceLabel(game.source) })}
+                    >
+                      <ExternalLinkIcon className="size-4" />
+                    </a>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           )
