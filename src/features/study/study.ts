@@ -5,6 +5,7 @@ import {
   addLine,
   addMove,
   deleteVariation,
+  gameEnd,
   gameNodeAt,
   gameTree,
   getNode,
@@ -35,8 +36,12 @@ export function startStudy(
   return { tree, current, line: current }
 }
 
-/** The line once at `id`: kept when `id` is on it, `id` otherwise. */
+/**
+ * The line once at `id`: back on the game, the game (forward resumes it, whatever variation was
+ * seen); otherwise kept when `id` is on it, `id` when not.
+ */
 function lineAt(state: StudyState, id: string): string {
+  if (getNode(state.tree, id).inGame) return gameEnd(state.tree)
   return isWithin(state.line, id) ? state.line : id
 }
 

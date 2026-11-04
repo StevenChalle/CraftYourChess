@@ -20,8 +20,8 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 ## Navigation et variantes
 
 - L'arbre des coups (`features/study/tree.ts`, immuable) : un nœud par position, identifié par les coups UCI depuis le début. Les coups de la partie sont marqués `inGame`.
-- `study.ts` (réducteur) : aller à un nœud, avancer / reculer / début / fin, jouer un coup ou une ligne du moteur, supprimer une variante. On retient la **ligne regardée** (la position la plus loin atteinte) : → la suit, même après être revenu dans la partie.
-- Clavier : ← → coup par coup, ↑ / Début et ↓ / Fin, F retourne l'échiquier. Molette sur l'échiquier : un cran, un coup (sans faire défiler la page).
+- `study.ts` (réducteur) : aller à un nœud, avancer / reculer / début / fin, jouer un coup ou une ligne du moteur, supprimer une variante. On retient la **ligne regardée** (la position la plus loin atteinte) : → la suit tant qu'on reste dans la variante ; revenu sur un coup de la partie (← ou clic), → reprend la partie.
+- Clavier : ← → coup par coup, ↑ / Début et ↓ / Fin, espace joue le meilleur coup du moteur, F retourne l'échiquier. Molette sur l'échiquier : un cran, un coup (sans faire défiler la page).
 - L'adresse suit le coup de la partie affiché (`ply`), sans remplir l'historique.
 - Un coup refusé (échiquier désynchronisé) est ignoré, jamais une erreur ; l'échiquier est remis sur la position après chaque coup.
 - Les variantes ne sont **pas enregistrées** : elles disparaissent en quittant la page.
@@ -34,7 +34,7 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 - Les coups enchaînés vite (touche maintenue) ne cherchent que là où l'on s'arrête (120 ms).
 - C'est une **activité du joueur** (`lib/activity.ts`) pendant qu'il cherche : l'analyse de fond attend. Arrêté quand l'onglet du navigateur est caché.
 - Interrupteur on / off gardé dans `localStorage` (`craftyourchess:study-engine`, déclaré sur `/legal`).
-- Les lignes restent immobiles sous la souris, pour cliquer un coup sans qu'une recherche plus profonde le déplace.
+- Les lignes restent immobiles sous la souris, pour cliquer un coup sans qu'une recherche plus profonde le déplace. Un coup survolé montre la position où il mène sur un petit échiquier sous sa ligne (à la souris seulement : au doigt, le toucher joue le coup).
 
 ## Analyse sur la page
 

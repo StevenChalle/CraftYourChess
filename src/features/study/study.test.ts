@@ -16,23 +16,30 @@ describe('a study', () => {
     expect(startStudy(game, 0).current).toBe('')
   })
 
-  it('plays variations, comes back to the game, and goes forward along the last line', () => {
+  it('plays variations, goes forward along them, and resumes the game once back on it', () => {
     let state = startStudy(game, 2)
     state = studyReducer(state, { type: 'play', uci: 'b1c3' })
     state = studyReducer(state, { type: 'play', uci: 'g8f6' })
     expect(state.current).toBe('e2e4 e7e5 b1c3 g8f6')
     expect(variationStart(state.tree, state.current)).toBe('e2e4 e7e5 b1c3')
     expect(gamePly(state.tree, state.current)).toBe(2)
+    // Back within the variation: forward follows it again.
+    state = studyReducer(state, { type: 'step', direction: 'back' })
+    expect(state.current).toBe('e2e4 e7e5 b1c3')
+    state = studyReducer(state, { type: 'step', direction: 'forward' })
+    expect(state.current).toBe('e2e4 e7e5 b1c3 g8f6')
+    // Back to the game: forward resumes the game, not the variation.
     state = studyReducer(state, { type: 'step', direction: 'back' })
     state = studyReducer(state, { type: 'step', direction: 'back' })
     expect(state.current).toBe('e2e4 e7e5')
-    // Forward again: into the variation just seen, not the game.
     state = studyReducer(state, { type: 'step', direction: 'forward' })
-    expect(state.current).toBe('e2e4 e7e5 b1c3')
-    // Clicking a game move makes the game the line again.
-    state = studyReducer(state, { type: 'goto', id: 'e2e4 e7e5 g1f3' })
+    expect(state.current).toBe('e2e4 e7e5 g1f3')
     state = studyReducer(state, { type: 'step', direction: 'end' })
     expect(state.current).toBe('e2e4 e7e5 g1f3 b8c6 f1b5')
+    // A variation's move clicked: forward follows the variation.
+    state = studyReducer(state, { type: 'goto', id: 'e2e4 e7e5 b1c3' })
+    state = studyReducer(state, { type: 'step', direction: 'forward' })
+    expect(state.current).toBe('e2e4 e7e5 b1c3 g8f6')
   })
 
   it("plays an engine's line, and deletes a variation the position is in", () => {

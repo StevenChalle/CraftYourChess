@@ -210,7 +210,15 @@ export function StudyView({
   const play = useCallback((uci: string) => dispatch({ type: 'play', uci }), [dispatch])
   const goto = useCallback((id: string) => dispatch({ type: 'goto', id }), [dispatch])
 
-  // Arrows (and Home / End) move through the moves, F flips the board; not while typing.
+  // The engine's best move, for the space bar.
+  const best = engineOn && !node.over ? lines[0]?.moves[0]?.uci : undefined
+  const bestRef = useRef(best)
+  useEffect(() => {
+    bestRef.current = best
+  })
+
+  // Arrows (and Home / End) move through the moves, the space bar plays the engine's best move,
+  // F flips the board; not while typing.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
@@ -220,13 +228,18 @@ export function StudyView({
       if (direction) {
         event.preventDefault()
         step(direction)
+      } else if (event.key === ' ') {
+        event.preventDefault()
+        // Not a click on the button that has the focus (it would be pressed on release).
+        if (target?.closest('button')) target.blur()
+        if (bestRef.current) play(bestRef.current)
       } else if (event.key === 'f') {
         setOrientation((color) => (color === 'white' ? 'black' : 'white'))
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step])
+  }, [step, play])
 
   // The game's move on screen goes in the address (a reload or a shared link comes back to it).
   const shownPly = gamePly(state.tree, state.current)
@@ -321,6 +334,7 @@ export function StudyView({
       maxDepth={LIVE_DEPTH[detectDevice()]}
       lines={lines}
       failed={live.failed}
+      orientation={orientation}
       onPlay={(moves) => dispatch({ type: 'playLine', moves })}
     />
   )

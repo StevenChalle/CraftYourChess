@@ -12,7 +12,11 @@ export const LIVE_LINES = 3
 export const LIVE_DEPTH = { desktop: 22, mobile: 18 } as const
 
 /** A line of the live analysis, ready to show: its score (White's side) and its moves in SAN. */
-export type ShownLine = { score: WhiteScore; moves: { uci: string; san: string }[] }
+export type ShownLine = {
+  score: WhiteScore
+  /** Each move, with the position it leads to */
+  moves: { uci: string; san: string; fen: string }[]
+}
 
 /**
  * One Stockfish analysing the position on screen, one position at a time: asking for another stops
@@ -119,8 +123,9 @@ export function shownLines(fen: string, turn: Color, analysis: LiveAnalysis): Sh
     let current = fen
     for (const uci of line.moves) {
       try {
-        moves.push({ uci, san: sanOf(current, uci) })
+        const san = sanOf(current, uci)
         current = play(current, uci).fen
+        moves.push({ uci, san, fen: current })
       } catch {
         // A line ending on a move the rules refuse (it should not happen): keep what came before.
         break

@@ -1,5 +1,9 @@
+import type { Key } from '@lichess-org/chessground/types'
+import type { Color } from 'chessops'
 import { Cpu } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useRef, useState, type PointerEvent } from 'react'
+import { Board } from '@/components/board/Board'
+import { moveSquares } from '@/features/training/moves'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -10,7 +14,8 @@ import type { WhiteScore } from '@/features/review/errors'
 /**
  * The live engine: on or off, the position's evaluation and depth, then its best lines. A click
  * on a move of a line plays the line up to it; the lines hold still while the mouse is over them,
- * so that a deeper search does not move the move about to be clicked.
+ * so that a deeper search does not move the move about to be clicked. A move under the mouse shows
+ * the position it leads to on a small board, below its line.
  */
 export function EnginePanel({
   on,
@@ -21,6 +26,7 @@ export function EnginePanel({
   maxDepth,
   lines,
   failed,
+  orientation,
   onPlay,
 }: {
   on: boolean
@@ -32,10 +38,22 @@ export function EnginePanel({
   maxDepth: number
   lines: ShownLine[]
   failed: boolean
+  /** The main board's, for the preview */
+  orientation: Color
   onPlay: (moves: string[]) => void
 }) {
   const [held, setHeld] = useState<{ fen: string; lines: ShownLine[] }>()
   const shown = held?.fen === node.fen ? held.lines : lines
+  const [preview, setPreview] = useState<Preview>()
+  const listRef = useRef<HTMLOListElement>(null)
+  const showPreview = (event: PointerEvent<HTMLButtonElement>, fen: string, uci: string) => {
+    // A mouse only: on a touch screen, the tap plays the move.
+    if (event.pointerType !== 'mouse' || !listRef.current) return
+    const list = listRef.current.getBoundingClientRect()
+    const move = event.currentTarget.getBoundingClientRect()
+    const left = Math.max(0, Math.min(move.left - list.left, list.width - PREVIEW_SIZE))
+    setPreview({ fen, uci, top: move.bottom - list.top + 4, left })
+  }
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -82,9 +100,13 @@ export function EnginePanel({
         on &&
         !node.over && (
           <ol
-            className="space-y-1 text-sm"
+            ref={listRef}
+            className="relative space-y-1 text-sm"
             onMouseEnter={() => lines.length > 0 && setHeld({ fen: node.fen, lines })}
-            onMouseLeave={() => setHeld(undefined)}
+            onMouseLeave={() => {
+              setHeld(undefined)
+              setPreview(undefined)
+            }}
           >
             {Array.from({ length: LIVE_LINES }, (_, index) => {
               const line = shown[index]
@@ -115,9 +137,12 @@ export function EnginePanel({
                               {label && <span className="num text-muted-foreground">{label} </span>}
                               <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
+                                  setPreview(undefined)
                                   onPlay(line.moves.slice(0, at + 1).map((item) => item.uci))
-                                }
+                                }}
+                                onPointerEnter={(event) => showPreview(event, move.fen, move.uci)}
+                                onPointerLeave={() => setPreview(undefined)}
                                 className="rounded-sm px-0.5 text-text-strong hover:bg-raised"
                               >
                                 {move.san}
@@ -133,10 +158,40 @@ export function EnginePanel({
                 </li>
               )
             })}
+            {preview && <PreviewBoard preview={preview} orientation={orientation} />}
           </ol>
         )
       )}
     </div>
+  )
+}
+
+/** The preview's width, in pixels */
+const PREVIEW_SIZE = 200
+
+type Preview = { fen: string; uci: string; top: number; left: number }
+
+/** The position after a line's move, over what follows the lines; it cannot be played on. */
+function PreviewBoard({ preview, orientation }: { preview: Preview; orientation: Color }) {
+  const config = useMemo(
+    () => ({
+      fen: preview.fen,
+      orientation,
+      viewOnly: true,
+      coordinates: false,
+      lastMove: moveSquares(preview.uci) as [Key, Key],
+      drawable: { enabled: false },
+    }),
+    [preview.fen, preview.uci, orientation],
+  )
+  return (
+    <li
+      aria-hidden
+      className="pointer-events-none absolute z-20 overflow-hidden rounded-sm border border-border-strong shadow-lg"
+      style={{ top: preview.top, left: preview.left, width: PREVIEW_SIZE }}
+    >
+      <Board config={config} />
+    </li>
   )
 }
 

@@ -62,7 +62,7 @@ describe('the live lines, as shown', () => {
       nodes: 1,
       lines: [{ moves: ['e7e5', 'g1f3', 'b8c6'], score: { cp: -25 } }],
     })
-    expect(lines).toEqual([
+    expect(lines).toMatchObject([
       {
         score: { cp: 25 },
         moves: [
