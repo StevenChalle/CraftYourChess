@@ -288,7 +288,13 @@ export function StudyView({
   const controls = (
     <div className="flex items-center gap-2">
       {clock(top)}
-      <div className="flex min-w-0 flex-1 items-center gap-1">
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 items-center gap-1',
+          // Between the clocks, in the middle
+          clocks && 'justify-center',
+        )}
+      >
         <ControlButton label={m.study_start()} onClick={() => step('start')}>
           <ChevronFirst />
         </ControlButton>
@@ -311,7 +317,7 @@ export function StudyView({
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto text-muted-foreground"
+            className={cn('text-muted-foreground', !clocks && 'ml-auto')}
             onClick={() => dispatch({ type: 'delete', id: variation })}
             title={m.study_delete_variation()}
           >
