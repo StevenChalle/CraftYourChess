@@ -33,7 +33,7 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 - Le dernier résultat de chaque position est gardé en mémoire : y revenir l'affiche tout de suite, sans relancer une recherche déjà complète.
 - Les coups enchaînés vite (touche maintenue) ne cherchent que là où l'on s'arrête (120 ms).
 - C'est une **activité du joueur** (`lib/activity.ts`) pendant qu'il cherche : l'analyse de fond attend. Arrêté quand l'onglet du navigateur est caché.
-- Interrupteur on / off gardé dans `localStorage` (`craftyourchess:study-engine`, déclaré sur `/legal`). Éteint, plus aucune évaluation : ni le chiffre, ni la barre (qui garde sa place, l'échiquier ne bouge pas), pas même celle de l'analyse.
+- Éteint en arrivant, tant qu'on ne l'a pas allumé ; interrupteur on / off gardé dans `localStorage` (`craftyourchess:study-engine`, déclaré sur `/legal`). Éteint, plus aucune évaluation : ni le chiffre, ni la barre (qui garde sa place, l'échiquier ne bouge pas), pas même celle de l'analyse.
 - Les lignes restent immobiles sous la souris, pour cliquer un coup sans qu'une recherche plus profonde le déplace. Un coup survolé montre la position où il mène sur un petit échiquier sous sa ligne (à la souris seulement : au doigt, le toucher joue le coup).
 
 ## Analyse sur la page

@@ -115,13 +115,13 @@ export function EnginePanel({
               return (
                 <li
                   key={index}
-                  className="flex h-6 items-center gap-2 overflow-hidden rounded-sm bg-field px-2"
+                  className="flex h-6 items-center gap-1.5 overflow-hidden rounded-sm border border-border-strong/40 bg-raised px-1.5"
                 >
                   {line ? (
                     <>
                       <span
                         className={cn(
-                          'num w-12 shrink-0 font-medium',
+                          'num w-10 shrink-0 font-medium',
                           'mate' in line.score
                             ? line.score.mate > 0
                               ? 'text-text-strong'
@@ -131,12 +131,12 @@ export function EnginePanel({
                       >
                         {formatScore(line.score)}
                       </span>
-                      <span className="min-w-0 truncate" title={lineText(node, line)}>
+                      <span className="min-w-0 truncate text-xs" title={lineText(node, line)}>
                         {line.moves.map((move, at) => {
                           const label = moveLabel(node, at)
                           return (
                             <span key={at}>
-                              {label && <span className="num text-muted-foreground">{label} </span>}
+                              {label && <span className="num text-muted-foreground">{label}</span>}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -145,7 +145,7 @@ export function EnginePanel({
                                 }}
                                 onPointerEnter={(event) => showPreview(event, move.fen, move.uci)}
                                 onPointerLeave={() => setPreview(undefined)}
-                                className="rounded-sm px-0.5 text-text-strong hover:bg-raised"
+                                className="rounded-sm px-px text-text-strong hover:bg-primary hover:text-primary-foreground"
                               >
                                 {move.san}
                               </button>{' '}
