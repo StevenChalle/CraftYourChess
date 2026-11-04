@@ -51,7 +51,22 @@ export function ReviewResults({
             games={pageSlice(games, page, RESULTS_PAGE_SIZE)}
             action={(game) => <ReviewLink game={game} compact className="max-sm:hidden" />}
             expandable={{
-              render: (game) => <GamePanel game={game} />,
+              render: (game) => (
+                <GamePanel
+                  game={game}
+                  train={
+                    <Button
+                      size="sm"
+                      disabled={game.mistakes.length === 0}
+                      onClick={() => onTrain(game.mistakes)}
+                      title={m.replay_game()}
+                    >
+                      <Swords data-icon="inline-start" />
+                      {m.replay_game_short()}
+                    </Button>
+                  }
+                />
+              ),
               // A single game: nothing else to look at, it opens right away.
               defaultOpen: games.length === 1 ? reviewedGameKey(games[0]!) : undefined,
               // Closing a game stops deepening it (not when every game is being deepened).

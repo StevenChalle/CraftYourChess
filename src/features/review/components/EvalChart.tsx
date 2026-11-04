@@ -66,6 +66,7 @@ export function EvalChart({
   game,
   ratingChange,
   legendAside,
+  train,
   selected,
   onSelect,
   orientation,
@@ -76,6 +77,8 @@ export function EvalChart({
   ratingChange?: number
   /** On the legend's line, on its right */
   legendAside?: ReactNode
+  /** Beside the review page's button, under the details: the training of the game's errors */
+  train?: ReactNode
   /**
    * The review page's chart: no details beside it, the position on screen (`selected`) marked,
    * and a click (a tap, a sliding finger) goes to the move under the pointer. The move under the
@@ -142,139 +145,146 @@ export function EvalChart({
   return (
     <div ref={rootRef} className="space-y-2">
       <div className="flex flex-col gap-3 md:flex-row md:items-start">
-        <div ref={wrapRef} className="relative min-w-0 md:flex-1">
-          <svg
-            width="100%"
-            height={height}
-            role="img"
-            aria-label={m.eval_chart_label()}
-            className="block cursor-crosshair touch-pan-y rounded-md border border-border bg-field select-none"
-            onPointerMove={(event) => {
-              if (event.pointerType === 'mouse') setHovered(nearest(event))
-              else if (touching.current) (onSelect ?? setPinned)(nearest(event))
-            }}
-            onPointerDown={(event) => {
-              if (event.pointerType === 'mouse') return
-              touching.current = true
-              ;(onSelect ?? setPinned)(nearest(event))
-            }}
-            onPointerUp={() => (touching.current = false)}
-            onPointerCancel={() => (touching.current = false)}
-            onPointerLeave={(event) => event.pointerType === 'mouse' && setHovered(undefined)}
-            onClick={(event) => {
-              if ((event.nativeEvent as globalThis.PointerEvent).pointerType !== 'mouse') return
-              const index = nearest(event as unknown as PointerEvent<SVGSVGElement>)
-              if (onSelect) onSelect(index)
-              else setPinned((current) => (current === index ? undefined : index))
-            }}
-          >
-            {width > 0 && (
-              <>
-                <defs>
-                  <clipPath id={`${ids}-top`}>
-                    <rect x={0} y={0} width={width} height={mid} />
-                  </clipPath>
-                  <clipPath id={`${ids}-bottom`}>
-                    <rect x={0} y={mid} width={width} height={mid} />
-                  </clipPath>
-                </defs>
-                <path d={area} className="fill-text-strong/80" clipPath={`url(#${ids}-top)`} />
-                <path d={area} className="fill-background" clipPath={`url(#${ids}-bottom)`} />
-                <line x1={0} x2={width} y1={mid} y2={mid} className="stroke-border-strong" />
-                {(
-                  [
-                    ['middlegame', phases.middlegame, m.phase_middlegame()],
-                    ['endgame', phases.endgame, m.phase_endgame()],
-                  ] as const
-                ).map(
-                  ([phase, index, label]) =>
-                    index !== undefined && (
-                      <g key={phase}>
-                        <line
-                          x1={x(index)}
-                          x2={x(index)}
-                          y1={0}
-                          y2={height}
-                          className="stroke-border-strong/60"
-                        />
-                        <text
-                          x={x(index) + 4}
-                          // Phases close together: the endgame's label goes to the bottom.
-                          y={
-                            phase === 'endgame' &&
-                            phases.middlegame !== undefined &&
-                            x(index) - x(phases.middlegame) < LABEL_ROOM
-                              ? height - 6
-                              : 12
-                          }
-                          className="fill-muted-foreground text-[10px]"
-                        >
-                          {label}
-                        </text>
-                      </g>
-                    ),
-                )}
-                <path
-                  d={curve}
-                  fill="none"
-                  strokeWidth={1.5}
-                  strokeLinejoin="round"
-                  className="stroke-primary"
-                />
-                {active !== undefined && (
-                  <line
-                    x1={x(active)}
-                    x2={x(active)}
-                    y1={0}
-                    y2={height}
-                    className="stroke-text-strong/40"
-                  />
-                )}
-                {points(game.opponentErrors).map((index) => (
-                  <circle
-                    key={`o${index}`}
-                    cx={x(index)}
-                    cy={y(game.positions[index]!.cp)}
-                    r={3.5}
-                    strokeWidth={1.5}
-                    className="fill-field stroke-muted-foreground"
-                  />
-                ))}
-                {points(game.mistakes.map((mistake) => mistake.ply)).map((index) => (
-                  <circle
-                    key={`m${index}`}
-                    cx={x(index)}
-                    cy={y(game.positions[index]!.cp)}
-                    r={4.5}
-                    strokeWidth={2}
-                    className="fill-loss stroke-field"
-                  />
-                ))}
-                {active !== undefined && (
-                  <circle
-                    cx={x(active)}
-                    cy={y(game.positions[active]!.cp)}
-                    r={4}
-                    strokeWidth={2}
-                    className="fill-primary stroke-field"
-                  />
-                )}
-              </>
-            )}
-          </svg>
-          {preview && hovered !== undefined && width > 0 && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute z-20 overflow-hidden rounded-sm border border-border-strong shadow-lg"
-              style={{
-                width: PREVIEW_SIZE,
-                bottom: height + 6,
-                left: Math.max(0, Math.min(x(hovered) - PREVIEW_SIZE / 2, width - PREVIEW_SIZE)),
+        <div className="min-w-0 space-y-2 md:flex-1">
+          <div ref={wrapRef} className="relative">
+            <svg
+              width="100%"
+              height={height}
+              role="img"
+              aria-label={m.eval_chart_label()}
+              className="block cursor-crosshair touch-pan-y rounded-md border border-border bg-field select-none"
+              onPointerMove={(event) => {
+                if (event.pointerType === 'mouse') setHovered(nearest(event))
+                else if (touching.current) (onSelect ?? setPinned)(nearest(event))
+              }}
+              onPointerDown={(event) => {
+                if (event.pointerType === 'mouse') return
+                touching.current = true
+                ;(onSelect ?? setPinned)(nearest(event))
+              }}
+              onPointerUp={() => (touching.current = false)}
+              onPointerCancel={() => (touching.current = false)}
+              onPointerLeave={(event) => event.pointerType === 'mouse' && setHovered(undefined)}
+              onClick={(event) => {
+                if ((event.nativeEvent as globalThis.PointerEvent).pointerType !== 'mouse') return
+                const index = nearest(event as unknown as PointerEvent<SVGSVGElement>)
+                if (onSelect) onSelect(index)
+                else setPinned((current) => (current === index ? undefined : index))
               }}
             >
-              <Board config={preview} />
-            </div>
-          )}
+              {width > 0 && (
+                <>
+                  <defs>
+                    <clipPath id={`${ids}-top`}>
+                      <rect x={0} y={0} width={width} height={mid} />
+                    </clipPath>
+                    <clipPath id={`${ids}-bottom`}>
+                      <rect x={0} y={mid} width={width} height={mid} />
+                    </clipPath>
+                  </defs>
+                  <path d={area} className="fill-text-strong/80" clipPath={`url(#${ids}-top)`} />
+                  <path d={area} className="fill-background" clipPath={`url(#${ids}-bottom)`} />
+                  <line x1={0} x2={width} y1={mid} y2={mid} className="stroke-border-strong" />
+                  {(
+                    [
+                      ['middlegame', phases.middlegame, m.phase_middlegame()],
+                      ['endgame', phases.endgame, m.phase_endgame()],
+                    ] as const
+                  ).map(
+                    ([phase, index, label]) =>
+                      index !== undefined && (
+                        <g key={phase}>
+                          <line
+                            x1={x(index)}
+                            x2={x(index)}
+                            y1={0}
+                            y2={height}
+                            className="stroke-border-strong/60"
+                          />
+                          <text
+                            x={x(index) + 4}
+                            // Phases close together: the endgame's label goes to the bottom.
+                            y={
+                              phase === 'endgame' &&
+                              phases.middlegame !== undefined &&
+                              x(index) - x(phases.middlegame) < LABEL_ROOM
+                                ? height - 6
+                                : 12
+                            }
+                            className="fill-muted-foreground text-[10px]"
+                          >
+                            {label}
+                          </text>
+                        </g>
+                      ),
+                  )}
+                  <path
+                    d={curve}
+                    fill="none"
+                    strokeWidth={1.5}
+                    strokeLinejoin="round"
+                    className="stroke-primary"
+                  />
+                  {active !== undefined && (
+                    <line
+                      x1={x(active)}
+                      x2={x(active)}
+                      y1={0}
+                      y2={height}
+                      className="stroke-text-strong/40"
+                    />
+                  )}
+                  {points(game.opponentErrors).map((index) => (
+                    <circle
+                      key={`o${index}`}
+                      cx={x(index)}
+                      cy={y(game.positions[index]!.cp)}
+                      r={3.5}
+                      strokeWidth={1.5}
+                      className="fill-field stroke-muted-foreground"
+                    />
+                  ))}
+                  {points(game.mistakes.map((mistake) => mistake.ply)).map((index) => (
+                    <circle
+                      key={`m${index}`}
+                      cx={x(index)}
+                      cy={y(game.positions[index]!.cp)}
+                      r={4.5}
+                      strokeWidth={2}
+                      className="fill-loss stroke-field"
+                    />
+                  ))}
+                  {active !== undefined && (
+                    <circle
+                      cx={x(active)}
+                      cy={y(game.positions[active]!.cp)}
+                      r={4}
+                      strokeWidth={2}
+                      className="fill-primary stroke-field"
+                    />
+                  )}
+                </>
+              )}
+            </svg>
+            {preview && hovered !== undefined && width > 0 && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute z-20 overflow-hidden rounded-sm border border-border-strong shadow-lg"
+                style={{
+                  width: PREVIEW_SIZE,
+                  bottom: height + 6,
+                  left: Math.max(0, Math.min(x(hovered) - PREVIEW_SIZE / 2, width - PREVIEW_SIZE)),
+                }}
+              >
+                <Board config={preview} />
+              </div>
+            )}
+          </div>
+          {/* Under the chart only: the details beside it keep the whole height */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <Legend />
+            {legendAside}
+          </div>
         </div>
         {/* Beside the chart, always in the same place: the move under the pointer, the game as
             a whole otherwise. On a phone, above the chart once a move is tapped: the finger hides
@@ -282,16 +292,12 @@ export function EvalChart({
         {!onSelect && (
           <div className={cn('order-first md:order-last', pinned === undefined && 'max-md:hidden')}>
             {active === undefined ? (
-              <GameDetails game={game} ratingChange={ratingChange} />
+              <GameDetails game={game} ratingChange={ratingChange} train={train} />
             ) : (
-              <MoveDetails game={game} index={active} />
+              <MoveDetails game={game} index={active} train={train} />
             )}
           </div>
         )}
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <Legend />
-        {legendAside}
       </div>
     </div>
   )
@@ -300,7 +306,8 @@ export function EvalChart({
 /**
  * The details beside the chart, the same frame for a move and for the whole game, so that nothing
  * moves from one to the other: a title, a line under it, figures one per line, a note (kept even
- * when empty), the review page's button at the bottom, and the board as tall as the chart.
+ * when empty), the review page's and training's buttons at the bottom, and the board as tall as the chart with
+ * its legend.
  */
 function DetailsFrame({
   title,
@@ -320,7 +327,7 @@ function DetailsFrame({
 }) {
   return (
     <div className="flex items-start gap-4">
-      <div className="flex w-52 shrink-0 flex-col gap-2 md:h-[180px]">
+      <div className="flex w-52 shrink-0 flex-col gap-2 md:h-[204px]">
         <div className="space-y-0.5">
           <p className="flex items-center gap-2 text-base font-medium text-text-strong">{title}</p>
           {subtitle}
@@ -337,7 +344,7 @@ function DetailsFrame({
         {note !== undefined && <p className="min-h-4 text-xs font-medium">{note}</p>}
         <div className="mt-auto">{action}</div>
       </div>
-      <div className="w-32 shrink-0 md:w-[180px]">
+      <div className="w-32 shrink-0 md:w-[204px]">
         <Board config={board} className="rounded-sm" />
       </div>
     </div>
@@ -356,7 +363,15 @@ function boardAt(game: ReviewedGame, index: number, orientation: Color = game.co
 }
 
 /** The move, who played it, its evaluation and change, time spent and clock left; an error. */
-function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
+function MoveDetails({
+  game,
+  index,
+  train,
+}: {
+  game: ReviewedGame
+  index: number
+  train: ReactNode
+}) {
   const { label, position, mover, delta, time, mine, theirs } = moveInfo(game, index)
   const board = useMemo(() => boardAt(game, index), [game, index])
   const rows = [
@@ -407,7 +422,7 @@ function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
           </span>
         ) : null
       }
-      action={<ReviewLink game={game} ply={index} />}
+      action={<DetailsActions game={game} ply={index} train={train} />}
       board={board}
     />
   )
@@ -419,7 +434,15 @@ function MoveDetails({ game, index }: { game: ReviewedGame; index: number }) {
  * page's button at the bottom. As wide and tall as a move's details with their board, so that the chart
  * keeps its size.
  */
-function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?: number }) {
+function GameDetails({
+  game,
+  ratingChange,
+  train,
+}: {
+  game: ReviewedGame
+  ratingChange?: number
+  train: ReactNode
+}) {
   const last = game.positions.length - 1
   const result = RESULTS[game.result]
   const figures: { label: string; value: ReactNode }[] = [
@@ -460,8 +483,8 @@ function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?
     },
   ]
   return (
-    // 13rem of figures, 1rem of gap and a 180 px board, as MoveDetails
-    <div className="flex flex-col gap-3 md:h-[180px] md:w-[calc(14rem+180px)]">
+    // 13rem of figures, 1rem of gap and a 204 px board, as MoveDetails
+    <div className="flex flex-col gap-3 md:h-[204px] md:w-[calc(14rem+204px)]">
       <div className="space-y-1">
         <p className={cn('text-lg font-semibold', result.className)}>{result.label()}</p>
         {game.opening && (
@@ -482,8 +505,26 @@ function GameDetails({ game, ratingChange }: { game: ReviewedGame; ratingChange?
         ))}
       </dl>
       <div className="mt-auto">
-        <ReviewLink game={game} />
+        <DetailsActions game={game} train={train} />
       </div>
+    </div>
+  )
+}
+
+/** At the bottom left of the details, the same place for a move and for the game: review, train. */
+function DetailsActions({
+  game,
+  ply,
+  train,
+}: {
+  game: ReviewedGame
+  ply?: number
+  train: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <ReviewLink game={game} ply={ply} size="sm" />
+      {train}
     </div>
   )
 }

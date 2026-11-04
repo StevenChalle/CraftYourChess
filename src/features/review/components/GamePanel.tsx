@@ -1,4 +1,5 @@
 import { Check, Gauge, Microscope, Square } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useBackground } from '@/features/background/backgroundContext'
@@ -18,16 +19,19 @@ import { EvalChart } from './EvalChart'
  * had a quick look, or its progress. `deepen`: false outside the analysis's results (a game of the
  * profile, judged from the cache), where the session cannot deepen it: only the progress of a
  * deepening under way (the Results tab's, or the background analysis's). `ratingChange`: for the
- * chart's summary of the game, when known (Lichess says it itself).
+ * chart's summary of the game, when known (Lichess says it itself). `train`: the training of the
+ * game's errors, beside the review page's button in the chart's details.
  */
 export function GamePanel({
   game,
   deepen = true,
   ratingChange,
+  train,
 }: {
   game: ReviewedGame
   deepen?: boolean
   ratingChange?: number
+  train?: ReactNode
 }) {
   const { deepening, stopDeepening } = useAnalysisSession()
   const background = useBackground()?.state
@@ -59,6 +63,7 @@ export function GamePanel({
       <EvalChart
         game={game}
         ratingChange={ratingChange ?? game.ratingDiff}
+        train={train}
         legendAside={
           busy ? undefined : shallow === 0 ? (
             <span className="inline-flex items-center gap-1.5">

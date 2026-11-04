@@ -66,7 +66,20 @@ export function PagedGamesTable({
               const review = reviewed.get(gameRef(game))
               return (
                 review && (
-                  <GamePanel game={review} deepen={false} ratingChange={ratingChange(game)} />
+                  <GamePanel
+                    game={review}
+                    deepen={false}
+                    ratingChange={ratingChange(game)}
+                    train={
+                      <AnalyzeLink
+                        game={game}
+                        usernames={usernames}
+                        analysed
+                        disabled={review.mistakes.length === 0}
+                        size="sm"
+                      />
+                    }
+                  />
                 )
               )
             },

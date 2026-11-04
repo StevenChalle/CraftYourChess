@@ -9,50 +9,53 @@ import { m } from '@/paraglide/messages'
 /**
  * Straight to the analysis of this game alone, then its training. Already analysed: straight to
  * the training (the analysis comes back from the cache at once); `disabled` when it has no error
- * to replay.
+ * to replay. `size` 'sm': larger, its label always shown.
  */
 export function AnalyzeLink({
   game,
   usernames,
   analysed = false,
   disabled = false,
+  size = 'xs',
 }: {
   game: GameSummary
   usernames: ProfileSearch
   analysed?: boolean
   disabled?: boolean
+  size?: 'xs' | 'sm'
 }) {
+  const label = size === 'xs' ? 'max-sm:sr-only' : undefined
   if (analysed && disabled) {
     return (
-      <Button size="xs" disabled title={m.replay_game()}>
+      <Button size={size} disabled title={m.replay_game()}>
         <Swords data-icon="inline-start" />
-        <span className="max-sm:sr-only">{m.replay_game_short()}</span>
+        <span className={label}>{m.replay_game_short()}</span>
       </Button>
     )
   }
   if (analysed) {
     return (
-      <Button size="xs" asChild>
+      <Button size={size} asChild>
         <Link
           to="/player/results"
           search={{ ...usernames, game: gameRef(game), train: true }}
           title={m.replay_game()}
         >
           <Swords data-icon="inline-start" />
-          <span className="max-sm:sr-only">{m.replay_game_short()}</span>
+          <span className={label}>{m.replay_game_short()}</span>
         </Link>
       </Button>
     )
   }
   return (
-    <Button size="xs" asChild>
+    <Button size={size} asChild>
       <Link
         to="/player/results"
         search={{ ...usernames, game: gameRef(game) }}
         title={m.history_analyze_title()}
       >
         <Microscope data-icon="inline-start" />
-        <span className="max-sm:sr-only">{m.history_analyze()}</span>
+        <span className={label}>{m.history_analyze()}</span>
       </Link>
     </Button>
   )

@@ -15,11 +15,14 @@ export function ReviewLink({
   game,
   ply = 0,
   compact = false,
+  size = 'xs',
   className,
 }: {
   game: GameSummary
   ply?: number
   compact?: boolean
+  /** The labelled button's */
+  size?: 'xs' | 'sm'
   className?: string
 }) {
   const { usernames } = useAnalysisSession()
@@ -27,7 +30,7 @@ export function ReviewLink({
     <Button
       asChild
       variant={compact ? 'ghost' : 'outline'}
-      size={compact ? 'icon-sm' : 'xs'}
+      size={compact ? 'icon-sm' : size}
       className={cn(compact && 'text-muted-foreground hover:text-primary', className)}
     >
       <Link
