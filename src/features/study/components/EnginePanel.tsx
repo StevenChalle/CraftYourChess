@@ -119,16 +119,8 @@ export function EnginePanel({
                 >
                   {line ? (
                     <>
-                      <span
-                        className={cn(
-                          'num w-10 shrink-0 font-medium',
-                          'mate' in line.score
-                            ? line.score.mate > 0
-                              ? 'text-text-strong'
-                              : 'text-muted-foreground'
-                            : 'text-text-strong',
-                        )}
-                      >
+                      {/* On a light chip: each line's evaluation stands out from its moves */}
+                      <span className="num w-11 shrink-0 rounded-sm bg-text-strong px-1 text-center text-xs leading-4 font-semibold text-background">
                         {formatScore(line.score)}
                       </span>
                       <span className="min-w-0 truncate text-xs" title={lineText(node, line)}>

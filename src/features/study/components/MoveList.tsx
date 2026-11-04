@@ -42,8 +42,8 @@ function mainRows(tree: StudyTree): Row[] {
 
 /**
  * The moves of the game and of the variations played on it. The game's moves show the player's
- * errors (red), the opponent's (a ring), and the time spent; variations are inline, in brackets
- * when nested, as on Lichess. Each move goes to its position; the one on screen stays in sight.
+ * errors (red), the opponent's (a ring), and the time spent; each variation has a line of its own,
+ * its branches indented under it. Each move goes to its position; the one on screen stays in sight.
  */
 export function MoveList({
   tree,
@@ -124,9 +124,13 @@ export function MoveList({
     )
   }
 
-  /** A variation from `start`, inline, its own variations in brackets after the move they replace. */
-  const line = (start: string): ReactNode[] => {
+  /**
+   * A variation from `start`, on a line of its own, until it forks: then each branch (its
+   * continuation first) on its own line, indented under it, with a rule on its left.
+   */
+  const branch = (start: string, depth: number): ReactNode => {
     const parts: ReactNode[] = []
+    const forks: string[] = []
     let node: StudyNode | undefined = getNode(tree, start)
     let numbered = true
     while (node) {
@@ -140,20 +144,18 @@ export function MoveList({
       }
       parts.push(move(node, true))
       numbered = false
-      const parent = getNode(tree, node.parent!)
-      if (node.id !== start && parent.children[0] === node.id && parent.children.length > 1) {
-        for (const alternative of parent.children.slice(1)) {
-          parts.push(
-            <span key={`v${alternative}`} className="text-muted-foreground">
-              ({line(alternative)})
-            </span>,
-          )
-        }
-        numbered = true
+      if (node.children.length > 1) {
+        forks.push(...node.children)
+        break
       }
       node = node.children[0] ? getNode(tree, node.children[0]) : undefined
     }
-    return parts.flatMap((part, index) => (index === 0 ? [part] : [' ', part]))
+    return (
+      <div key={start} className={cn(depth > 0 && 'ml-2 border-l border-border-strong/50 pl-2')}>
+        <p>{parts.flatMap((part, index) => (index === 0 ? [part] : [' ', part]))}</p>
+        {forks.map((fork) => branch(fork, depth + 1))}
+      </div>
+    )
   }
 
   return (
@@ -180,9 +182,7 @@ export function MoveList({
               key={`v${index}`}
               className="col-span-3 space-y-1 border-y border-border bg-background/40 px-3 py-1.5 text-[13px] leading-relaxed"
             >
-              {row.starts.map((start) => (
-                <p key={start}>{line(start)}</p>
-              ))}
+              {row.starts.map((start) => branch(start, 0))}
             </div>
           ),
         )}
