@@ -70,6 +70,7 @@
   "review_step_quick_hint": "Repère les coups suspects",
   "review_step_deep": "Vérification approfondie des coups suspects",
   "review_step_deep_hint": "Confirme les vraies erreurs",
+  "analysis_here_step": "Étape {step} sur {steps}",
   "review_positions_progress": "{done} / {total} positions",
   "positions_count": [
     {

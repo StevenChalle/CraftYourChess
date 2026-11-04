@@ -70,6 +70,7 @@
   "review_step_quick_hint": "Spots the suspicious moves",
   "review_step_deep": "Deep check of suspicious moves",
   "review_step_deep_hint": "Confirms the real mistakes",
+  "analysis_here_step": "Step {step} of {steps}",
   "review_positions_progress": "{done} / {total} positions",
   "positions_count": [
     {
