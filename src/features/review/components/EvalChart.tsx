@@ -31,8 +31,11 @@ const PAD_X = 6
 const PAD_Y = 8
 /** Width a phase label needs before the next one */
 const LABEL_ROOM = 80
-/** The review page's preview over the chart, in pixels */
+/** The review page's preview over the chart: its board, and the move's details beside it (px) */
 const PREVIEW_SIZE = 240
+const PREVIEW_DETAILS = 176
+/** The preview's whole width: details, gap, board, padding and border */
+const PREVIEW_WIDTH = PREVIEW_DETAILS + 12 + PREVIEW_SIZE + 16 + 2
 
 /** What the chart says about the move leading to position `index` (index ≥ 1). */
 function moveInfo(game: ReviewedGame, index: number) {
@@ -269,14 +272,20 @@ export function EvalChart({
             {preview && hovered !== undefined && width > 0 && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute z-20 overflow-hidden rounded-sm border border-border-strong shadow-lg"
+                className="pointer-events-none absolute z-20 flex items-start gap-3 rounded-md border border-border-strong bg-popover p-2 shadow-lg"
                 style={{
-                  width: PREVIEW_SIZE,
+                  width: PREVIEW_WIDTH,
                   bottom: height + 6,
-                  left: Math.max(0, Math.min(x(hovered) - PREVIEW_SIZE / 2, width - PREVIEW_SIZE)),
+                  left: Math.max(
+                    0,
+                    Math.min(x(hovered) - PREVIEW_WIDTH / 2, width - PREVIEW_WIDTH),
+                  ),
                 }}
               >
-                <Board config={preview} />
+                <MoveSummary game={game} index={hovered} width={PREVIEW_DETAILS} />
+                <div className="shrink-0" style={{ width: PREVIEW_SIZE }}>
+                  <Board config={preview} className="rounded-sm" />
+                </div>
               </div>
             )}
           </div>
@@ -362,18 +371,9 @@ function boardAt(game: ReviewedGame, index: number, orientation: Color = game.co
   }
 }
 
-/** The move, who played it, its evaluation and change, time spent and clock left; an error. */
-function MoveDetails({
-  game,
-  index,
-  train,
-}: {
-  game: ReviewedGame
-  index: number
-  train: ReactNode
-}) {
+/** A move's title, figures and note, as the chart's details show them. */
+function moveFacts(game: ReviewedGame, index: number) {
   const { label, position, mover, delta, time, mine, theirs } = moveInfo(game, index)
-  const board = useMemo(() => boardAt(game, index), [game, index])
   const rows = [
     {
       label: m.eval_chart_eval(),
@@ -406,25 +406,62 @@ function MoveDetails({
         ]
       : []),
   ]
+  return {
+    title: (
+      <>
+        <SideSquare color={mover} />
+        {label}
+      </>
+    ),
+    rows,
+    note:
+      mine || theirs ? (
+        <span className={mine ? 'text-loss' : 'text-muted-foreground'}>
+          {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}
+        </span>
+      ) : null,
+  }
+}
+
+/** The move, who played it, its evaluation and change, time spent and clock left; an error. */
+function MoveDetails({
+  game,
+  index,
+  train,
+}: {
+  game: ReviewedGame
+  index: number
+  train: ReactNode
+}) {
+  const facts = moveFacts(game, index)
+  const board = useMemo(() => boardAt(game, index), [game, index])
   return (
     <DetailsFrame
-      title={
-        <>
-          <SideSquare color={mover} />
-          {label}
-        </>
-      }
-      rows={rows}
-      note={
-        mine || theirs ? (
-          <span className={mine ? 'text-loss' : 'text-muted-foreground'}>
-            {mine ? m.eval_chart_your_mistake() : m.eval_chart_their_mistake()}
-          </span>
-        ) : null
-      }
+      title={facts.title}
+      rows={facts.rows}
+      note={facts.note}
       action={<DetailsActions game={game} ply={index} train={train} />}
       board={board}
     />
+  )
+}
+
+/** The review page's preview over the chart: the same facts as the details, without buttons. */
+function MoveSummary({ game, index, width }: { game: ReviewedGame; index: number; width: number }) {
+  const { title, rows, note } = moveFacts(game, index)
+  return (
+    <div className="shrink-0 space-y-2" style={{ width }}>
+      <p className="flex items-center gap-2 text-base font-medium text-text-strong">{title}</p>
+      <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-sm">
+        {rows.map((row) => (
+          <div key={row.label} className="contents">
+            <dt className="text-xs text-muted-foreground">{row.label}</dt>
+            <dd className="num">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {note && <p className="text-xs font-medium">{note}</p>}
+    </div>
   )
 }
 

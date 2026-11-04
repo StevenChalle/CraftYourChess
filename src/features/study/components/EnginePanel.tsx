@@ -106,63 +106,69 @@ export function EnginePanel({
       ) : (
         on &&
         !node.over && (
-          <ol
-            ref={listRef}
-            className="relative space-y-1 text-sm"
-            onMouseEnter={() => lines.length > 0 && setHeld({ fen: node.fen, lines })}
-            onMouseLeave={() => {
-              setHeld(undefined)
-              setPreview(undefined)
-            }}
-          >
-            {Array.from({ length: LIVE_LINES }, (_, index) => {
-              const line = shown[index]
-              return (
-                <li
-                  key={index}
-                  className="flex h-6 items-center gap-1.5 overflow-hidden rounded-sm border border-border-strong/40 bg-raised px-1.5"
-                >
-                  {line ? (
-                    <>
-                      <span
-                        className={cn(
-                          'num w-11 shrink-0 rounded-sm border px-1 text-center text-xs leading-4 font-semibold',
-                          scoreChip(line.score),
-                        )}
-                      >
-                        {formatScore(line.score)}
-                      </span>
-                      <span className="min-w-0 truncate text-xs" title={lineText(node, line)}>
-                        {line.moves.map((move, at) => {
-                          const label = moveLabel(node, at)
-                          return (
-                            <span key={at}>
-                              {label && <span className="num text-muted-foreground">{label}</span>}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPreview(undefined)
-                                  onPlay(line.moves.slice(0, at + 1).map((item) => item.uci))
-                                }}
-                                onPointerEnter={(event) => showPreview(event, move.fen, move.uci)}
-                                onPointerLeave={() => setPreview(undefined)}
-                                className="rounded-sm px-px text-text-strong hover:bg-primary hover:text-primary-foreground"
-                              >
-                                {move.san}
-                              </button>{' '}
-                            </span>
-                          )
-                        })}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">…</span>
-                  )}
-                </li>
-              )
-            })}
+          // The preview beside the list, not in it: a list item more would change its spacing
+          // (and move the moves below).
+          <div className="relative">
+            <ol
+              ref={listRef}
+              className="space-y-1 text-sm"
+              onMouseEnter={() => lines.length > 0 && setHeld({ fen: node.fen, lines })}
+              onMouseLeave={() => {
+                setHeld(undefined)
+                setPreview(undefined)
+              }}
+            >
+              {Array.from({ length: LIVE_LINES }, (_, index) => {
+                const line = shown[index]
+                return (
+                  <li
+                    key={index}
+                    className="flex h-6 items-center gap-1.5 overflow-hidden rounded-sm border border-border-strong/40 bg-raised px-1.5"
+                  >
+                    {line ? (
+                      <>
+                        <span
+                          className={cn(
+                            'num w-11 shrink-0 rounded-sm border px-1 text-center text-xs leading-4 font-semibold',
+                            scoreChip(line.score),
+                          )}
+                        >
+                          {formatScore(line.score)}
+                        </span>
+                        <span className="min-w-0 truncate text-xs" title={lineText(node, line)}>
+                          {line.moves.map((move, at) => {
+                            const label = moveLabel(node, at)
+                            return (
+                              <span key={at}>
+                                {label && (
+                                  <span className="num text-muted-foreground">{label}</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPreview(undefined)
+                                    onPlay(line.moves.slice(0, at + 1).map((item) => item.uci))
+                                  }}
+                                  onPointerEnter={(event) => showPreview(event, move.fen, move.uci)}
+                                  onPointerLeave={() => setPreview(undefined)}
+                                  className="rounded-sm px-px text-text-strong hover:bg-primary hover:text-primary-foreground"
+                                >
+                                  {move.san}
+                                </button>{' '}
+                              </span>
+                            )
+                          })}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">…</span>
+                    )}
+                  </li>
+                )
+              })}
+            </ol>
             {preview && <PreviewBoard preview={preview} orientation={orientation} />}
-          </ol>
+          </div>
         )
       )}
     </div>
@@ -200,13 +206,13 @@ function PreviewBoard({ preview, orientation }: { preview: Preview; orientation:
     [preview.fen, preview.uci, orientation],
   )
   return (
-    <li
+    <div
       aria-hidden
       className="pointer-events-none absolute z-20 overflow-hidden rounded-sm border border-border-strong shadow-lg"
       style={{ top: preview.top, left: preview.left, width: PREVIEW_SIZE }}
     >
       <Board config={config} />
-    </li>
+    </div>
   )
 }
 
