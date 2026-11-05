@@ -6,6 +6,8 @@ import { Board } from '@/components/board/Board'
 import { SideSquare } from '@/features/games/components/GamesTable'
 import type { ReviewGame } from '@/features/review/games'
 import { gamePhases } from '@/features/review/phases'
+import { forColor } from '@/features/review/errors'
+import { evalDelta, formatDelta, formatEval } from '@/features/training/evaluation'
 import { moveSquares } from '@/features/training/moves'
 import { formatClock, formatMoveTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -20,7 +22,7 @@ const PAD_Y = 8
 const LABEL_ROOM = 80
 /** The preview over the chart: its board, and the move's details beside it (px) */
 const PREVIEW_SIZE = 240
-const PREVIEW_DETAILS = 150
+const PREVIEW_DETAILS = 176
 const PREVIEW_WIDTH = PREVIEW_DETAILS + 12 + PREVIEW_SIZE + 16 + 2
 
 /**
@@ -250,6 +252,7 @@ export function TimeChart({
               after={positions[hovered]}
               bar={bars.find((bar) => bar.index === hovered)}
               note={notes[hovered]}
+              previousCp={notes[hovered - 1]?.cp}
             />
             <div className="shrink-0" style={{ width: PREVIEW_SIZE }}>
               <Board config={preview} className="rounded-sm" />
@@ -295,20 +298,31 @@ function boardAt(position: StudyNode | undefined, orientation: Color): Config | 
   }
 }
 
-/** The preview's details: the move, the time it took and the clock left, an error. */
+/**
+ * The preview's details: the move, its evaluation and change for whoever played it (when the game
+ * is analysed), the time it took and the clock left, an error.
+ */
 function MoveTime({
   before,
   after,
   bar,
   note,
+  previousCp,
 }: {
   before: StudyNode | undefined
   after: StudyNode | undefined
   bar: ReturnType<typeof timeBars>[number] | undefined
   note: MoveNote | undefined
+  /** The evaluation before the move */
+  previousCp: number | undefined
 }) {
   if (!before || !after) return null
   const number = Number(before.fen.split(' ')[5] ?? 1)
+  const cp = note?.cp
+  const delta =
+    cp !== undefined && previousCp !== undefined
+      ? evalDelta(forColor(previousCp, before.turn), forColor(cp, before.turn))
+      : undefined
   return (
     <div className="shrink-0 space-y-2" style={{ width: PREVIEW_DETAILS }}>
       <p className="flex items-center gap-2 text-base font-medium text-text-strong">
@@ -316,6 +330,19 @@ function MoveTime({
         {`${number}${before.turn === 'white' ? '.' : '…'} ${after.move?.san ?? ''}`}
       </p>
       <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-sm">
+        {cp !== undefined && (
+          <>
+            <dt className="text-xs text-muted-foreground">{m.eval_chart_eval()}</dt>
+            <dd className="num">
+              <span className="text-text-strong">{formatEval(cp)}</span>
+              {delta !== undefined && (
+                <span className={cn('ml-1.5', delta < 0 ? 'text-loss' : 'text-muted-foreground')}>
+                  ({formatDelta(delta)})
+                </span>
+              )}
+            </dd>
+          </>
+        )}
         <dt className="text-xs text-muted-foreground">{m.eval_chart_time_spent()}</dt>
         <dd className="num text-text-strong">
           {bar?.spent !== undefined ? formatMoveTime(bar.spent) : '—'}
