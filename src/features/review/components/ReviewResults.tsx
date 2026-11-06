@@ -95,6 +95,7 @@ export function ReviewResults({
               }}
               extra={{
                 header: m.review_col_errors(),
+                shortHeader: m.review_col_errors_short(),
                 cell: (game: ReviewedGame) => <MistakesCount count={game.mistakes.length} />,
               }}
             />

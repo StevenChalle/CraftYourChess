@@ -35,9 +35,10 @@ export function SideSquare({ color, className }: { color: Color; className?: str
 }
 
 /**
- * Narrow screens keep, by priority: `extra` (the mistakes), time control, links, result, platform
- * (its dot only on phones). The opponent and then the date give way first: tapping a row there
- * shows them under its time control.
+ * Narrow screens keep, by priority: `extra` (the mistakes), time control, links, result, platform.
+ * The opponent and then the date give way first. On a phone, the whole row fits the width: the
+ * platform's dot goes into the time control's cell, the result is a letter, the headers are short,
+ * the cells closer.
  */
 const HIDE = { date: 'hidden md:table-cell', opponent: 'hidden sm:table-cell' }
 
@@ -65,7 +66,12 @@ function Collapse({ open, children }: { open: boolean; children: ReactNode }) {
 }
 
 /** A column specific to one table (mistakes for the review). */
-export type ExtraColumn<G> = { header: string; cell: (game: G) => ReactNode }
+export type ExtraColumn<G> = {
+  header: string
+  /** On a phone */
+  shortHeader?: string
+  cell: (game: G) => ReactNode
+}
 
 /**
  * Games, newest first: date, platform, time control, opponent, result, then `extra` if any. `action`
@@ -81,9 +87,8 @@ export function GamesTable<G extends GameSummary>({
   extra?: ExtraColumn<G>
   action?: (game: G) => ReactNode
   /**
-   * Rows that open onto a full-width panel, one at a time, with a slide (the narrow-screen
-   * details then go into that panel). `onToggle` is told when one opens or closes. `canOpen`:
-   * only some rows have a panel (the others keep their narrow-screen details).
+   * Rows that open onto a full-width panel, one at a time, with a slide. `onToggle` is told when
+   * one opens or closes. `canOpen`: only some rows have a panel (the others do not open).
    */
   expandable?: {
     render: (game: G) => ReactNode
@@ -106,15 +111,9 @@ export function GamesTable<G extends GameSummary>({
     if (openKey !== key) expandable?.onToggle?.(key, true)
     setOpenKey(openKey === key ? undefined : key)
   }
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
-  const toggle = (key: string) =>
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (!next.delete(key)) next.add(key)
-      return next
-    })
   return (
-    <Table>
+    // Closer cells on a phone, for the row to fit its width.
+    <Table className="max-sm:[&_td]:px-1 max-sm:[&_th]:px-1">
       <TableHeader>
         <TableRow>
           {expandable && (
@@ -123,14 +122,19 @@ export function GamesTable<G extends GameSummary>({
             </TableHead>
           )}
           <TableHead className={HIDE.date}>{m.review_col_date()}</TableHead>
-          <TableHead>
-            <span className="max-sm:sr-only">{m.review_col_platform()}</span>
-          </TableHead>
-          {/* On a phone, on two lines: the narrowest column is then the content's */}
-          <TableHead className="max-sm:whitespace-normal">{m.review_col_time_control()}</TableHead>
+          <TableHead className="max-sm:hidden">{m.review_col_platform()}</TableHead>
+          <TableHead>{m.review_col_time_control()}</TableHead>
           <TableHead className={HIDE.opponent}>{m.review_col_opponent()}</TableHead>
-          <TableHead>{m.review_col_result()}</TableHead>
-          {extra && <TableHead className="text-right">{extra.header}</TableHead>}
+          <TableHead>
+            <span className="max-sm:hidden">{m.review_col_result()}</span>
+            <span className="sm:hidden">{m.review_col_result_short()}</span>
+          </TableHead>
+          {extra && (
+            <TableHead className="text-right">
+              <span className={cn(extra.shortHeader && 'max-sm:hidden')}>{extra.header}</span>
+              {extra.shortHeader && <span className="sm:hidden">{extra.shortHeader}</span>}
+            </TableHead>
+          )}
           <TableHead>
             <span className="sr-only">{m.review_col_link()}</span>
           </TableHead>
@@ -142,14 +146,10 @@ export function GamesTable<G extends GameSummary>({
           const key = `${game.source}-${game.id}`
           const openable = expandable !== undefined && (expandable.canOpen?.(game) ?? true)
           const panelOpen = openable && openKey === key
-          // Inline details on narrow screens, unless the row opens onto a panel.
-          const open = !openable && expanded.has(key)
-          // The whole row toggles its panel (or, where columns are hidden, its details), except
-          // its links and buttons.
+          // The whole row toggles its panel, except its links and buttons.
           const onRowClick = (event: MouseEvent) => {
             if ((event.target as Element).closest('a, button')) return
             if (openable) toggleOpen(key)
-            else if (window.matchMedia('(width < 48rem)').matches) toggle(key)
           }
           const row = (
             <TableRow
@@ -195,49 +195,20 @@ export function GamesTable<G extends GameSummary>({
                   </>
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="max-sm:hidden">
                 <SourceLabel source={game.source} compact />
               </TableCell>
-              <TableCell>
-                <button
-                  type="button"
-                  aria-expanded={open}
-                  aria-label={m.games_row_details()}
-                  onClick={() => toggle(key)}
-                  className={cn(
-                    'mr-1 align-middle text-muted-foreground md:hidden',
-                    openable && 'hidden',
-                  )}
-                >
-                  <ChevronDown
-                    className={cn('size-3.5 transition-transform', open && 'rotate-180')}
-                  />
-                </button>
+              <TableCell className="whitespace-nowrap">
+                {/* On a phone, the platform's dot here: one column less */}
+                <span className="mr-1.5 inline-block align-middle sm:hidden">
+                  <SourceLabel source={game.source} compact />
+                </span>
                 {categoryLabel(game.category)}{' '}
                 <span className="num text-muted-foreground">
                   {timeControlLabel(game.timeControl)}
                 </span>
                 {game.variant && (
                   <span className="block text-xs text-highlight">{variantLabel(game.variant)}</span>
-                )}
-                {open && (
-                  <span className="mt-1 block space-y-0.5 md:hidden">
-                    {!game.undated && (
-                      <span className="num block whitespace-nowrap text-muted-foreground">
-                        {formatDate(game.playedAt)} {formatTime(game.playedAt)}
-                      </span>
-                    )}
-                    <span className="block sm:hidden">
-                      <SourceLabel source={game.source} />
-                    </span>
-                    <span className="flex items-center gap-2 sm:hidden">
-                      <SideSquare color={game.color} />
-                      <span className="text-text-strong">{game.opponent.name}</span>
-                      {game.opponent.rating !== undefined && (
-                        <span className="num text-muted-foreground">{game.opponent.rating}</span>
-                      )}
-                    </span>
-                  </span>
                 )}
               </TableCell>
               <TableCell className={HIDE.opponent}>
@@ -249,7 +220,12 @@ export function GamesTable<G extends GameSummary>({
                   )}
                 </span>
               </TableCell>
-              <TableCell className={result.className}>{result.label()}</TableCell>
+              <TableCell className={result.className}>
+                <span className="max-sm:hidden">{result.label()}</span>
+                <span className="font-semibold sm:hidden" title={result.label()}>
+                  {result.short()}
+                </span>
+              </TableCell>
               {extra && <TableCell className="text-right">{extra.cell(game)}</TableCell>}
               <TableCell className="whitespace-nowrap">
                 {/* Centered on the button's line, whatever the text's baseline */}

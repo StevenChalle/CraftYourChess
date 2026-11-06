@@ -335,8 +335,9 @@ function DetailsFrame({
   board: Config
 }) {
   return (
-    <div className="flex items-start gap-4">
-      <div className="flex w-52 shrink-0 flex-col gap-2 md:h-[204px]">
+    // On a phone, the figures take the room the board leaves: the whole fits the width.
+    <div className="flex items-start gap-3 md:gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 md:h-[204px] md:w-52 md:flex-none">
         <div className="space-y-0.5">
           <p className="flex items-center gap-2 text-base font-medium text-text-strong">{title}</p>
           {subtitle}
@@ -345,7 +346,8 @@ function DetailsFrame({
           {rows.map((row) => (
             <div key={row.label} className="contents">
               <dt className="text-xs text-muted-foreground">{row.label}</dt>
-              <dd className="num">{row.value}</dd>
+              {/* A value and its change wrap rather than run under the board */}
+              <dd className="num flex flex-wrap items-baseline">{row.value}</dd>
             </div>
           ))}
         </dl>

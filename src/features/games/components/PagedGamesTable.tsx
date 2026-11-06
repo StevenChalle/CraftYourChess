@@ -111,6 +111,7 @@ export function PagedGamesTable({
           }}
           extra={{
             header: m.review_col_errors(),
+            shortHeader: m.review_col_errors_short(),
             cell: (game) => {
               const review = reviewOf(game)
               return review && <MistakesCount count={review.mistakes.length} />
