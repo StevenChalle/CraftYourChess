@@ -5,8 +5,9 @@ import { m } from '@/paraglide/messages'
 /**
  * A game's action in a list. Not analysed: analyses it where it is (`onAnalyze`, a loader in the
  * button while `busy`). Analysed: opens the training of its errors (`onTrain`); `disabled` when it
- * has none, or while another game is analysed. `size` 'sm': larger, its label always shown.
- * `compact`: the training as an icon alone.
+ * has none, or while another game is analysed. `size` 'xs': its label hidden on a phone (an icon
+ * alone), 'sm': larger, its label always shown. `compact`: the training named in full for screen
+ * readers.
  */
 export function AnalyzeLink({
   analysed = false,
@@ -26,27 +27,29 @@ export function AnalyzeLink({
   busy?: boolean
 }) {
   const label = size === 'xs' ? 'max-sm:sr-only' : undefined
+  // In a list, the same width whatever the label, for the row's other buttons to line up.
+  const width = size === 'xs' ? 'sm:min-w-22' : undefined
   if (analysed) {
-    return compact ? (
+    return (
       <Button
-        size="icon-xs"
+        size={size}
+        className={width}
         disabled={disabled}
         onClick={onTrain}
         title={m.replay_game()}
-        aria-label={m.replay_game()}
+        aria-label={compact ? m.replay_game() : undefined}
       >
-        <Swords className="size-3.5" />
-      </Button>
-    ) : (
-      <Button size={size} disabled={disabled} onClick={onTrain} title={m.replay_game()}>
         <Swords data-icon="inline-start" />
-        <span className={label}>{m.replay_game_short()}</span>
+        <span className={label} aria-hidden={compact || undefined}>
+          {m.replay_game_short()}
+        </span>
       </Button>
     )
   }
   return (
     <Button
       size={size}
+      className={width}
       // While busy, not greyed out: its loader says the analysis runs.
       onClick={busy ? undefined : onAnalyze}
       disabled={disabled}
