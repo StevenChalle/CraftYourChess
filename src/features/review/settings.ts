@@ -1,6 +1,7 @@
 import type { Color } from 'chessops'
 import type { GameResult } from '@/features/games/normalize'
 import { CATEGORIES, type Category } from '@/features/player/summary'
+import { detectDevice } from '@/lib/device'
 import type { ApiSource } from '@/lib/http'
 import { DEFAULT_CRITERIA, normalizeCriteria, type ReviewCriteria } from './criteria'
 import {
@@ -25,7 +26,20 @@ import {
 const STORAGE_KEY = 'craftyourchess:review-settings'
 const VERSION = 1
 
-export type ReviewSettings = { selection: GameSelection; criteria: ReviewCriteria }
+export type ReviewSettings = {
+  selection: GameSelection
+  criteria: ReviewCriteria
+  /**
+   * Once the analysis is done, every position of its games the engine only looked at quickly gets
+   * a deep look, in the background. Not a filter: changing it alone does not make a new analysis.
+   */
+  autoDeepen: boolean
+}
+
+/** On by default on a computer; on a phone, minutes of Stockfish weigh on the battery. */
+export function defaultAutoDeepen(): boolean {
+  return detectDevice() === 'desktop'
+}
 
 const SOURCES: ApiSource[] = ['lichess', 'chesscom']
 
@@ -70,7 +84,11 @@ function parseRatingFilter(value: unknown): OpponentRatingFilter | undefined {
  * Platforms are limited to the accounts available now (all of them if none of the saved ones).
  */
 export function parseReviewSettings(raw: string | null, available: ApiSource[]): ReviewSettings {
-  const defaults = { selection: defaultSelection(available), criteria: DEFAULT_CRITERIA }
+  const defaults = {
+    selection: defaultSelection(available),
+    criteria: DEFAULT_CRITERIA,
+    autoDeepen: defaultAutoDeepen(),
+  }
   if (!raw) return defaults
   let data: Record<string, unknown>
   try {
@@ -102,7 +120,9 @@ export function parseReviewSettings(raw: string | null, available: ApiSource[]):
       ? normalizeCriteria({ errorMinDrop, validMaxDrop })
       : DEFAULT_CRITERIA
 
-  return { selection, criteria }
+  const autoDeepen = typeof data.autoDeepen === 'boolean' ? data.autoDeepen : defaults.autoDeepen
+
+  return { selection, criteria, autoDeepen }
 }
 
 export function loadReviewSettings(available: ApiSource[]): ReviewSettings {

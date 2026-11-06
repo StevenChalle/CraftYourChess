@@ -4,13 +4,13 @@ import { GamePanel } from '@/features/review/components/GamePanel'
 import { gameRef } from '@/features/review/gameRef'
 import type { ReviewGame } from '@/features/review/games'
 import { reviewedGameKey, useAnalysisSession } from '@/features/review/sessionContext'
+import { trackedReview, useTracker } from '@/features/review/tracker'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
 import { useKeptScroll } from '@/hooks/useKeptScroll'
 import { pageSlice } from '@/lib/pagination'
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../pageSize'
 import { m } from '@/paraglide/messages'
 import { ReviewLink } from '@/features/study/components/ReviewLink'
-import { useAnalysisHere } from '../useAnalysisHere'
 import { AnalysisProgress } from './AnalysisInPlace'
 import { AnalyzeLink } from './AnalyzeLink'
 import { MistakesCount } from './MistakesCount'
@@ -18,10 +18,12 @@ import { GamesTable } from './GamesTable'
 
 /**
  * Games already in memory, in their order (newest first), 20 per page or as many as chosen (kept
- * in this browser), the arrows under the list. A game is analysed right where it is: its row opens
- * on the progress, then on the game. A game analysed before shows its errors and opens onto its
- * evaluation chart, as in the analysis's results (judged from the cache with the analysis's
- * criteria). New games arriving keep the page shown.
+ * in this browser), the arrows under the list. A game is analysed right where it is, after those
+ * asked before it: a loader in its button, its row opens on the steps, then on the game as soon as
+ * it is judged, deepening on its own (its errors counted again as it goes). The background
+ * analysis's games show the same way (tracker.ts). A game analysed before shows its errors and
+ * opens onto its evaluation chart, as in the analysis's results (judged from the cache with the
+ * analysis's criteria). New games arriving keep the page shown.
  */
 export function PagedGamesTable({
   games,
@@ -36,27 +38,32 @@ export function PagedGamesTable({
 }) {
   // The page and the game open live in the session: coming back from a review or a training finds
   // them again.
-  const { draft, deepening, trainGame, gameList, setGameList } = useAnalysisSession()
+  const { draft, trainGame, gameList, setGameList, player, analyzeGame, stopGame } =
+    useAnalysisSession()
+  const tracked = useTracker()
   const wanted = gameList.page
   const setWanted = (page: number) => setGameList((view) => ({ ...view, page }))
   const [pageSize, setPageSize] = useState(loadPageSize)
   const page = Math.min(wanted, Math.max(0, Math.ceil(games.length / pageSize) - 1))
   const shown = pageSlice(games, page, pageSize)
-  // Read again once a game is deepened, by the session or in its panel.
-  const [deepened, setDeepened] = useState(0)
-  const reviewed = useCachedReviews(shown, draft.criteria, `${deepening?.gameKey}:${deepened}`)
-  // A game analysed right here: its row opens on the progress, then on the game once analysed.
-  const here = useAnalysisHere(() => setDeepened((count) => count + 1))
+  // Read again whenever an analysis or a deepening ends.
+  const reviewed = useCachedReviews(shown, draft.criteria, String(tracked.revision))
   const [openNow, setOpenNow] = useState<{ key: string }>()
   const reviewOf = (game: ReviewGame) =>
-    reviewed.get(gameRef(game)) ?? here.analysed.get(gameRef(game))
+    trackedReview(tracked, gameRef(game), draft.criteria, reviewed.get(gameRef(game)))
+  /** Analysed, waiting or under way: not judged yet */
+  const analysing = (game: ReviewGame) => {
+    const active = tracked.active.get(gameRef(game))
+    return active !== undefined && active.review === undefined ? active : undefined
+  }
+  const failed = (game: ReviewGame) => player.failed.has(gameRef(game))
   const rootRef = useRef<HTMLDivElement>(null)
 
   // The window's scroll, kept as the list is left, and put back on return once the list (and the
   // game open, which makes the page taller) is there again.
   useKeptScroll(
     gameList.scrollY,
-    gameList.open === undefined || reviewed.size > 0 || here.analysed.size > 0,
+    gameList.open === undefined || reviewed.size > 0 || tracked.results.size > 0,
     (scrollY) => setGameList((view) => ({ ...view, scrollY })),
   )
 
@@ -82,12 +89,19 @@ export function PagedGamesTable({
                     ? { ...view, open: undefined }
                     : view,
               ),
-            canOpen: (game) => reviewOf(game) !== undefined || here.current?.ref === gameRef(game),
+            canOpen: (game) =>
+              reviewOf(game) !== undefined || analysing(game) !== undefined || failed(game),
             openNow,
             render: (game) => {
               const review = reviewOf(game)
-              if (!review && here.current?.ref === gameRef(game)) {
-                return <AnalysisProgress state={here.current} onStop={here.stop} />
+              if (!review) {
+                return (
+                  <AnalysisProgress
+                    analysis={analysing(game)}
+                    failed={failed(game)}
+                    onStop={() => stopGame(gameRef(game))}
+                  />
+                )
               }
               return (
                 review && (
@@ -95,7 +109,6 @@ export function PagedGamesTable({
                     game={review}
                     deepen={false}
                     ratingChange={ratingChange(game)}
-                    onDeepened={() => setDeepened((count) => count + 1)}
                     train={
                       <AnalyzeLink
                         analysed
@@ -114,27 +127,24 @@ export function PagedGamesTable({
             shortHeader: m.review_col_errors_short(),
             cell: (game) => {
               const review = reviewOf(game)
-              return review && <MistakesCount count={review.mistakes.length} />
+              const live = tracked.active.get(gameRef(game))?.review !== undefined
+              return review && <MistakesCount count={review.mistakes.length} live={live} />
             },
           }}
           action={(game) => {
             const review = reviewOf(game)
-            const busy = here.current?.ref === gameRef(game) && !here.current.failed
+            const busy = analysing(game) !== undefined
             return (
               <>
                 <ReviewLink game={game} compact />
                 <AnalyzeLink
                   analysed={review !== undefined}
-                  disabled={
-                    review
-                      ? review.mistakes.length === 0
-                      : !busy && here.current !== undefined && !here.current.failed
-                  }
+                  disabled={review !== undefined && review.mistakes.length === 0}
                   compact
                   busy={busy}
                   onTrain={() => review && trainGame(review.mistakes, draft.criteria)}
                   onAnalyze={() => {
-                    here.start(game)
+                    analyzeGame(game)
                     setOpenNow({ key: reviewedGameKey(game) })
                     setGameList((view) => ({ ...view, open: reviewedGameKey(game) }))
                   }}

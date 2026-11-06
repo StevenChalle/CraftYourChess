@@ -20,25 +20,19 @@ import {
 } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { AnalysisProgress } from '@/features/games/components/AnalysisInPlace'
 import type { ProfileSearch } from '@/features/player/search'
-import {
-  analyzeGames,
-  deepenGame,
-  shallowPositions,
-  withDeepPosition,
-  type ReviewedGame,
-} from '@/features/review/analyze'
+import { shallowPositions, type ReviewedGame } from '@/features/review/analyze'
 import { EvalChart } from '@/features/review/components/EvalChart'
 import type { WhiteScore } from '@/features/review/errors'
 import type { Color } from 'chessops'
 import { gameRef } from '@/features/review/gameRef'
 import { clocksAt, type ReviewGame } from '@/features/review/games'
-import type { ReviewProgress } from '@/features/review/progress'
 import { useAnalysisSession } from '@/features/review/sessionContext'
+import { trackedReview, useTracker, type TrackedAnalysis } from '@/features/review/tracker'
 import { useCachedReviews } from '@/features/review/useCachedReviews'
 import { SIDE_BY_SIDE, useBoardSize } from '@/features/training/useBoardSize'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { withActivity } from '@/lib/activity'
 import { detectDevice } from '@/lib/device'
 import { formatClock, formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -70,9 +64,8 @@ const KEYS: Record<string, 'back' | 'forward' | 'start' | 'end'> = {
   End: 'end',
 }
 
-type Work =
-  | { kind: 'analysing'; progress?: ReviewProgress }
-  | { kind: 'deepening'; done: number; total: number }
+/** The game's analysis or deepening under way (tracker.ts), whoever runs it */
+type Work = TrackedAnalysis
 
 type PhoneTab = 'moves' | 'engine' | 'chart' | 'time' | 'info'
 /** The charts under the board: the evaluation's, the time's */
@@ -101,7 +94,14 @@ export function StudyView({
 }) {
   const ref = gameRef(game)
   const navigate = useNavigate()
-  const { draft, trainGame } = useAnalysisSession()
+  const {
+    draft,
+    trainGame,
+    analyzeGame,
+    deepenGame,
+    stopGame,
+    player: playerAnalysis,
+  } = useAnalysisSession()
   const criteria = draft.criteria
   const wide = useMediaQuery(SIDE_BY_SIDE)
 
@@ -111,92 +111,25 @@ export function StudyView({
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('chart')
   const [chartTab, setChartTab] = useState<ChartTab>('eval')
 
-  // The analysis: from the cache, or made here (then deepened here).
+  // The analysis: from the cache, or made from here. It runs in the session (playerAnalysis.ts),
+  // then deepens: both go on if the page is left for the profile, and show here again on return.
+  const tracked = useTracker()
   const cached = useCachedReviews(
     useMemo(() => [game], [game]),
     criteria,
+    String(tracked.revision),
   )
-  const [local, setLocal] = useState<ReviewedGame>()
-  const review = local ?? cached.get(ref)
-  const notes = useMemo(() => moveNotes(game, review), [game, review])
-  const [work, setWork] = useState<Work>()
-  const [workFailed, setWorkFailed] = useState(false)
-  const job = useRef<AbortController | undefined>(undefined)
-  useEffect(() => () => job.current?.abort(), [])
-
-  const analyse = async () => {
-    const controller = new AbortController()
-    job.current = controller
-    setWorkFailed(false)
-    setWork({ kind: 'analysing' })
-    try {
-      const [reviewed] = await withActivity(() =>
-        analyzeGames([game], criteria, {
-          signal: controller.signal,
-          onProgress: (progress) => {
-            if (!controller.signal.aborted) setWork({ kind: 'analysing', progress })
-          },
-        }),
-      )
-      if (!controller.signal.aborted && reviewed) setLocal(reviewed)
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        console.error('Study: analysis failed', error)
-        setWorkFailed(true)
-      }
-    } finally {
-      if (job.current === controller) {
-        job.current = undefined
-        setWork(undefined)
-      }
-    }
-  }
-
-  const deepen = async () => {
-    if (!review) return
-    const controller = new AbortController()
-    job.current = controller
-    const total = shallowPositions(review).length
-    let done = 0
-    let current = review
-    setWorkFailed(false)
-    setWork({ kind: 'deepening', done, total })
-    try {
-      await withActivity(() =>
-        deepenGame(current, {
-          signal: controller.signal,
-          onPosition: (index, cp) => {
-            current = withDeepPosition(current, index, cp, criteria)
-            done += 1
-            setLocal(current)
-            setWork({ kind: 'deepening', done, total })
-          },
-        }),
-      )
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        console.error('Study: deepening failed', error)
-        setWorkFailed(true)
-      }
-    } finally {
-      if (job.current === controller) {
-        job.current = undefined
-        setWork(undefined)
-      }
-    }
-  }
-
-  const stopWork = () => {
-    job.current?.abort()
-    job.current = undefined
-    setWork(undefined)
-  }
+  const review = trackedReview(tracked, ref, criteria, cached.get(ref))
+  const notes = moveNotes(game, review)
+  const work = tracked.active.get(ref)
+  /** The two steps of the analysis, before the game is judged */
+  const analysing = work !== undefined && work.review === undefined
 
   // The live engine: on when the page opens on the game's start, off when it opens on a given
-  // position (switched on only when wanted); nothing remembered. Paused while the analysis
-  // computes here (they would share the processor).
+  // position (switched on only when wanted); nothing remembered. Paused while the game's analysis
+  // runs (they would share the processor); a deepening gives way to it instead.
   const [engineOn, setEngineOn] = useState(ply === 0)
-  const live = useLiveAnalysis(node.over ? undefined : node.fen, engineOn && !work)
+  const live = useLiveAnalysis(node.over ? undefined : node.fen, engineOn && !analysing)
   const lines = useMemo(
     () => (live.analysis ? shownLines(node.fen, node.turn, live.analysis) : []),
     [live.analysis, node.fen, node.turn],
@@ -341,12 +274,12 @@ export function StudyView({
     <StudyAction
       review={review}
       work={work}
-      failed={workFailed}
+      failed={playerAnalysis.failed.has(ref)}
       mistakes={mistakes}
       onTrain={() => review && trainGame(review.mistakes, criteria)}
-      onAnalyse={() => void analyse()}
-      onDeepen={() => void deepen()}
-      onStop={stopWork}
+      onAnalyse={() => analyzeGame(game)}
+      onDeepen={() => review && deepenGame(review)}
+      onStop={() => stopGame(ref)}
     />
   )
   const engine = (header: boolean) => (
@@ -593,37 +526,8 @@ function StudyAction({
   onDeepen: () => void
   onStop: () => void
 }) {
-  if (work) {
-    const progress =
-      work.kind === 'deepening'
-        ? {
-            label: m.deepen_running({
-              done: formatNumber(work.done),
-              total: formatNumber(work.total),
-            }),
-            value: work.done / Math.max(work.total, 1),
-          }
-        : work.progress?.phase === 'analysing'
-          ? {
-              label: m.study_analysing({
-                done: formatNumber(work.progress.done),
-                total: formatNumber(work.progress.total),
-              }),
-              value: work.progress.done / Math.max(work.progress.total, 1),
-            }
-          : { label: m.study_analysis_starting(), value: 0 }
-    return (
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-xs text-muted-foreground tabular-nums">{progress.label}</p>
-          <Progress value={progress.value * 100} />
-        </div>
-        <Button variant="ghost" size="sm" onClick={onStop} className="text-muted-foreground">
-          {m.deepen_stop()}
-        </Button>
-      </div>
-    )
-  }
+  // The two steps of the analysis, waiting for its turn or under way.
+  if (work && !work.review) return <AnalysisProgress analysis={work} onStop={onStop} />
   if (!review) {
     return (
       <div className="space-y-1">
@@ -637,19 +541,52 @@ function StudyAction({
   }
   const shallow = shallowPositions(review).length
   return (
-    <div className="flex items-center gap-2">
-      {mistakes > 0 ? (
-        <Button className="flex-1" onClick={onTrain}>
-          <Swords data-icon="inline-start" />
-          {m.study_train({ count: mistakes, formatted: formatNumber(mistakes) })}
-        </Button>
-      ) : (
-        <p className="flex-1 text-sm text-win">{m.study_no_mistakes()}</p>
-      )}
-      {shallow > 0 && (
-        <Button variant="outline" onClick={onDeepen} title={m.deepen_hint()}>
-          <Microscope data-icon="inline-start" />
-          {m.study_deepen()}
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {mistakes > 0 ? (
+          <Button className="flex-1" onClick={onTrain}>
+            <Swords data-icon="inline-start" />
+            {m.study_train({ count: mistakes, formatted: formatNumber(mistakes) })}
+          </Button>
+        ) : (
+          <p className="flex-1 text-sm text-win">{m.study_no_mistakes()}</p>
+        )}
+        {shallow > 0 && !work && (
+          <Button variant="outline" onClick={onDeepen} title={m.deepen_hint()}>
+            <Microscope data-icon="inline-start" />
+            {m.study_deepen()}
+          </Button>
+        )}
+      </div>
+      {/* Deepening on its own after the analysis: the errors above are counted again as it goes */}
+      {work && <DeepenLine work={work} onStop={onStop} />}
+    </div>
+  )
+}
+
+/** The game's deepening, under its action: waiting for its turn, or its progress. */
+function DeepenLine({ work, onStop }: { work: Work; onStop: () => void }) {
+  const background = work.by === 'background'
+  return (
+    <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {work.stage === 'deepening'
+            ? m.deepen_running({ done: formatNumber(work.done), total: formatNumber(work.total) })
+            : background
+              ? m.deepen_background()
+              : m.deepen_waiting()}
+          {work.stage === 'deepening' && background && <> · {m.analysis_here_background_short()}</>}
+          {work.paused && <> · {m.deepen_paused()}</>}
+        </p>
+        <Progress
+          value={(work.done / Math.max(work.total, 1)) * 100}
+          data-loading={work.stage === 'deepening' ? undefined : true}
+        />
+      </div>
+      {!background && (
+        <Button variant="ghost" size="sm" onClick={onStop} className="text-muted-foreground">
+          {m.deepen_stop()}
         </Button>
       )}
     </div>

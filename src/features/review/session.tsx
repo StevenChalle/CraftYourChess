@@ -1,10 +1,18 @@
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
 import { RefreshCw } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
 import type { ProfileSearch } from '@/features/player/search'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useKeepAwake } from '@/hooks/useKeepAwake'
-import { beginActivity, waitForOthers, watchOthers, withActivity } from '@/lib/activity'
+import { withActivity } from '@/lib/activity'
 import { trainingPuzzles } from '@/features/training/order'
 import type { TrainingProgress } from '@/features/training/session'
 import {
@@ -14,13 +22,9 @@ import {
   type TrainingSettings,
 } from '@/features/training/settings'
 import { m } from '@/paraglide/messages'
-import {
-  analyzeGames,
-  deepenGame,
-  shallowPositions,
-  withDeepPosition,
-  type Mistake,
-} from './analyze'
+import { analyzeGames, shallowPositions, type Mistake, type ReviewedGame } from './analyze'
+import { browserPlayerAnalysisDeps, createPlayerAnalysis } from './playerAnalysis'
+import { tracker } from './tracker'
 import { DEFAULT_CRITERIA, type ReviewCriteria } from './criteria'
 import type { FoundGames, ReviewAccount } from './fetch'
 import type { GameLibrary } from './library'
@@ -34,6 +38,7 @@ import {
 } from './openSession'
 import { defaultSelection } from './selection'
 import {
+  defaultAutoDeepen,
   loadReviewSettings,
   sameSelection,
   saveReviewSettings,
@@ -61,6 +66,7 @@ function quickSettings(library: GameLibrary): ReviewSettings {
       scope: { kind: 'latest', count: 1 },
     },
     criteria: DEFAULT_CRITERIA,
+    autoDeepen: defaultAutoDeepen(),
   }
 }
 
@@ -114,7 +120,11 @@ export function AnalysisSessionProvider({
     () =>
       initialQuick ??
       (library.kind === 'import'
-        ? { selection: defaultSelection(sources), criteria: DEFAULT_CRITERIA }
+        ? {
+            selection: defaultSelection(sources),
+            criteria: DEFAULT_CRITERIA,
+            autoDeepen: defaultAutoDeepen(),
+          }
         : loadReviewSettings(accounts.map((account) => account.source))),
   )
   const [search, setSearch] = useState<SearchState>({ status: 'idle' })
@@ -139,11 +149,30 @@ export function AnalysisSessionProvider({
   const [gameList, setGameList] = useState<GameListView>({ page: 0 })
   const [view, setView] = useState<(AnalysisView & { analysisId: number }) | undefined>()
   const [analysisId, setAnalysisId] = useState(0)
-  const [deepening, setDeepening] = useState<Deepening | undefined>(undefined)
-  const deepenJob = useRef<AbortController | undefined>(undefined)
-  // The deepening loop reads the latest games, not those of the render it started in.
+  // The player's analyses of single games and every deepening, one at a time (playerAnalysis.ts).
+  // A deepened game of the analysis open is followed in it as it goes.
+  const onDeepened = useRef<(ref: string, game: ReviewedGame) => void>(() => {})
+  const [player] = useState(() =>
+    createPlayerAnalysis(tracker, browserPlayerAnalysisDeps(), (ref, game) =>
+      onDeepened.current(ref, game),
+    ),
+  )
+  const playerState = useSyncExternalStore(player.subscribe, player.get, player.get)
+  // Effects that run on a page change read the latest analysis, not that of their render.
   const analysisRef = useRef(analysis)
   analysisRef.current = analysis
+  onDeepened.current = (ref, game) =>
+    setAnalysis((state) =>
+      state.status === 'done' && state.outcome.games.some((item) => refOf(item) === ref)
+        ? {
+            ...state,
+            outcome: {
+              ...state.outcome,
+              games: state.outcome.games.map((item) => (refOf(item) === ref ? game : item)),
+            },
+          }
+        : state,
+    )
   const searchJob = useRef<AbortController | undefined>(undefined)
   const analysisJob = useRef<AbortController | undefined>(undefined)
   const analysisCount = useRef(0)
@@ -154,13 +183,17 @@ export function AnalysisSessionProvider({
     restored.training?.phase.kind === 'running' ? restored.training.phase.run : 0,
   )
 
-  useKeepAwake(analysis.status === 'running' || deepening !== undefined)
+  useKeepAwake(
+    analysis.status === 'running' ||
+      playerState.deepening !== undefined ||
+      playerState.analysing.length > 0,
+  )
 
   /** Stops the latest search, analysis and deepening, whichever they are by then. */
   const stopAll = () => {
     searchJob.current?.abort()
     analysisJob.current?.abort()
-    deepenJob.current?.abort()
+    player.stopAll()
   }
 
   const restart = (job: React.RefObject<AbortController | undefined>) => {
@@ -178,8 +211,7 @@ export function AnalysisSessionProvider({
     async (settings: ReviewSettings, getFound: (signal: AbortSignal) => Promise<FoundGames>) => {
       const signal = restart(analysisJob)
       // A deepening worked on the games being replaced.
-      deepenJob.current?.abort()
-      setDeepening(undefined)
+      player.stopScope('all')
       analysisCount.current += 1
       setAnalysisId(analysisCount.current)
       setAnalysis({ status: 'running', progress: { phase: 'fetching' }, settings })
@@ -218,7 +250,7 @@ export function AnalysisSessionProvider({
         }
       }
     },
-    [profile],
+    [profile, player],
   )
 
   // Stops everything when the page goes away (the provider is remounted for other accounts).
@@ -321,11 +353,11 @@ export function AnalysisSessionProvider({
   const launch = useCallback(async () => {
     if (search.status !== 'found' || !(await confirmReplace())) return
     const { found, selection } = search
-    const settings = { selection, criteria: draft.criteria }
+    const settings = { selection, criteria: draft.criteria, autoDeepen: draft.autoDeepen }
     // Remembered for next time: the settings of the last analysis launched from the filters.
     if (library.kind === 'accounts') saveReviewSettings(settings)
     void runAnalysis(settings, async () => found)
-  }, [search, draft.criteria, confirmReplace, runAnalysis, library.kind])
+  }, [search, draft.criteria, draft.autoDeepen, confirmReplace, runAnalysis, library.kind])
 
   /**
    * Opens the training page on these errors, on its options or already running; it replaces any
@@ -494,100 +526,56 @@ export function AnalysisSessionProvider({
   /** Stops the analysis under way and drops it: back to the filters, to change them. */
   const stopAnalysis = useCallback(() => {
     analysisJob.current?.abort()
-    deepenJob.current?.abort()
-    setDeepening(undefined)
+    player.stopScope('all')
     setAnalysis({ status: 'none' })
     saveOpenAnalysis(profile, undefined)
-  }, [profile])
+  }, [profile, player])
 
   /**
-   * Deepens these games one after the other. It holds an activity (the background analysis waits)
-   * but gives way to any other use of Stockfish (a training, here or in another tab): it stops its
-   * engines, shows that it is paused, and goes on a few seconds after the last one ends. What was
-   * evaluated stays: it resumes with the positions left.
+   * Deepens these games of the analysis one after the other (playerAnalysis.ts: they give way to
+   * any other use of Stockfish). 'all' replaces the analysis's other deepenings.
    */
-  const deepenGames = useCallback(async (gameKeys: string[], scope: Deepening['scope']) => {
-    const signal = restart(deepenJob)
-    const endActivity = beginActivity()
-    signal.addEventListener('abort', endActivity, { once: true })
-    const latest = (gameKey: string) => {
-      const current = analysisRef.current
-      return current.status === 'done'
-        ? current.outcome.games.find((item) => reviewedGameKey(item) === gameKey)
-        : undefined
-    }
-    games: for (const [position, gameKey] of gameKeys.entries()) {
-      const first = latest(gameKey)
-      if (signal.aborted || !first) break
-      const total = shallowPositions(first).length
-      if (total === 0) continue
-      const gamesLeft = gameKeys.length - position - 1
-      while (!signal.aborted) {
-        // The positions deepened before a pause are precise now: only the others are left.
-        const game = latest(gameKey)
-        const left = game ? shallowPositions(game).length : 0
-        if (!game || left === 0) break
-        setDeepening({ scope, gameKey, done: total - left, total, gamesLeft, paused: false })
-        const criteria =
-          analysisRef.current.status === 'done' ? analysisRef.current.outcome.criteria : undefined
-        const yielded = new AbortController()
-        const stopWatching = watchOthers(() => yielded.abort())
-        try {
-          await deepenGame(game, {
-            signal: AbortSignal.any([signal, yielded.signal]),
-            onPosition: (index, cp) => {
-              setAnalysis((state) =>
-                state.status === 'done'
-                  ? {
-                      ...state,
-                      outcome: {
-                        ...state.outcome,
-                        games: state.outcome.games.map((item) =>
-                          reviewedGameKey(item) === gameKey && criteria
-                            ? withDeepPosition(item, index, cp, criteria)
-                            : item,
-                        ),
-                      },
-                    }
-                  : state,
-              )
-              setDeepening((state) =>
-                state?.gameKey === gameKey ? { ...state, done: state.done + 1 } : state,
-              )
-            },
-          })
-        } catch (error) {
-          if (!signal.aborted && !yielded.signal.aborted) {
-            console.error('Deepening failed', error)
-            break games
-          }
-        } finally {
-          stopWatching()
-        }
-        if (signal.aborted || !yielded.signal.aborted) break
-        // Another use of Stockfish: wait for it to end, then go on with this game.
-        setDeepening((state) => (state ? { ...state, paused: true } : state))
-        await waitForOthers(signal)
-      }
-    }
-    endActivity()
-    if (!signal.aborted) setDeepening(undefined)
-  }, [])
+  const deepenGames = useCallback(
+    (gameKeys: string[], scope: Deepening['scope']) => {
+      if (analysis.status !== 'done') return
+      const { games, criteria } = analysis.outcome
+      const entries = gameKeys.flatMap((key) => {
+        const game = games.find((item) => reviewedGameKey(item) === key)
+        return game ? [{ game, criteria }] : []
+      })
+      player.deepen(entries, scope, { replace: scope === 'all' })
+    },
+    [analysis, player],
+  )
 
-  // Once an analysis is done, its games are deepened at once (each analysis once: stopping the
-  // deepening is for good).
+  // Once an analysis is done, its games are deepened at once if its option says so (each analysis
+  // once: stopping the deepening is for good).
   const autoDeepened = useRef<number | undefined>(undefined)
   useEffect(() => {
     if (analysis.status !== 'done' || autoDeepened.current === analysisId) return
     autoDeepened.current = analysisId
+    if (!analysis.settings.autoDeepen) return
     const pending = analysis.outcome.games.filter((game) => shallowPositions(game).length > 0)
-    if (pending.length > 0) void deepenGames(pending.map(reviewedGameKey), 'all')
+    if (pending.length > 0) deepenGames(pending.map(reviewedGameKey), 'all')
   }, [analysis, analysisId, deepenGames])
 
-  const stopDeepening = useCallback(() => {
-    deepenJob.current?.abort()
-    setDeepening(undefined)
-  }, [])
+  const stopDeepening = useCallback(() => player.stopScope('all'), [player])
+
+  // The deepening under way, if it is one of the analysis's games.
+  const deepening = useMemo((): Deepening | undefined => {
+    const current = playerState.deepening
+    if (!current || analysis.status !== 'done') return undefined
+    const game = analysis.outcome.games.find((item) => refOf(item) === current.ref)
+    if (!game) return undefined
+    return {
+      scope: current.scope,
+      gameKey: reviewedGameKey(game),
+      done: current.done,
+      total: current.total,
+      gamesLeft: playerState.waiting.filter((item) => item.scope === 'all').length,
+      paused: current.paused,
+    }
+  }, [playerState, analysis])
 
   // Leaving the training's page closes it; leaving the analysis's pages closes the analysis (the
   // player was asked first while it ran: LeaveGuard).
@@ -595,8 +583,7 @@ export function AnalysisSessionProvider({
     if (pathname !== TRAINING_PAGE) setTraining(undefined)
     if (!ANALYSIS_PAGES.includes(pathname) && analysisRef.current.status !== 'none' && !quick) {
       analysisJob.current?.abort()
-      deepenJob.current?.abort()
-      setDeepening(undefined)
+      player.stopScope('all')
       setAnalysis({ status: 'none' })
       saveOpenAnalysis(profile, undefined)
     }
@@ -645,8 +632,13 @@ export function AnalysisSessionProvider({
         ...change,
       })),
     deepening,
-    deepenGames: (keys, scope) => void deepenGames(keys, scope),
+    deepenGames,
     stopDeepening,
+    player: playerState,
+    analyzeGame: (game) => player.analyze(game, draft.criteria),
+    deepenGame: (game, criteria) =>
+      player.deepen([{ game, criteria: criteria ?? draft.criteria }], 'game'),
+    stopGame: (ref) => player.stop(ref),
   }
 
   return (

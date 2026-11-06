@@ -1,10 +1,12 @@
 import { createContext, useContext, type Dispatch, type SetStateAction } from 'react'
-import type { Mistake, ReviewOutcome } from './analyze'
+import type { Mistake, ReviewedGame, ReviewOutcome } from './analyze'
 import type { FetchProgress, FoundGames, ReviewAccount } from './fetch'
 import type { GameLibrary } from './library'
 import type { ReviewProgress } from './progress'
 import type { GameSelection } from './selection'
 import type { ReviewSettings } from './settings'
+import type { ReviewGame } from './games'
+import type { PlayerAnalysisState } from './playerAnalysis'
 import type { TrainingProgress } from '@/features/training/session'
 import type { Exercise, TrainingSettings } from '@/features/training/settings'
 import type { ReviewCriteria } from './criteria'
@@ -123,8 +125,19 @@ export type Session = {
   deepening: Deepening | undefined
   /** Deepens these games of the analysis, one after the other (replaces any deepening) */
   deepenGames: (gameKeys: string[], scope: Deepening['scope']) => void
-  /** Stops the deepening: what was found stays */
+  /** Stops the deepening of the analysis's games: what was found stays */
   stopDeepening: () => void
+  /** The player's analyses of single games and the deepenings, waiting or under way */
+  player: PlayerAnalysisState
+  /**
+   * Analyses one game (after those asked before), with the rules being edited, then deepens it on
+   * its own; its progress in the tracker (tracker.ts)
+   */
+  analyzeGame: (game: ReviewGame) => void
+  /** Deepens one game after the others (judged with `criteria`, the rules being edited by default) */
+  deepenGame: (game: ReviewedGame, criteria?: ReviewCriteria) => void
+  /** Stops a game's analysis or deepening (by gameRef): what was found stays */
+  stopGame: (ref: string) => void
 }
 
 /**

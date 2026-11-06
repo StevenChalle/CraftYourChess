@@ -72,3 +72,7 @@ Au clic : **un favori par ligne** (pastilles, nom qui ouvre son profil, barre, n
 
 - Montrer le résultat du travail de fond : sur son propre profil, les N dernières parties déjà analysées, puis des courbes d'évolution (erreurs par phase et par thème, mois après mois).
 - Un nombre de moteurs plus discret pour le fond, au choix.
+
+## Dans les listes de parties
+
+Chaque partie que l'analyse de fond traite se voit en direct dans les listes (profil, imports), comme une partie analysée par le joueur (`features/review/tracker.ts`, alimenté par `browserDeps.ts`) : le loader dans son bouton « Analyser », sa ligne dépliable pendant le travail (« Étape 1 sur 2 · … · en arrière-plan », sans bouton Arrêter : la pause est dans l'en-tête), son résultat dès qu'elle est jugée, avant les autres parties du lot, puis son approfondissement (le nombre d'erreurs recompté, un petit loader à côté). Seulement dans l'onglet qui travaille.

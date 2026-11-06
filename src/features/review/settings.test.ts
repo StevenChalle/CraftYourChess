@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_CRITERIA } from './criteria'
 import { defaultSelection } from './selection'
-import { parseReviewSettings, sameSettings } from './settings'
+import { defaultAutoDeepen, parseReviewSettings, sameSettings } from './settings'
 
 const both = ['lichess', 'chesscom'] as const
 
@@ -9,7 +9,11 @@ const saved = (data: object) => JSON.stringify({ version: 1, ...data })
 
 describe('parseReviewSettings', () => {
   it('falls back to the defaults without valid storage', () => {
-    const defaults = { selection: defaultSelection([...both]), criteria: DEFAULT_CRITERIA }
+    const defaults = {
+      selection: defaultSelection([...both]),
+      criteria: DEFAULT_CRITERIA,
+      autoDeepen: defaultAutoDeepen(),
+    }
     expect(parseReviewSettings(null, [...both])).toEqual(defaults)
     expect(parseReviewSettings('not json', [...both])).toEqual(defaults)
     expect(parseReviewSettings(JSON.stringify({ version: 99 }), [...both])).toEqual(defaults)
@@ -28,6 +32,7 @@ describe('parseReviewSettings', () => {
           opponentRating: { enabled: true, min: 1200, max: 1800 },
         },
         criteria: { errorMinDrop: 15, validMaxDrop: 4 },
+        autoDeepen: false,
       }),
       [...both],
     )
@@ -42,7 +47,15 @@ describe('parseReviewSettings', () => {
         opponentRating: { enabled: true, min: 1200, max: 1800 },
       },
       criteria: { errorMinDrop: 15, validMaxDrop: 4 },
+      autoDeepen: false,
     })
+  })
+
+  it("keeps the deepening option's default when none was saved", () => {
+    expect(parseReviewSettings(saved({}), [...both]).autoDeepen).toBe(defaultAutoDeepen())
+    expect(parseReviewSettings(saved({ autoDeepen: 'yes' }), [...both]).autoDeepen).toBe(
+      defaultAutoDeepen(),
+    )
   })
 
   it('replaces invalid fields one by one', () => {
@@ -81,7 +94,11 @@ describe('parseReviewSettings', () => {
 })
 
 describe('sameSettings', () => {
-  const base = { selection: defaultSelection(['lichess', 'chesscom']), criteria: DEFAULT_CRITERIA }
+  const base = {
+    selection: defaultSelection(['lichess', 'chesscom']),
+    criteria: DEFAULT_CRITERIA,
+    autoDeepen: true,
+  }
 
   it('ignores the order of the chosen items', () => {
     const reordered = {
@@ -128,5 +145,27 @@ describe('sameSettings', () => {
         { ...base, selection: { ...base.selection, scope: { ...range, max: 20 } } },
       ),
     ).toBe(false)
+  })
+})
+
+describe('defaultAutoDeepen', () => {
+  it('deepens on a computer, not on a phone', () => {
+    const agent = vi.spyOn(navigator, 'userAgent', 'get')
+    agent.mockReturnValue('Mozilla/5.0 (X11; Linux x86_64) Chrome/140')
+    expect(defaultAutoDeepen()).toBe(true)
+    agent.mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148')
+    expect(defaultAutoDeepen()).toBe(false)
+    agent.mockRestore()
+  })
+})
+
+describe('sameSettings and the deepening option', () => {
+  it('does not count the option as a change of the analysis', () => {
+    const base = {
+      selection: defaultSelection([...both]),
+      criteria: DEFAULT_CRITERIA,
+      autoDeepen: true,
+    }
+    expect(sameSettings(base, { ...base, autoDeepen: false })).toBe(true)
   })
 })

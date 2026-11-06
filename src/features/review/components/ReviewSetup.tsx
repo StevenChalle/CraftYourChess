@@ -131,7 +131,7 @@ export function ReviewSetup({
   accounts,
   sources,
   gameTotal,
-  value: { selection, criteria },
+  value,
   onChange,
   reference,
 }: {
@@ -145,9 +145,10 @@ export function ReviewSetup({
   /** The current analysis's settings, if any: each section can go back to them */
   reference?: ReviewSettings
 }) {
+  const { selection, criteria } = value
   const update = (change: Partial<GameSelection>) =>
-    onChange({ selection: { ...selection, ...change }, criteria })
-  const setCriteria = (next: ReviewCriteria) => onChange({ selection, criteria: next })
+    onChange({ ...value, selection: { ...selection, ...change } })
+  const setCriteria = (next: ReviewCriteria) => onChange({ ...value, criteria: next })
   const sectionReset = (
     same: (ref: ReviewSettings) => boolean,
     restore: (ref: ReviewSettings) => void,
@@ -465,6 +466,10 @@ export function ReviewSetup({
               }
             />
           </div>
+          <AutoDeepenField
+            checked={value.autoDeepen}
+            onChange={(autoDeepen) => onChange({ ...value, autoDeepen })}
+          />
         </Expandable>
       </ExpandableGroup>
 
@@ -478,6 +483,33 @@ export function ReviewSetup({
             : m.setup_invalid()}
         </p>
       )}
+    </div>
+  )
+}
+
+/** Deepening every game once the analysis is done (ReviewSettings.autoDeepen). */
+function AutoDeepenField({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  const id = useId()
+  return (
+    <div className="mt-6 flex items-start gap-2">
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={(next) => onChange(next === true)}
+        className="mt-0.5 border-border-strong"
+      />
+      <div className="space-y-0.5">
+        <Label htmlFor={id} className="font-normal text-text-strong">
+          {m.setup_auto_deepen()}
+        </Label>
+        <p className="text-xs text-muted-foreground">{m.setup_auto_deepen_hint()}</p>
+      </div>
     </div>
   )
 }

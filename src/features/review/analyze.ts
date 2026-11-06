@@ -101,8 +101,17 @@ type Work = {
   deep: Set<number>
 }
 
-/** Positions of one game to evaluate in a pass. */
-type Job = { work: Work; indexes: number[] }
+/** Positions of one game to evaluate in a pass; `game`: its index in the games analysed. */
+type Job = { work: Work; indexes: number[]; game: number }
+
+/**
+ * Where one game of an analysis stands (analyzeGames's `onGame`): waiting for its turn, in the
+ * quick pass, in the deep pass around its suspicious moves (`done` of `total` positions), or done,
+ * judged (`review`), before the other games of the analysis are.
+ */
+export type GameProgress =
+  | { stage: 'waiting' | 'quick' | 'deep'; done: number; total: number }
+  | { stage: 'done'; review: ReviewedGame }
 
 /**
  * The usual starting position's evaluation (White's side, centipawns), as engines give it: Lichess
@@ -262,23 +271,42 @@ export async function analyzeGames(
     onProgress,
     poolSize = defaultPoolSize(),
     cache = analysisCache,
+    onGame,
   }: {
     signal: AbortSignal
     onProgress: (progress: ReviewProgress) => void
     poolSize?: number
     cache?: EvaluationCache
+    /** Each game's own progress, by its index in `games`; its result as soon as it is judged */
+    onGame?: (index: number, progress: GameProgress) => void
   },
 ): Promise<ReviewedGame[]> {
   const works = games.map(prepare)
   const cached = await fillFromCache(works, cache)
   signal.throwIfAborted()
   const quick = works
-    .map((work) => ({ work, indexes: missing(work) }))
+    .map((work, game) => ({ work, indexes: missing(work), game }))
     .filter((job) => job.indexes.length > 0)
   const deepJobs = () =>
     works
-      .map((work) => ({ work, indexes: deepCheckPositions(work, criteria) }))
+      .map((work, game) => ({ work, indexes: deepCheckPositions(work, criteria), game }))
       .filter((job) => job.indexes.length > 0)
+  /** A game whose quick evaluations are all known: done, or waiting for its deep pass. */
+  const afterQuick = (game: number) => {
+    const work = works[game]!
+    const deep = deepCheckPositions(work, criteria).length
+    onGame?.(
+      game,
+      deep > 0
+        ? { stage: 'deep', done: 0, total: deep }
+        : { stage: 'done', review: finish([work], criteria)[0]! },
+    )
+  }
+  works.forEach((work, game) => {
+    const left = missing(work).length
+    if (left > 0) onGame?.(game, { stage: 'waiting', done: 0, total: left })
+    else afterQuick(game)
+  })
   // Every quick evaluation in the cache: the deep pass is known right away.
   const deepOnly = quick.length === 0 ? deepJobs() : []
   if (quick.length === 0 && deepOnly.length === 0) {
@@ -316,8 +344,10 @@ export async function analyzeGames(
           }),
         })
       report()
-      await pool.run(jobs, async (engine, { work, indexes }) => {
+      await pool.run(jobs, async (engine, { work, indexes, game }) => {
         if (pass === 'quick') await engine.newGame()
+        let gameDone = 0
+        onGame?.(game, { stage: pass, done: 0, total: indexes.length })
         for (const index of indexes) {
           const { cp, entry } = await evaluate(engine, work.positions[index]!, nodes)
           work.cps[index] = cp
@@ -325,10 +355,14 @@ export async function analyzeGames(
           work.byEngine.add(index)
           if (pass === 'deep') work.deep.add(index)
           done++
+          gameDone++
           doneNodes += nodes
           active.time.markProgress()
           report()
+          onGame?.(game, { stage: pass, done: gameDone, total: indexes.length })
         }
+        if (pass === 'quick') afterQuick(game)
+        else onGame?.(game, { stage: 'done', review: finish([work], criteria)[0]! })
       })
     }
 
@@ -426,34 +460,61 @@ export async function deepenPositions(
     onProgress,
     poolSize = defaultPoolSize(),
     cache = analysisCache,
+    onGame,
   }: {
     signal: AbortSignal
     onProgress: (share: number) => void
     poolSize?: number
     cache?: EvaluationCache
+    /**
+     * Each game's own progress, by its index in `games` (`done` of its `total` positions), with the
+     * evaluation just found (White's side) and its position in the game
+     */
+    onGame?: (
+      index: number,
+      progress: { done: number; total: number; index?: number; cp?: number },
+    ) => void
   },
 ): Promise<void> {
   const works = games.map(prepare)
   await fillFromCache(works, cache)
   signal.throwIfAborted()
-  const positions = new Map<string, GamePosition>()
-  for (const work of works) {
+  /** Each position to evaluate, with the games (and their indexes) where it is */
+  const positions = new Map<
+    string,
+    { position: GamePosition; owners: { game: number; index: number }[] }
+  >()
+  const totals = works.map(() => 0)
+  works.forEach((work, game) => {
     const shallowIndexes = [...work.byEngine].filter((index) => !work.deep.has(index))
-    for (const index of [...missing(work), ...shallowIndexes]) {
+    for (const index of new Set([...missing(work), ...shallowIndexes])) {
       const position = work.positions[index]!
-      positions.set(positionKey(position.fen), position)
+      const key = positionKey(position.fen)
+      const item = positions.get(key) ?? { position, owners: [] }
+      item.owners.push({ game, index })
+      positions.set(key, item)
+      totals[game]!++
     }
-  }
+  })
   if (positions.size === 0) return
+  const dones = works.map(() => 0)
+  totals.forEach((total, game) => {
+    if (total > 0) onGame?.(game, { done: 0, total })
+  })
   const pool = await EnginePool.start(Math.min(poolSize, positions.size), signal)
   const writer = cacheWriter(cache)
   let done = 0
   try {
-    await pool.run([...positions.values()], async (engine, position) => {
-      const { entry } = await evaluate(engine, position, DEEP_NODES)
+    await pool.run([...positions.values()], async (engine, { position, owners }) => {
+      const { cp, entry } = await evaluate(engine, position, DEEP_NODES)
       writer.add(entry)
       done++
       onProgress(done / positions.size)
+      if (signal.aborted) return
+      for (const { game, index } of owners) {
+        dones[game]!++
+        onGame?.(game, { done: dones[game]!, total: totals[game]!, index, cp })
+      }
     })
   } finally {
     pool.terminate()

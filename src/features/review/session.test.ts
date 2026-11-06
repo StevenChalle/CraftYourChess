@@ -17,7 +17,11 @@ describe('the open analysis and training', () => {
   beforeEach(() => localStorage.clear())
 
   it('come back for their profile only, until closed', () => {
-    const settings = { selection: defaultSelection(['lichess']), criteria: DEFAULT_CRITERIA }
+    const settings = {
+      selection: defaultSelection(['lichess']),
+      criteria: DEFAULT_CRITERIA,
+      autoDeepen: false,
+    }
     saveOpenAnalysis(PROFILE, { settings, refs: ['lichess:abc'] })
     expect(loadOpenAnalysis(PROFILE)).toEqual({ settings, refs: ['lichess:abc'] })
     expect(loadOpenAnalysis(profileKey({ lichess: 'bob' }))).toBeUndefined()

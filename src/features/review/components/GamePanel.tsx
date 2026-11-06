@@ -1,52 +1,44 @@
 import { Check, Gauge, Microscope, Square } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { useBackground } from '@/features/background/backgroundContext'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { m } from '@/paraglide/messages'
-import { withActivity } from '@/lib/activity'
-import { deepenGame, shallowPositions, withDeepPosition, type ReviewedGame } from '../analyze'
-import { movesHash } from '../cache'
+import { shallowPositions, type ReviewedGame } from '../analyze'
 import { deepenSeconds } from '../estimate'
+import { gameRef } from '../gameRef'
 import { reviewedGameKey, useAnalysisSession } from '../sessionContext'
+import { useTracker } from '../tracker'
 import { EvalChart } from './EvalChart'
 
 /**
- * An analysed game, opened in the results: its opponent on a phone (hidden from the row), the
+ * An analysed game, opened in a list: its opponent on a phone (hidden from the row), the
  * evaluation chart, whether every move had a deep look (on the legend's line), and deepening the
- * positions that only had a quick look, or its progress. `deepen`: false outside the analysis's
- * results (a game of the profile, judged from the cache), where the session cannot deepen it: the
- * game is deepened here instead, from the legend's line (`onDeepened` once done, for the list to
- * read it again), and the progress of a deepening under way elsewhere shows (the analysis's, the
- * background analysis's). `ratingChange`: for the chart's summary of the game, when known (Lichess
- * says it itself). `train`: the training of the game's errors, beside the review page's button in
- * the chart's details.
+ * positions that only had a quick look, or its progress, whoever deepens it (the player, the
+ * background analysis: tracker.ts), the errors counted again as it goes. `deepen`: true in the
+ * analysis's results, whose games deepen together (a button under the chart); false in the other
+ * lists (the profile), where the game deepens on its own, from the legend's line. `ratingChange`:
+ * for the chart's summary of the game, when known (Lichess says it itself). `train`: the training of
+ * the game's errors, beside the review page's button in the chart's details.
  */
 export function GamePanel({
   game: received,
   deepen = true,
   ratingChange,
   train,
-  onDeepened,
 }: {
   game: ReviewedGame
   deepen?: boolean
   ratingChange?: number
   train?: ReactNode
-  onDeepened?: () => void
 }) {
-  const { deepening, stopDeepening } = useAnalysisSession()
-  const here = useDeepenHere(received, onDeepened)
-  const game = here.game
-  const background = useBackground()?.state
-  const running = deepening?.gameKey === reviewedGameKey(game) ? deepening : undefined
-  const inBackground =
-    !running &&
-    background?.phase === 'deepening' &&
-    background.deepening?.includes(movesHash(game.sanMoves, game.initialFen))
+  const { deepenGame, stopGame } = useAnalysisSession()
+  const ref = gameRef(received)
+  const tracked = useTracker().active.get(ref)
+  // As far as its deepening went.
+  const game = tracked?.review ?? received
   const shallow = shallowPositions(game).length
-  const busy = running !== undefined || inBackground || here.progress !== undefined
+  const busy = tracked !== undefined
 
   return (
     <div className="space-y-3">
@@ -79,7 +71,7 @@ export function GamePanel({
                   variant="outline"
                   size="xs"
                   className="ml-1"
-                  onClick={here.start}
+                  onClick={() => deepenGame(game)}
                   title={m.deepen_hint()}
                 >
                   <Microscope data-icon="inline-start" />
@@ -90,20 +82,18 @@ export function GamePanel({
           )
         }
       />
-      {here.progress ? (
-        <DeepenProgress done={here.progress.done} total={here.progress.total} onStop={here.stop} />
-      ) : running ? (
+      {tracked?.stage === 'deepening' ? (
         <DeepenProgress
-          done={running.done}
-          total={running.total}
-          paused={running.paused}
-          onStop={stopDeepening}
+          done={tracked.done}
+          total={tracked.total}
+          paused={tracked.paused}
+          background={tracked.by === 'background'}
+          onStop={() => stopGame(ref)}
         />
-      ) : inBackground ? (
-        <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground">{m.deepen_background()}</p>
-          <Progress value={((background.current ?? 0) / background.deepening!.length) * 100} />
-        </div>
+      ) : tracked ? (
+        <p className="text-xs text-muted-foreground">
+          {tracked.by === 'background' ? m.deepen_background() : m.deepen_waiting()}
+        </p>
       ) : (
         deepen && shallow > 0 && <DeepenButton game={game} shallow={shallow} />
       )}
@@ -111,66 +101,18 @@ export function GamePanel({
   )
 }
 
-/**
- * Deepens `received` right here, outside the analysis's session (a game of the profile): the game
- * with its deeper positions while it runs, until the list gives it again (`onDeepened` once done).
- * Stopped when the panel closes; what was computed stays in the cache.
- */
-function useDeepenHere(received: ReviewedGame, onDeepened?: () => void) {
-  const { draft } = useAnalysisSession()
-  const [local, setLocal] = useState<{ from: ReviewedGame; game: ReviewedGame }>()
-  const [progress, setProgress] = useState<{ done: number; total: number }>()
-  const job = useRef<AbortController | undefined>(undefined)
-  useEffect(() => () => job.current?.abort(), [])
-
-  const start = async () => {
-    const controller = new AbortController()
-    job.current = controller
-    let current = received
-    const total = shallowPositions(current).length
-    let done = 0
-    setProgress({ done, total })
-    try {
-      await withActivity(() =>
-        deepenGame(current, {
-          signal: controller.signal,
-          onPosition: (index, cp) => {
-            current = withDeepPosition(current, index, cp, draft.criteria)
-            done += 1
-            setLocal({ from: received, game: current })
-            setProgress({ done, total })
-          },
-        }),
-      )
-      if (!controller.signal.aborted) onDeepened?.()
-    } catch (error) {
-      if (!controller.signal.aborted) console.error('Deepening failed', error)
-    } finally {
-      if (job.current === controller) {
-        job.current = undefined
-        setProgress(undefined)
-      }
-    }
-  }
-  const stop = () => {
-    job.current?.abort()
-    job.current = undefined
-    setProgress(undefined)
-  }
-  // Once the list gives the game again (read from the cache), it is the one shown.
-  const game = local?.from === received ? local.game : received
-  return { game, progress, start: () => void start(), stop }
-}
-
+/** A deepening's progress; the player's own can be stopped (what was found stays). */
 function DeepenProgress({
   done,
   total,
   paused = false,
+  background = false,
   onStop,
 }: {
   done: number
   total: number
   paused?: boolean
+  background?: boolean
   onStop: () => void
 }) {
   return (
@@ -178,14 +120,18 @@ function DeepenProgress({
       <div className="min-w-40 flex-1 space-y-1.5">
         <p className="text-xs text-muted-foreground tabular-nums">
           {m.deepen_running({ done: formatNumber(done), total: formatNumber(total) })}
+          {background && <> · {m.analysis_here_background_short()}</>}
           {paused && <> · {m.deepen_paused()}</>}
         </p>
         <Progress value={(done / Math.max(total, 1)) * 100} />
       </div>
-      <Button variant="ghost" size="sm" onClick={onStop} className="text-muted-foreground">
-        <Square data-icon="inline-start" />
-        {m.deepen_stop()}
-      </Button>
+      {/* The background analysis is paused from the header, not game by game */}
+      {!background && (
+        <Button variant="ghost" size="sm" onClick={onStop} className="text-muted-foreground">
+          <Square data-icon="inline-start" />
+          {m.deepen_stop()}
+        </Button>
+      )}
     </div>
   )
 }

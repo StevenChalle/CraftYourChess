@@ -42,8 +42,9 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 ## Analyse sur la page
 
 - Partie déjà analysée : jugée depuis le cache (`useCachedReviews`) avec les critères de l'onglet Analyse.
-- Sinon, un bouton **Analyser la partie** (pas d'analyse automatique : elle prendrait le processeur pendant l'exploration). Le moteur en direct se met en pause pendant l'analyse ou l'approfondissement, puis reprend.
-- « Approfondir » quand l'analyse n'est que rapide.
+- Sinon, un bouton **Analyser la partie** (pas d'analyse automatique à l'ouverture : elle prendrait le processeur pendant l'exploration). L'analyse passe par la file du joueur de la session (`playerAnalysis.ts`), comme celle lancée depuis une liste : ses deux étapes, puis l'approfondissement automatique de toutes les autres positions, la ligne « Approfondissement… » sous le bouton principal et les erreurs recomptées au fur et à mesure. Tout continue si l'on revient au profil, et se retrouve ici au retour.
+- Le moteur en direct se met en pause pendant les deux étapes de l'analyse ; l'approfondissement, lui, **cède la place au moteur en direct** (« en pause pendant que Stockfish sert ailleurs ») et reprend quelques secondes après la fin de sa recherche.
+- « Approfondir » quand l'analyse n'est que rapide et que rien ne l'approfondit (arrêté, rechargé).
 - « Rejouer mes N erreurs » ouvre l'entraînement de la partie (le même lien que « Entraîner » dans les listes).
 
 ## Plus tard

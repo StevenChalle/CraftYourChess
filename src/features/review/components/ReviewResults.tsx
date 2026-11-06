@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { FeedbackNudge } from '@/components/FeedbackLink'
 import { TablePagination } from '@/components/TablePagination'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { AnalyzeLink } from '@/features/games/components/AnalyzeLink'
 import { GamesTable } from '@/features/games/components/GamesTable'
 import { MistakesCount } from '@/features/games/components/MistakesCount'
@@ -12,7 +13,9 @@ import { pageSlice } from '@/lib/pagination'
 import { loadPageSize, PAGE_SIZES, savePageSize } from '@/features/games/pageSize'
 import { m } from '@/paraglide/messages'
 import { shallowPositions, type Mistake, type ReviewedGame, type ReviewOutcome } from '../analyze'
+import { gameRef } from '../gameRef'
 import { reviewedGameKey, useAnalysisSession } from '../sessionContext'
+import { useTracker } from '../tracker'
 import { deepenSeconds } from '../estimate'
 import { ReviewLink } from '@/features/study/components/ReviewLink'
 import { GamePanel } from './GamePanel'
@@ -33,7 +36,8 @@ export function ReviewResults({
   const [pageSize, setPageSize] = useState(loadPageSize)
   const { games, failures } = outcome
   // The page and the game open are kept with the analysis: back from a training, as they were.
-  const { deepening, stopDeepening, analysisView, updateAnalysisView } = useAnalysisSession()
+  const { analysisView, updateAnalysisView } = useAnalysisSession()
+  const tracked = useTracker()
   const page = analysisView?.page ?? 0
   const setPage = (next: number) => updateAnalysisView({ page: next })
 
@@ -84,19 +88,20 @@ export function ReviewResults({
                 defaultOpen:
                   analysisView?.open ??
                   (games.length === 1 ? reviewedGameKey(games[0]!) : undefined),
-                // Closing a game stops deepening it (not when every game is being deepened).
                 onToggle: (key, open) => {
                   if (open) updateAnalysisView({ open: key })
                   else if (analysisView?.open === key) updateAnalysisView({ open: undefined })
-                  if (!open && deepening?.scope === 'game' && deepening.gameKey === key) {
-                    stopDeepening()
-                  }
                 },
               }}
               extra={{
                 header: m.review_col_errors(),
                 shortHeader: m.review_col_errors_short(),
-                cell: (game: ReviewedGame) => <MistakesCount count={game.mistakes.length} />,
+                cell: (game: ReviewedGame) => (
+                  <MistakesCount
+                    count={game.mistakes.length}
+                    live={tracked.active.get(gameRef(game))?.review !== undefined}
+                  />
+                ),
               }}
             />
           </div>
@@ -120,44 +125,63 @@ export function ReviewResults({
 }
 
 /**
- * Above the games, discreet: deepen every game that only had a quick look, one after the other,
- * or follow and stop it. Hidden once every game is deep.
+ * Above the games, under the training: deepen every game that only had a quick look, one after the
+ * other (when the analysis's option did not, or once stopped), or follow and stop it. Hidden once
+ * every game is deep.
  */
 function DeepenAll({ games }: { games: ReviewedGame[] }) {
-  const { deepening, deepenGames, stopDeepening } = useAnalysisSession()
-  if (deepening?.scope === 'all') {
+  const { deepenGames, stopGame } = useAnalysisSession()
+  const tracked = useTracker()
+  // Its games waiting to deepen or deepening, whoever asked (this list, the profile, the option).
+  const queued = games.filter((game) => tracked.active.has(gameRef(game)))
+  if (queued.length > 0) {
+    const current = queued
+      .map((game) => tracked.active.get(gameRef(game))!)
+      .find((item) => item.stage === 'deepening')
     return (
-      <p className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
-        {m.deepen_all_running({
-          games: formatGameCount(deepening.gamesLeft + 1),
-          done: formatNumber(deepening.done),
-          total: formatNumber(deepening.total),
-        })}
-        {deepening.paused && <span>{m.deepen_paused()}</span>}
-        <Button variant="ghost" size="xs" onClick={stopDeepening} className="text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 rounded-md border border-border p-3">
+        <div className="min-w-48 flex-1 space-y-1.5">
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {m.deepen_all_running({
+              games: formatGameCount(queued.length),
+              done: formatNumber(current?.done ?? 0),
+              total: formatNumber(current?.total ?? 0),
+            })}
+            {current?.paused && <> · {m.deepen_paused()}</>}
+          </p>
+          <Progress
+            value={current ? (current.done / Math.max(current.total, 1)) * 100 : 0}
+            data-loading={current ? undefined : true}
+          />
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => queued.forEach((game) => stopGame(gameRef(game)))}
+          className="text-muted-foreground"
+        >
           <Square data-icon="inline-start" />
           {m.deepen_stop()}
         </Button>
-      </p>
+      </div>
     )
   }
   const pending = games.filter((game) => shallowPositions(game).length > 0)
   if (pending.length === 0) return null
   const positions = pending.reduce((sum, game) => sum + shallowPositions(game).length, 0)
   return (
-    <div className="flex justify-end">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+      <p className="text-sm text-muted-foreground">
+        {m.deepen_all_pending({ games: formatGameCount(pending.length) })}
+      </p>
       <Button
-        variant="ghost"
-        size="xs"
+        variant="outline"
+        size="sm"
         onClick={() => deepenGames(pending.map(reviewedGameKey), 'all')}
-        className="text-muted-foreground"
         title={m.deepen_hint()}
       >
         <Microscope data-icon="inline-start" />
-        {m.deepen_all({
-          games: formatGameCount(pending.length),
-          time: formatEstimate(deepenSeconds(positions)),
-        })}
+        {m.deepen_all_button({ time: formatEstimate(deepenSeconds(positions)) })}
       </Button>
     </div>
   )

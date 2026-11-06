@@ -8,6 +8,7 @@ import {
   analysisWorkLeft,
   analyzeGames,
   DEEP_NODES,
+  type GameProgress,
   deepenGame,
   deepenPositions,
   gamesToDeepen,
@@ -237,5 +238,81 @@ describe('analysisWorkLeft', () => {
       deep: [2],
       fromCache: 0,
     })
+  })
+})
+
+describe('analyzeGames, game by game', () => {
+  const run = async (games: ReviewGame[]) => {
+    const events: { game: number; progress: GameProgress }[] = []
+    const result = await analyzeGames(games, DEFAULT_CRITERIA, {
+      signal: new AbortController().signal,
+      onProgress: () => {},
+      cache,
+      onGame: (index, progress) => events.push({ game: index, progress }),
+    })
+    return { events, result }
+  }
+  const stages = (events: { game: number; progress: GameProgress }[], game: number) =>
+    events.filter((event) => event.game === game).map((event) => event.progress.stage)
+
+  it('reports each step of a game, then its result as soon as it is judged', async () => {
+    const { events, result } = await run([game('g1', SCHOLAR)])
+    const seen = stages(events, 0)
+    // Waiting, the quick pass position by position, the deep pass around the blunder, done.
+    expect(seen[0]).toBe('waiting')
+    expect(seen.filter((stage) => stage === 'quick')).toHaveLength(8)
+    expect(seen.filter((stage) => stage === 'deep').length).toBeGreaterThanOrEqual(3)
+    expect(seen.at(-1)).toBe('done')
+    expect(seen.indexOf('deep')).toBeGreaterThan(seen.lastIndexOf('quick'))
+    const done = events.at(-1)!.progress
+    expect(done.stage === 'done' && done.review.mistakes).toEqual(result[0]!.mistakes)
+    const last = events.filter((event) => event.progress.stage === 'quick').at(-1)!.progress
+    expect(last).toEqual({ stage: 'quick', done: 7, total: 7 })
+  })
+
+  it('says a game without a suspicious move is done after its quick pass', async () => {
+    const { events } = await run([game('g1', SCHOLAR, 'white'), game('g2', SCHOLAR)])
+    const white = stages(events, 0)
+    expect(white).not.toContain('deep')
+    expect(white.at(-1)).toBe('done')
+    // Done before the other game's deep pass starts.
+    const whiteDone = events.findIndex(
+      (event) => event.game === 0 && event.progress.stage === 'done',
+    )
+    const otherDeep = events.findIndex(
+      (event) => event.game === 1 && event.progress.stage === 'deep' && event.progress.done > 0,
+    )
+    expect(whiteDone).toBeLessThan(otherDeep)
+  })
+
+  it('says a game the cache knows is done at once', async () => {
+    await analyze([game('g1', ['e4', 'e5', 'Nf3'])])
+    const { events } = await run([game('g1', ['e4', 'e5', 'Nf3'])])
+    expect(events.map((event) => event.progress.stage)).toEqual(['done'])
+  })
+})
+
+describe('deepenPositions, game by game', () => {
+  it("reports each game's positions as they come, a shared one in every game", async () => {
+    const games = [game('g1', ['e4', 'e5', 'Nf3']), game('g2', ['e4', 'e5', 'Nc3'])]
+    await analyze(games)
+    searches = []
+    const events: { game: number; done: number; total: number; index?: number }[] = []
+    await deepenPositions(games, {
+      signal: new AbortController().signal,
+      onProgress: () => {},
+      cache,
+      onGame: (index, progress) => events.push({ game: index, ...progress }),
+    })
+    // Each game first says its total, then counts to it.
+    for (const index of [0, 1]) {
+      const own = events.filter((event) => event.game === index)
+      expect(own[0]).toEqual({ game: index, done: 0, total: 4 })
+      expect(own.at(-1)).toMatchObject({ done: 4, total: 4 })
+      expect(own.slice(1).every((event) => event.index !== undefined)).toBe(true)
+    }
+    // Five positions searched, eight reported: the shared opening counts in both games.
+    expect(searches).toHaveLength(5)
+    expect(events.filter((event) => event.done > 0)).toHaveLength(8)
   })
 })

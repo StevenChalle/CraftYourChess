@@ -1,5 +1,5 @@
 import type { ProfileSearch } from '@/features/player/search'
-import type { ReviewSettings } from './settings'
+import { defaultAutoDeepen, type ReviewSettings } from './settings'
 import type { OpenTraining } from './sessionContext'
 
 /**
@@ -51,7 +51,14 @@ export function loadOpenAnalysis(
   profile: string,
   storage: Storage = localStorage,
 ): SavedAnalysis | undefined {
-  return load<SavedAnalysis>(ANALYSIS_KEY, profile, storage)
+  const saved = load<SavedAnalysis>(ANALYSIS_KEY, profile, storage)
+  // Saved before the option existed: its default.
+  return (
+    saved && {
+      ...saved,
+      settings: { ...saved.settings, autoDeepen: saved.settings.autoDeepen ?? defaultAutoDeepen() },
+    }
+  )
 }
 
 /** undefined: the analysis is closed. */
