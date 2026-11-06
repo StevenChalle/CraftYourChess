@@ -89,6 +89,7 @@
   "review_col_platform": "Platform",
   "review_col_time_control": "Time control",
   "review_col_opponent": "Opponent",
+  "review_col_side": "Your side",
   "review_col_result": "Result",
   "review_col_errors": "Mistakes",
   "games_row_open": "Open the game",

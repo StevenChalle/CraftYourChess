@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useBackground } from '@/features/background/backgroundContext'
-import { SideSquare } from '@/features/games/components/GamesTable'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { m } from '@/paraglide/messages'
 import { withActivity } from '@/lib/activity'
@@ -54,7 +53,6 @@ export function GamePanel({
       {/* On a phone, the opponent the row hides; its date and platform would be too much */}
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:hidden">
         <span className="inline-flex items-center gap-2">
-          <SideSquare color={game.color} />
           <span className="text-text-strong">{game.opponent.name}</span>
           {game.opponent.rating !== undefined && (
             <span className="num text-muted-foreground">{game.opponent.rating}</span>

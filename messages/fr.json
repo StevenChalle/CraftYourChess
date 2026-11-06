@@ -89,6 +89,7 @@
   "review_col_platform": "Plateforme",
   "review_col_time_control": "Cadence",
   "review_col_opponent": "Adversaire",
+  "review_col_side": "Ton camp",
   "review_col_result": "Résultat",
   "review_col_errors": "Erreurs",
   "games_row_open": "Ouvrir la partie",

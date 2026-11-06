@@ -124,6 +124,9 @@ export function GamesTable<G extends GameSummary>({
           <TableHead className={HIDE.date}>{m.review_col_date()}</TableHead>
           <TableHead className="max-sm:hidden">{m.review_col_platform()}</TableHead>
           <TableHead>{m.review_col_time_control()}</TableHead>
+          <TableHead className={cn(HIDE.opponent, 'w-4 pr-0')}>
+            <span className="sr-only">{m.review_col_side()}</span>
+          </TableHead>
           <TableHead className={HIDE.opponent}>{m.review_col_opponent()}</TableHead>
           <TableHead>
             <span className="max-sm:hidden">{m.review_col_result()}</span>
@@ -207,13 +210,18 @@ export function GamesTable<G extends GameSummary>({
                 <span className="num text-muted-foreground">
                   {timeControlLabel(game.timeControl)}
                 </span>
+                {/* On a phone, the player's side here too */}
+                <SideSquare color={game.color} className="ml-1.5 align-middle sm:hidden" />
                 {game.variant && (
                   <span className="block text-xs text-highlight">{variantLabel(game.variant)}</span>
                 )}
               </TableCell>
+              {/* The player's side, its own column before the opponent */}
+              <TableCell className={cn(HIDE.opponent, 'w-4 pr-0')}>
+                <SideSquare color={game.color} className="align-middle" />
+              </TableCell>
               <TableCell className={HIDE.opponent}>
                 <span className="inline-flex items-center gap-2">
-                  <SideSquare color={game.color} />
                   <span className="text-text-strong">{game.opponent.name}</span>
                   {game.opponent.rating !== undefined && (
                     <span className="num text-muted-foreground">{game.opponent.rating}</span>

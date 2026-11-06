@@ -342,7 +342,7 @@ function DetailsFrame({
           <p className="flex items-center gap-2 text-base font-medium text-text-strong">{title}</p>
           {subtitle}
         </div>
-        <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-sm">
+        <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-1 text-sm md:gap-x-3">
           {rows.map((row) => (
             <div key={row.label} className="contents">
               <dt className="text-xs text-muted-foreground">{row.label}</dt>
@@ -355,7 +355,8 @@ function DetailsFrame({
         {note !== undefined && <p className="min-h-4 text-xs font-medium">{note}</p>}
         <div className="mt-auto">{action}</div>
       </div>
-      <div className="w-32 shrink-0 md:w-[204px]">
+      {/* On a phone, small enough for an evaluation and its change to keep one line */}
+      <div className="w-22 shrink-0 md:w-[204px]">
         <Board config={board} className="rounded-sm" />
       </div>
     </div>
@@ -383,7 +384,7 @@ function moveFacts(game: ReviewedGame, index: number) {
         <>
           <span className="text-text-strong">{formatEval(position.cp)}</span>
           {delta !== undefined && (
-            <span className={cn('ml-1.5', delta < 0 ? 'text-loss' : 'text-muted-foreground')}>
+            <span className={cn('ml-1', delta < 0 ? 'text-loss' : 'text-muted-foreground')}>
               ({formatDelta(delta)})
             </span>
           )}
