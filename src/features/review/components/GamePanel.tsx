@@ -51,8 +51,9 @@ export function GamePanel({
   return (
     <div className="space-y-3">
       {/* On a phone, the opponent the row hides; its date and platform would be too much */}
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:hidden">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:hidden">
         <span className="inline-flex items-center gap-2">
+          <span className="text-muted-foreground">{m.games_opponent_label()}</span>
           <span className="text-text-strong">{game.opponent.name}</span>
           {game.opponent.rating !== undefined && (
             <span className="num text-muted-foreground">{game.opponent.rating}</span>
