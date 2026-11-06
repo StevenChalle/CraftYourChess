@@ -40,7 +40,12 @@ export function SideSquare({ color, className }: { color: Color; className?: str
  * platform's dot goes into the time control's cell, the result is a letter, the headers are short,
  * the cells closer.
  */
-const HIDE = { date: 'hidden md:table-cell', opponent: 'hidden sm:table-cell' }
+const HIDE = {
+  date: 'hidden md:table-cell',
+  opponent: 'hidden sm:table-cell',
+  // Below, the player's color goes after the time control
+  color: 'hidden lg:table-cell',
+}
 
 /** More than the table ever has: a panel row spans them all. */
 const COLUMNS = 99
@@ -124,9 +129,7 @@ export function GamesTable<G extends GameSummary>({
           <TableHead className={HIDE.date}>{m.review_col_date()}</TableHead>
           <TableHead className="max-sm:hidden">{m.review_col_platform()}</TableHead>
           <TableHead>{m.review_col_time_control()}</TableHead>
-          <TableHead className={cn(HIDE.opponent, 'w-4 pr-0')}>
-            <span className="sr-only">{m.review_col_side()}</span>
-          </TableHead>
+          <TableHead className={cn(HIDE.color, 'text-center')}>{m.review_col_side()}</TableHead>
           <TableHead className={HIDE.opponent}>{m.review_col_opponent()}</TableHead>
           <TableHead>
             <span className="max-sm:hidden">{m.review_col_result()}</span>
@@ -210,14 +213,14 @@ export function GamesTable<G extends GameSummary>({
                 <span className="num text-muted-foreground">
                   {timeControlLabel(game.timeControl)}
                 </span>
-                {/* On a phone, the player's side here too */}
-                <SideSquare color={game.color} className="ml-1.5 align-middle sm:hidden" />
+                {/* Without room for its column, the player's color here */}
+                <SideSquare color={game.color} className="ml-1.5 align-middle lg:hidden" />
                 {game.variant && (
                   <span className="block text-xs text-highlight">{variantLabel(game.variant)}</span>
                 )}
               </TableCell>
-              {/* The player's side, its own column before the opponent */}
-              <TableCell className={cn(HIDE.opponent, 'w-4 pr-0')}>
+              {/* The player's color, its own column before the opponent on a wide screen */}
+              <TableCell className={cn(HIDE.color, 'text-center')}>
                 <SideSquare color={game.color} className="align-middle" />
               </TableCell>
               <TableCell className={HIDE.opponent}>
