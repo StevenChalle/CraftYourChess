@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useState, type ReactNode } from 'react'
+import { ChevronUp, SlidersHorizontal } from 'lucide-react'
 import { DateField } from '@/components/DateField'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -10,7 +12,7 @@ import {
 } from '@/components/ui/select'
 import { PagedGamesTable } from '@/features/games/components/PagedGamesTable'
 import { toDateInput } from '@/lib/dateInput'
-import { formatGameCount, formatNumber, formatSigned } from '@/lib/format'
+import { formatDate, formatGameCount, formatNumber, formatSigned } from '@/lib/format'
 import { ApiError } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
@@ -83,7 +85,8 @@ const PRESET_LABELS: Record<PeriodPreset | 'custom', () => string> = {
 /**
  * The player's rating over time, on one platform and in one time control (never mixed: ratings
  * of two platforms do not compare), over a period: a preset, or dates; the period's games under
- * it. The period on the left, the platform and time control on the right. Its filters are kept per
+ * it. The period's figures on the title's line; the filters under the chart (the period, then the
+ * platform and time control), said on one line on a phone and unfolded to change them. Its filters are kept per
  * profile in this browser (settings.ts); a platform without account falls back to the other one.
  * A period up to today looks for new games by itself (useAutoRefresh).
  */
@@ -101,6 +104,8 @@ export function RatingHistory({
   const [found, setFound] = useState(0)
   // The date inputs' today: when the chart opened.
   const [now] = useState(Date.now)
+  /** On a phone: the filters unfolded, to change them */
+  const [editOpen, setEditOpen] = useState(false)
   const update = (patch: Partial<RatingChartSettings>) => {
     const next = { ...settings, ...patch }
     saveRatingChartSettings(profile, next)
@@ -142,82 +147,39 @@ export function RatingHistory({
   const last = points.at(-1)
   const peak = peakPoint(points)
 
+  const editing = (patch: Partial<RatingChartSettings>) => {
+    update(patch)
+    // On a phone, the filters fold back once a choice is made.
+    setEditOpen(false)
+  }
+  const platformLabel = (source: AccountSummary['source']) => (
+    <>
+      <SourceDot source={source} />
+      {SOURCE_LABELS[source]}
+    </>
+  )
+  const categoryOption = (category: ChartCategory) => {
+    const rating = account.categories[category]?.rating
+    return (
+      <>
+        {categoryLabel(category)}
+        {rating !== undefined && (
+          <span className="num text-muted-foreground">{formatNumber(rating)}</span>
+        )}
+      </>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <Panel title={m.rating_chart_title()}>
-        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Picker<PeriodPreset | 'custom'>
-            value={preset}
-            ariaLabel={m.rating_period()}
-            // "Custom" only says the dates were typed: it is never picked.
-            options={preset === 'custom' ? [...PERIOD_PRESETS, 'custom'] : PERIOD_PRESETS}
-            label={(option) => PRESET_LABELS[option]()}
-            onChange={(option) => option !== 'custom' && update({ period: presetPeriod(option) })}
-          />
-          <div className="flex items-center gap-1.5 text-sm">
-            <DateField
-              label={m.setup_from()}
-              hideLabel
-              value={from}
-              max={to}
-              onChange={(value) =>
-                value && value <= to && update({ period: periodFromDates(value, to, now) })
-              }
-            />
-            <span aria-hidden className="text-muted-foreground">
-              –
-            </span>
-            <DateField
-              label={m.setup_to()}
-              hideLabel
-              value={to}
-              min={from}
-              max={today}
-              onChange={(value) =>
-                value &&
-                value >= from &&
-                value <= today &&
-                update({ period: periodFromDates(from, value, now) })
-              }
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            {accounts.length > 1 && (
-              <Picker
-                value={account.source}
-                ariaLabel={m.review_col_platform()}
-                options={accounts.map((item) => item.source)}
-                label={(source) => (
-                  <>
-                    <SourceDot source={source} />
-                    {SOURCE_LABELS[source]}
-                  </>
-                )}
-                onChange={(source) => update({ source })}
-              />
-            )}
-            <Picker<ChartCategory>
-              value={settings.category}
-              ariaLabel={m.time_control()}
-              options={CHART_CATEGORIES}
-              // Each with the current rating on this platform
-              label={(category) => {
-                const rating = account.categories[category]?.rating
-                return (
-                  <>
-                    {categoryLabel(category)}
-                    {rating !== undefined && (
-                      <span className="num text-muted-foreground">{formatNumber(rating)}</span>
-                    )}
-                  </>
-                )
-              }}
-              onChange={(category) => update({ category })}
-            />
-          </div>
-          {/* The period's figures, on the right of the filters while there is room */}
-          {first && last && peak && (
-            <div className="ml-auto flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <Panel
+        title={<span className="whitespace-nowrap">{m.rating_chart_title()}</span>}
+        // The period's figures, on the title's line
+        aside={
+          first &&
+          last &&
+          peak && (
+            <div className="flex items-baseline justify-end gap-x-3 sm:gap-x-4">
               <Figure label={m.rating_current()} value={formatNumber(last.rating)}>
                 {last.rating !== first.rating && (
                   <span
@@ -233,8 +195,9 @@ export function RatingHistory({
               </Figure>
               <Figure label={m.rating_peak()} value={formatNumber(peak.rating)} />
             </div>
-          )}
-        </div>
+          )
+        }
+      >
         {query.isPending ? (
           <p className="text-sm text-muted-foreground">
             {found > 0
@@ -252,6 +215,114 @@ export function RatingHistory({
             {...periodBounds(settings.period, query.dataUpdatedAt, joinedAt)}
           />
         )}
+        {/* Under the chart, its filters (and the list's). On a phone, on one line that says
+            them, a discreet button unfolding them to change them. */}
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm sm:hidden">
+            <p className="flex min-w-0 flex-1 items-center gap-x-2 truncate text-text-strong">
+              <span className="truncate">
+                {preset === 'custom'
+                  ? `${formatDate(new Date(shown.from))} – ${formatDate(new Date(shown.to))}`
+                  : PRESET_LABELS[preset]()}
+              </span>
+              {accounts.length > 1 && (
+                <>
+                  <span aria-hidden className="text-muted-foreground">
+                    ·
+                  </span>
+                  {/* Its dot alone, for room: its name for screen readers */}
+                  <span
+                    className="inline-flex shrink-0 items-center"
+                    title={SOURCE_LABELS[account.source]}
+                  >
+                    <SourceDot source={account.source} />
+                    <span className="sr-only">{SOURCE_LABELS[account.source]}</span>
+                  </span>
+                </>
+              )}
+              <span aria-hidden className="text-muted-foreground">
+                ·
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-1.5">
+                {categoryOption(settings.category)}
+              </span>
+            </p>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="shrink-0 text-muted-foreground"
+              aria-expanded={editOpen}
+              aria-label={m.rating_filters_edit()}
+              title={m.rating_filters_edit()}
+              onClick={() => setEditOpen((open) => !open)}
+            >
+              {editOpen ? <ChevronUp /> : <SlidersHorizontal />}
+            </Button>
+          </div>
+          <div
+            className={cn(
+              'flex flex-wrap items-center gap-x-3 gap-y-2',
+              !editOpen && 'max-sm:hidden',
+            )}
+          >
+            <Picker<PeriodPreset | 'custom'>
+              value={preset}
+              ariaLabel={m.rating_period()}
+              // "Custom" only says the dates were typed: it is never picked.
+              options={preset === 'custom' ? [...PERIOD_PRESETS, 'custom'] : PERIOD_PRESETS}
+              label={(option) => PRESET_LABELS[option]()}
+              onChange={(option) =>
+                option !== 'custom' && editing({ period: presetPeriod(option) })
+              }
+            />
+            <div className="flex items-center gap-1.5 text-sm">
+              <DateField
+                label={m.setup_from()}
+                hideLabel
+                value={from}
+                max={to}
+                onChange={(value) =>
+                  value && value <= to && editing({ period: periodFromDates(value, to, now) })
+                }
+              />
+              <span aria-hidden className="text-muted-foreground">
+                –
+              </span>
+              <DateField
+                label={m.setup_to()}
+                hideLabel
+                value={to}
+                min={from}
+                max={today}
+                onChange={(value) =>
+                  value &&
+                  value >= from &&
+                  value <= today &&
+                  editing({ period: periodFromDates(from, value, now) })
+                }
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              {accounts.length > 1 && (
+                <Picker
+                  value={account.source}
+                  ariaLabel={m.review_col_platform()}
+                  options={accounts.map((item) => item.source)}
+                  label={platformLabel}
+                  onChange={(source) => editing({ source })}
+                />
+              )}
+              <Picker<ChartCategory>
+                value={settings.category}
+                ariaLabel={m.time_control()}
+                options={CHART_CATEGORIES}
+                // Each with the current rating on this platform
+                label={categoryOption}
+                onChange={(category) => editing({ category })}
+              />
+            </div>
+          </div>
+        </div>
       </Panel>
       {/* Under the panel, the whole width for its columns, as an import's list */}
       {points.length > 0 &&

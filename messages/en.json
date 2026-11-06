@@ -615,6 +615,7 @@
   "rating_preset_year": "Last year",
   "rating_preset_lifetime": "Lifetime",
   "rating_preset_custom": "Custom",
+  "rating_filters_edit": "Change the filters",
   "rating_current": "Current",
   "rating_change": "Change over the period",
   "rating_peak": "Peak",
