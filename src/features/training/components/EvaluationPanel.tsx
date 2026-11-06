@@ -7,6 +7,7 @@ import { formatSignedTenths } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { assess, EQUAL_MAX_CP, WINNING_MIN_CP, type Assessment } from '../assessment'
+import { cpChip } from '@/components/evalChip'
 import { formatEvalPrecise } from '../evaluation'
 import { assessmentVerdict, type TrainingAction, type TrainingState } from '../session'
 
@@ -123,7 +124,7 @@ export function EvaluationPanel({
         <Line
           label={m.training_assess_engine()}
           value={ASSESSMENT_LABELS[exact]()}
-          eval={formatEvalPrecise(whiteCp)}
+          eval={whiteCp}
         />
         {verdict && answer !== exact && (
           <p className="text-sm text-muted-foreground">{m.training_assess_limit()}</p>
@@ -142,14 +143,28 @@ export function EvaluationPanel({
 }
 
 /** "Engine   White is better   +0.32", on one line. */
-function Line({ label, value, eval: evaluation }: { label: string; value: string; eval?: string }) {
+function Line({
+  label,
+  value,
+  eval: evaluation,
+}: {
+  label: string
+  value: string
+  /** White's side, centipawns */
+  eval?: number
+}) {
   return (
     <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="font-semibold text-text-strong">{value}</span>
-      {evaluation && (
-        <span className="num ml-auto rounded-sm bg-background/70 px-1.5 py-0.5 text-sm font-medium text-text-strong">
-          {evaluation}
+      {evaluation !== undefined && (
+        <span
+          className={cn(
+            'num ml-auto rounded-sm border px-1.5 py-0.5 text-sm font-medium',
+            cpChip(evaluation),
+          )}
+        >
+          {formatEvalPrecise(evaluation)}
         </span>
       )}
     </p>

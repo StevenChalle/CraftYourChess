@@ -3,6 +3,7 @@ import type { Color } from 'chessops'
 import { Cpu } from 'lucide-react'
 import { useMemo, useRef, useState, type PointerEvent } from 'react'
 import { Board } from '@/components/board/Board'
+import { BLACK_CHIP, WHITE_CHIP } from '@/components/evalChip'
 import { moveSquares } from '@/features/training/moves'
 import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -144,9 +145,6 @@ export function EnginePanel({
     </div>
   )
 }
-
-export const WHITE_CHIP = 'border-piece-white bg-piece-white text-piece-black'
-export const BLACK_CHIP = 'border-border-strong bg-piece-black text-piece-white'
 
 /**
  * An evaluation's chip, in the colors of the side ahead: white when White is better (or equal),

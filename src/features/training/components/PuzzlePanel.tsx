@@ -21,6 +21,7 @@ import { SideSquare } from '@/features/games/components/GamesTable'
 import { forColor, isValidMove } from '@/features/review/errors'
 import { useValidMaxDrop } from '../criteria'
 import { formatNumber } from '@/lib/format'
+import { cpChip } from '@/components/evalChip'
 import { cn } from '@/lib/utils'
 import { m } from '@/paraglide/messages'
 import { evalDelta, formatDelta, formatEval } from '../evaluation'
@@ -85,18 +86,21 @@ function Feedback({
   )
 }
 
-/** An evaluation, as a small chip. The target of a transition stands out, its origin less. */
+/**
+ * An evaluation, as a small chip: white when positive, black when negative (as everywhere). The
+ * target of a transition stands out, its origin less.
+ */
 function EvalChip({ cp, color, muted }: { cp: number; color: Color; muted?: boolean }) {
+  const shown = forColor(cp, color)
   return (
     <span
       className={cn(
-        'num rounded-sm px-1.5 py-0.5 text-sm',
-        muted
-          ? 'bg-background/35 text-muted-foreground'
-          : 'bg-background/70 font-medium text-text-strong',
+        'num rounded-sm border px-1.5 py-0.5 text-sm',
+        cpChip(shown),
+        muted ? 'opacity-60' : 'font-medium',
       )}
     >
-      {formatEval(forColor(cp, color))}
+      {formatEval(shown)}
     </span>
   )
 }
