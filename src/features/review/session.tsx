@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
-import { RefreshCw } from 'lucide-react'
+import { CircleX, RefreshCw } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -13,6 +13,7 @@ import type { ProfileSearch } from '@/features/player/search'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useKeepAwake } from '@/hooks/useKeepAwake'
 import { withActivity } from '@/lib/activity'
+import { formatNumber } from '@/lib/format'
 import { trainingPuzzles } from '@/features/training/order'
 import type { TrainingProgress } from '@/features/training/session'
 import {
@@ -35,6 +36,9 @@ import {
   profileKey,
   saveOpenAnalysis,
   saveOpenTraining,
+  trainingCount,
+  trainingStarted,
+  trainingUnderWay,
 } from './openSession'
 import { defaultSelection } from './selection'
 import {
@@ -143,9 +147,17 @@ export function AnalysisSessionProvider({
   // What was open before a reload, only on the pages it goes with (left meanwhile otherwise).
   const [restored] = useState(() => ({
     analysis: !quick && ANALYSIS_PAGES.includes(pathname) ? loadOpenAnalysis(profile) : undefined,
-    training: pathname === TRAINING_PAGE ? loadOpenTraining(profile) : undefined,
+    training: ((training) =>
+      pathname === TRAINING_PAGE || trainingUnderWay(training) ? training : undefined)(
+      loadOpenTraining(profile),
+    ),
   }))
   const [training, setTraining] = useState<OpenTraining | undefined>(restored.training)
+  // The page shown and the one before, to go back to the training from where it led.
+  const [pages, setPages] = useState<{ current: string; previous?: string }>({ current: pathname })
+  if (pages.current !== pathname) setPages({ current: pathname, previous: pages.current })
+  /** Closing the training: once its page is left */
+  const closeOnLeave = useRef(false)
   const [gameList, setGameList] = useState<GameListView>({ page: 0 })
   const [view, setView] = useState<(AnalysisView & { analysisId: number }) | undefined>()
   const [analysisId, setAnalysisId] = useState(0)
@@ -360,11 +372,29 @@ export function AnalysisSessionProvider({
   }, [search, draft.criteria, draft.autoDeepen, confirmReplace, runAnalysis, library.kind])
 
   /**
-   * Opens the training page on these errors, on its options or already running; it replaces any
-   * training open (there is none: leaving its page closed it). Back where it was opened from.
+   * Opens the training page on these errors, on its options or already running. It replaces the
+   * training kept, asking first if positions were played in it. Back where it was opened from.
    */
   const openTraining = useCallback(
-    (mistakes: Mistake[], criteria: ReviewCriteria, running: boolean) => {
+    async (mistakes: Mistake[], criteria: ReviewCriteria, running: boolean) => {
+      const count = trainingCount(training)
+      if (
+        count &&
+        trainingStarted(training) &&
+        !(await confirm({
+          icon: RefreshCw,
+          title: m.confirm_replace_training_title(),
+          description: m.confirm_replace_training_body({
+            current: formatNumber(count.current),
+            total: formatNumber(count.total),
+          }),
+          confirmLabel: m.confirm_replace_action(),
+          cancelLabel: m.confirm_cancel(),
+        }))
+      ) {
+        return
+      }
+      closeOnLeave.current = false
       runCount.current += 1
       const { location } = router.state
       setTraining({
@@ -393,12 +423,12 @@ export function AnalysisSessionProvider({
         void navigate({ to: TRAINING_PAGE, search: usernames, resetScroll: false })
       }
     },
-    [router, navigate, usernames],
+    [router, navigate, usernames, training, confirm],
   )
 
   const newTraining = useCallback(() => {
     if (analysis.status !== 'done') return
-    openTraining(
+    void openTraining(
       analysis.outcome.games.flatMap((game) => game.mistakes),
       analysis.outcome.criteria,
       false,
@@ -408,7 +438,7 @@ export function AnalysisSessionProvider({
   const trainGame = useCallback(
     (mistakes: Mistake[], criteria?: ReviewCriteria) => {
       const rules = criteria ?? (analysis.status === 'done' ? analysis.outcome.criteria : undefined)
-      openTraining(mistakes, rules ?? draft.criteria, true)
+      void openTraining(mistakes, rules ?? draft.criteria, true)
     },
     [analysis, draft.criteria, openTraining],
   )
@@ -508,8 +538,7 @@ export function AnalysisSessionProvider({
 
   /**
    * Back where the training was opened: the browser's previous page when there is one in the app,
-   * its origin otherwise (after a reload). The page left, the training closes (see below); one
-   * under way asks first (LeaveGuard).
+   * its origin otherwise (after a reload). One under way stays open, to come back to it (see below).
    */
   const leaveTraining = useCallback(() => {
     if (router.history.canGoBack()) router.history.back()
@@ -522,6 +551,37 @@ export function AnalysisSessionProvider({
       } as unknown as Parameters<typeof navigate>[0])
     } else void navigate({ to: '/player', search: usernames, replace: true })
   }, [router, training, navigate, usernames])
+
+  /**
+   * Closes the training for good (asking first if positions were played): its page is left, back
+   * where it was opened.
+   */
+  const closeTraining = useCallback(async () => {
+    if (
+      trainingStarted(training) &&
+      !(await confirm({
+        icon: CircleX,
+        title: m.confirm_close_training_title(),
+        description: m.confirm_close_training_body(),
+        confirmLabel: m.confirm_close_training_action(),
+        cancelLabel: m.confirm_cancel(),
+      }))
+    ) {
+      return
+    }
+    if (pathname !== TRAINING_PAGE) {
+      setTraining(undefined)
+      return
+    }
+    closeOnLeave.current = true
+    leaveTraining()
+  }, [pathname, leaveTraining, training, confirm])
+
+  /** Back to the training kept: the browser's previous page if it was the training's. */
+  const resumeTraining = useCallback(() => {
+    if (pages.previous === TRAINING_PAGE && router.history.canGoBack()) router.history.back()
+    else void navigate({ to: TRAINING_PAGE, search: usernames })
+  }, [pages.previous, router, navigate, usernames])
 
   /** Stops the analysis under way and drops it: back to the filters, to change them. */
   const stopAnalysis = useCallback(() => {
@@ -577,10 +637,15 @@ export function AnalysisSessionProvider({
     }
   }, [playerState, analysis])
 
-  // Leaving the training's page closes it; leaving the analysis's pages closes the analysis (the
-  // player was asked first while it ran: LeaveGuard).
+  // Leaving the training's page closes it unless it is under way (kept, to come back to it), or
+  // closed by the player; leaving the analysis's pages closes the analysis (the player was asked
+  // first while it ran: LeaveGuard).
   useEffect(() => {
-    if (pathname !== TRAINING_PAGE) setTraining(undefined)
+    if (pathname !== TRAINING_PAGE) {
+      const close = closeOnLeave.current
+      closeOnLeave.current = false
+      setTraining((current) => (!close && trainingUnderWay(current) ? current : undefined))
+    }
     if (!ANALYSIS_PAGES.includes(pathname) && analysisRef.current.status !== 'none' && !quick) {
       analysisJob.current?.abort()
       player.stopScope('all')
@@ -619,6 +684,9 @@ export function AnalysisSessionProvider({
     setTrainingFinished,
     setTrainingProgress,
     leaveTraining,
+    closeTraining,
+    resumeTraining,
+    fromTraining: pages.previous === TRAINING_PAGE && trainingUnderWay(training),
     stopAnalysis,
     gameList,
     setGameList,

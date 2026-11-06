@@ -19,7 +19,7 @@ export const Route = createFileRoute('/player/review')({
  */
 function ReviewPage() {
   const search = Route.useSearch()
-  const { library, accounts, analysis } = useAnalysisSession()
+  const { library, accounts, analysis, fromTraining, resumeTraining } = useAnalysisSession()
   const imported = useImportedGames()
   const ref = parseGameRef(search.review)
   const usernames: ProfileSearch = search.import
@@ -38,17 +38,19 @@ function ReviewPage() {
     retry: shouldRetry,
   })
 
-  // Opened from the analysis's results: back there, the analysis still open.
-  const back =
-    analysis.status !== 'none' ? (
-      <BackLink label={m.back_to_analysis()} to="/player/analysis" search={usernames} />
-    ) : (
-      <BackLink
-        label={search.import ? m.study_back_import() : m.study_back_profile()}
-        to={search.import ? '/player/history' : '/player'}
-        search={usernames}
-      />
-    )
+  // Opened from the training (still under way): back there. From the analysis's results: back
+  // there, the analysis still open.
+  const back = fromTraining ? (
+    <BackLink label={m.back_to_training()} onClick={resumeTraining} />
+  ) : analysis.status !== 'none' ? (
+    <BackLink label={m.back_to_analysis()} to="/player/analysis" search={usernames} />
+  ) : (
+    <BackLink
+      label={search.import ? m.study_back_import() : m.study_back_profile()}
+      to={search.import ? '/player/history' : '/player'}
+      search={usernames}
+    />
+  )
   const message = (text: string, tone = 'text-muted-foreground') => (
     <div className="space-y-3">
       {back}

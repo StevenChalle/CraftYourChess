@@ -1,5 +1,7 @@
 import { createFileRoute, Navigate, useLocation } from '@tanstack/react-router'
+import { X } from 'lucide-react'
 import { BackLink } from '@/components/BackLink'
+import { trainingUnderWay } from '@/features/review/openSession'
 import { TRAINING_PAGE, useAnalysisSession } from '@/features/review/sessionContext'
 import { TrainingSetup } from '@/features/training/components/TrainingSetup'
 import { TrainingView } from '@/features/training/components/TrainingView'
@@ -11,7 +13,8 @@ export const Route = createFileRoute('/player/training')({
 
 /**
  * The training open, on its own page: its options until launched, then the board. Going back (the
- * link, the browser) closes it, asking first while it is under way; a reload brings it back.
+ * link, the browser) keeps it while under way, to come back to it from the header; closing it is
+ * a button of its own. A reload brings it back.
  * Without a training (closed meanwhile, never opened): back to the analysis if one is open, else
  * the profile.
  */
@@ -28,6 +31,7 @@ function TrainingPage() {
     setTrainingFinished,
     setTrainingProgress,
     leaveTraining,
+    closeTraining,
   } = useAnalysisSession()
   const pathname = useLocation({ select: (location) => location.pathname })
 
@@ -54,7 +58,19 @@ function TrainingPage() {
   }
 
   const back = (
-    <BackLink label={backLabel(training.from.to, usernames.import)} onClick={leaveTraining} />
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <BackLink label={backLabel(training.from.to, usernames.import)} onClick={leaveTraining} />
+      {trainingUnderWay(training) && (
+        <button
+          type="button"
+          onClick={() => void closeTraining()}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-loss"
+        >
+          <X className="size-4" aria-hidden />
+          {m.training_close_for_good()}
+        </button>
+      )}
+    </div>
   )
   const phase = training.phase
   return (

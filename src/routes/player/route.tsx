@@ -1,6 +1,6 @@
-import { CircleX, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { createFileRoute, Navigate, Outlet, useBlocker, useLocation } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PlayerHeader } from '@/features/player/components/PlayerHeader'
 import { useRememberSearch } from '@/features/player/recentSearches'
@@ -13,6 +13,7 @@ import {
 import { usePlayerAccounts } from '@/features/player/usePlayerAccounts'
 import { reviewableAccounts } from '@/features/review/accounts'
 import { ReviewButtons } from '@/features/review/components/ReviewButtons'
+import { ResumeTrainingButton } from '@/features/training/components/ResumeTrainingButton'
 import { parseGameRef } from '@/features/review/gameRef'
 import { accountsLibrary, importLibrary } from '@/features/review/library'
 import { ImportHeader } from '@/features/import/components/ImportHeader'
@@ -153,70 +154,51 @@ function AccountsLayout() {
   )
 }
 
-/** The advanced analysis's button, but on its own page and the training's. */
+/**
+ * The training kept, to go back to it, and the advanced analysis's button; neither on the
+ * training's page, nor the analysis's on its own.
+ */
 function HeaderActions({ usernames }: { usernames: ProfileSearch }) {
   const pathname = useLocation({ select: (location) => location.pathname })
-  if (pathname === '/player/analysis' || pathname === TRAINING_PAGE) return null
-  return <ReviewButtons usernames={usernames} />
+  if (pathname === TRAINING_PAGE) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:flex-nowrap">
+      <ResumeTrainingButton />
+      {pathname !== '/player/analysis' && <ReviewButtons usernames={usernames} />}
+    </div>
+  )
 }
 
 /**
- * Leaving the training page while the training is under way (some position played, not all), or
- * the analysis's pages while it runs (for other accounts too), asks first: they close. A reload
- * asks nothing: both come back.
+ * Leaving the analysis's pages while it runs (for other accounts too) asks first: it closes. A
+ * reload asks nothing: it comes back. A training under way is kept when its page is left (see
+ * AnalysisSessionProvider): replacing it asks instead.
  */
 function LeaveGuard({ usernames }: { usernames: ProfileSearch }) {
-  const { analysis, training } = useAnalysisSession()
-  const [reason, setReason] = useState<'training' | 'analysis'>('analysis')
+  const { analysis } = useAnalysisSession()
   const blocker = useBlocker({
-    shouldBlockFn: ({ current, next }) => {
+    shouldBlockFn: ({ next }) => {
       const search = next.search as ProfileSearch
       const otherProfile =
         !next.pathname.startsWith('/player') ||
         search.lichess !== usernames.lichess ||
         search.chesscom !== usernames.chesscom ||
         Boolean(search.import) !== Boolean(usernames.import)
-      const trainingLeft =
-        current.pathname === TRAINING_PAGE && (next.pathname !== TRAINING_PAGE || otherProfile)
-      // Only a training with positions played has something to lose.
-      if (
-        trainingLeft &&
-        training?.phase.kind === 'running' &&
-        !training.finished &&
-        (training.progress?.index ?? 0) > 0
-      ) {
-        setReason('training')
-        return true
-      }
-      if (
-        analysis.status === 'running' &&
-        (otherProfile || !ANALYSIS_PAGES.includes(next.pathname))
-      ) {
-        setReason('analysis')
-        return true
-      }
-      return false
+      return (
+        analysis.status === 'running' && (otherProfile || !ANALYSIS_PAGES.includes(next.pathname))
+      )
     },
     // A reload brings the analysis and the training back: the browser need not ask.
     enableBeforeUnload: false,
     withResolver: true,
   })
-  const options =
-    reason === 'training'
-      ? {
-          icon: CircleX,
-          title: m.confirm_close_training_title(),
-          description: m.confirm_close_training_body(),
-          confirmLabel: m.confirm_close_training_action(),
-          cancelLabel: m.confirm_cancel(),
-        }
-      : {
-          icon: LogOut,
-          title: m.confirm_leave_title(),
-          description: m.confirm_leave_body(),
-          confirmLabel: m.confirm_leave_action(),
-          cancelLabel: m.confirm_cancel(),
-        }
+  const options = {
+    icon: LogOut,
+    title: m.confirm_leave_title(),
+    description: m.confirm_leave_body(),
+    confirmLabel: m.confirm_leave_action(),
+    cancelLabel: m.confirm_cancel(),
+  }
   return (
     <ConfirmDialog
       open={blocker.status === 'blocked'}

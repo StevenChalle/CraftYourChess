@@ -320,9 +320,9 @@
   "training_replay_missed": "Replay the missed moves ({count})",
   "training_replay_missed_hint": "The positions where your first move wasn't valid, moves only: evaluations don't count.",
   "training_restart": "Start again",
-  "confirm_close_training_title": "Leave the training?",
+  "confirm_close_training_title": "Close the training?",
   "confirm_close_training_body": "The positions left to play will be lost.",
-  "confirm_close_training_action": "Leave",
+  "confirm_close_training_action": "Close",
   "training_setup_order": "Order",
   "training_setup_interleave": "Interleave the games",
   "training_setup_interleave_info": "Positions from different games come mixed together instead of one game after another.",
@@ -695,5 +695,12 @@
   "study_review": "Review",
   "study_review_title": "Review this game: board, engine, variations",
   "legal_privacy_local_page_size": "how many games the lists show per page;",
-  "legal_privacy_local_open": "the advanced analysis and the training you have open (filters, games analysed, positions played), only until you close them, so that reloading the page brings them back;"
+  "legal_privacy_local_open": "the advanced analysis and the training you have open (filters, games analysed, positions played), only until you close them, so that reloading the page brings them back;",
+  "confirm_replace_training_title": "Replace the training under way?",
+  "confirm_replace_training_body": "You are at position {current} of {total}. The positions left to play will be lost.",
+  "training_resume": "Resume training",
+  "training_resume_count": "{current}/{total}",
+  "training_close_for_good": "Close the training",
+  "back_to_training": "Back to the training",
+  "training_resume_short": "Training"
 }

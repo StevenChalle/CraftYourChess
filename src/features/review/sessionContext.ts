@@ -19,7 +19,7 @@ import type { ProfileSearch } from '@/features/player/search'
 
 /** The pages an open analysis goes with: leaving them for another closes it. */
 export const ANALYSIS_PAGES = ['/player/analysis', '/player/training', '/player/review']
-/** The training's page: leaving it closes the training. */
+/** The training's page: leaving it keeps the training only while under way (trainingUnderWay). */
 export const TRAINING_PAGE = '/player/training'
 
 export type SearchState =
@@ -53,7 +53,10 @@ export type TrainingPhase =
 /** Where a training was opened: back there when it closes. */
 export type TrainingOrigin = { to: string; search: Record<string, unknown> }
 
-/** The training open, on its own page: one at a time, closed when the page is left. */
+/**
+ * The training open, on its own page: one at a time. Kept when the page is left while under way
+ * (to come back to it), until replaced, closed or over.
+ */
 export type OpenTraining = {
   /** The errors it can replay */
   mistakes: Mistake[]
@@ -107,8 +110,14 @@ export type Session = {
   replayMissed: (puzzles: Mistake[]) => void
   setTrainingFinished: (finished: boolean) => void
   setTrainingProgress: (progress: TrainingProgress) => void
-  /** Leaves the training page, back where it was opened (asks first while it is under way) */
+  /** Leaves the training page, back where it was opened (one under way stays open) */
   leaveTraining: () => void
+  /** Closes the training for good (leaving its page if shown) */
+  closeTraining: () => Promise<void>
+  /** Back to the training kept */
+  resumeTraining: () => void
+  /** The page shown was opened from the training's, which is still under way */
+  fromTraining: boolean
   /** Stops the analysis under way and drops it: the filters stay, to change them */
   stopAnalysis: () => void
   /**

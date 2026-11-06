@@ -6,7 +6,7 @@ Une page pour étudier une partie en détail sans quitter l'app : l'échiquier e
 
 - `/player/review?lichess=…&chesscom=…&review=<gameRef>&ply=<demi-coup>` (ou `?import=true&review=…` pour une partie importée). La page vit dans le profil, pour réutiliser sa session (entraînements, critères d'analyse), sous son en-tête mais **sans ses onglets** (`ProfileTabs` dans `routes/player/route.tsx`).
 - Le paramètre s'appelle `review`, pas `game` : `game` lance déjà l'analyse rapide d'une partie (session).
-- Points d'entrée (`ReviewLink`) : le bouton **Review** du panneau de la courbe d'évaluation (à la place du lien « Analyze on Lichess »), au coup survolé ; l'icône de chaque ligne des listes de parties (profil, imports, résultats), sur téléphone aussi, à côté de l'entraînement ; « Étudier cette position » d'un entraînement (à la place de « Analyser sur Lichess » : plus besoin de quitter l'app ; un lien, ctrl + clic l'ouvre dans un autre onglet).
+- Points d'entrée (`ReviewLink`) : le bouton **Review** du panneau de la courbe d'évaluation (à la place du lien « Analyze on Lichess »), au coup survolé ; l'icône de chaque ligne des listes de parties (profil, imports, résultats), sur téléphone aussi, à côté de l'entraînement ; « Étudier cette position » d'un entraînement (à la place de « Analyser sur Lichess » : plus besoin de quitter l'app ; un lien, ctrl + clic l'ouvre dans un autre onglet ; l'entraînement reste ouvert, et le lien du haut devient « ← Retour à l'entraînement »).
 - La partie se charge par `library.findOne` (plateforme pour un compte, lot en mémoire pour un import). Une partie importée est perdue au rechargement de la page, comme le lot.
 
 ## Ce que montre la page

@@ -320,9 +320,9 @@
   "training_replay_missed": "Rejouer les coups manqués ({count})",
   "training_replay_missed_hint": "Les positions où ton premier coup n'était pas valide, en rejouant seulement les coups : les évaluations ne comptent pas.",
   "training_restart": "Recommencer",
-  "confirm_close_training_title": "Quitter l'entraînement ?",
+  "confirm_close_training_title": "Fermer l'entraînement ?",
   "confirm_close_training_body": "Les positions qui restent à jouer seront perdues.",
-  "confirm_close_training_action": "Quitter",
+  "confirm_close_training_action": "Fermer",
   "training_setup_order": "Ordre",
   "training_setup_interleave": "Entremêler les parties",
   "training_setup_interleave_info": "Les positions de plusieurs parties s'intercalent, au lieu de jouer une partie après l'autre.",
@@ -695,5 +695,12 @@
   "study_review": "Revoir",
   "study_review_title": "Revoir cette partie : échiquier, moteur, variantes",
   "legal_privacy_local_page_size": "le nombre de parties par page des listes ;",
-  "legal_privacy_local_open": "l'analyse avancée et l'entraînement ouverts (filtres, parties analysées, positions jouées), seulement jusqu'à ce que vous les fermiez, pour qu'un rechargement de la page les retrouve ;"
+  "legal_privacy_local_open": "l'analyse avancée et l'entraînement ouverts (filtres, parties analysées, positions jouées), seulement jusqu'à ce que vous les fermiez, pour qu'un rechargement de la page les retrouve ;",
+  "confirm_replace_training_title": "Remplacer l'entraînement en cours ?",
+  "confirm_replace_training_body": "Il en est à la position {current} sur {total}. Les positions qui restent à jouer seront perdues.",
+  "training_resume": "Reprendre l'entraînement",
+  "training_resume_count": "{current}/{total}",
+  "training_close_for_good": "Fermer l'entraînement",
+  "back_to_training": "Retour à l'entraînement",
+  "training_resume_short": "Entraînement"
 }
